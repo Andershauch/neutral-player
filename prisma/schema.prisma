@@ -72,6 +72,9 @@ model Embed {
 
 model Group {
   id        String   @id @default(cuid())
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
   name      String   // Fx "Velkomstvideo", "Instruktion 1"
   slug      String   // Fx "velkomst", "step-1" (bruges i URL)
   
