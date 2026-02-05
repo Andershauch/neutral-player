@@ -10,8 +10,7 @@ async function main() {
     update: {},
     create: {
       email: 'admin@company.com',
-      password,
-      role: 'ADMIN'
+      password
     },
   })
   console.log({ user })
