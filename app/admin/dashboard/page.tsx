@@ -1,5 +1,6 @@
 import AdminNav from "@/components/admin/AdminNav";
 import EmbedList from "@/components/admin/EmbedList";
+import { createEmbed } from "@/app/actions/create-embed";
 
 export const metadata = {
   title: "Admin Dashboard | EmbedManager",
