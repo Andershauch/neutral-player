@@ -1,0 +1,60 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String   // Husk at hashe dette før save!
+  role      String   @default("ADMIN")
+  createdAt DateTime @default(now())
+}
+
+model Embed {
+  id          String       @id @default(cuid())
+  name        String       // Internt navn, fx "Intranet Q1"
+  defaultLang String       @default("da")
+  groups      VideoGroup[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model VideoGroup {
+  id        String         @id @default(cuid())
+  embedId   String
+  embed     Embed          @relation(fields: [embedId], references: [id], onDelete: Cascade)
+  title     String         // Visningstitel, fx "Velkomst"
+  slug      String         // URL-safe, fx "velkomst"
+  sortOrder Int            @default(0)
+  variants  VideoVariant[]
+
+  @@unique([embedId, slug]) // Slug skal være unik pr. embed
+  @@index([embedId])
+}
+
+model VideoVariant {
+  id             String     @id @default(cuid())
+  groupId        String
+  group          VideoGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  lang           String     // 'da', 'en', 'uk', 'fa', etc.
+  dreamBrokerUrl String
+  
+  @@unique([groupId, lang]) // Kun én variant pr. sprog i en gruppe
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String? 
+  action    String   
+  entity    String   
+  entityId  String   
+  details   String   // <--- RETTET FRA Json TIL String
+  timestamp DateTime @default(now())
+}
