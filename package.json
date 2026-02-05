@@ -4,9 +4,9 @@
   "private": true,
  "scripts": {
   "dev": "next dev",
-  "build": "next build --no-lint",  // <--- RETTET HER
+  "build": "next build --no-lint",
   "start": "next start",
-  "lint": "next lint",
+  "lint": "eslint",
   "postinstall": "prisma generate"
 },
   "dependencies": {
