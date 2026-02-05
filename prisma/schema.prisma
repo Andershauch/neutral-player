@@ -1,60 +1,101 @@
-// prisma/schema.prisma
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "postgresql" // Eller "sqlite" hvis du tester lokalt uden Neon endnu
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String   // Husk at hashe dette før save!
-  role      String   @default("ADMIN")
-  createdAt DateTime @default(now())
+// --- NextAuth Models (Til login) ---
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
 }
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  accounts      Account[]
+  sessions      Session[]
+  embeds        Embed[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// --- Video Platform Models ---
 
 model Embed {
-  id          String       @id @default(cuid())
-  name        String       // Internt navn, fx "Intranet Q1"
-  defaultLang String       @default("da")
-  groups      VideoGroup[]
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-}
-
-model VideoGroup {
-  id        String         @id @default(cuid())
-  embedId   String
-  embed     Embed          @relation(fields: [embedId], references: [id], onDelete: Cascade)
-  title     String         // Visningstitel, fx "Velkomst"
-  slug      String         // URL-safe, fx "velkomst"
-  sortOrder Int            @default(0)
-  variants  VideoVariant[]
-
-  @@unique([embedId, slug]) // Slug skal være unik pr. embed
-  @@index([embedId])
-}
-
-model VideoVariant {
-  id             String     @id @default(cuid())
-  groupId        String
-  group          VideoGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  lang           String     // 'da', 'en', 'uk', 'fa', etc.
-  dreamBrokerUrl String
+  id          String   @id @default(cuid())
+  name        String
+  defaultLang String   @default("da") // Fx "da", "en", "de"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
   
-  @@unique([groupId, lang]) // Kun én variant pr. sprog i en gruppe
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  groups      Group[]
 }
 
-model AuditLog {
+model Group {
   id        String   @id @default(cuid())
-  userId    String? 
-  action    String   
-  entity    String   
-  entityId  String   
-  details   String   // <--- RETTET FRA Json TIL String
-  timestamp DateTime @default(now())
+  name      String   // Fx "Velkomstvideo", "Instruktion 1"
+  slug      String   // Fx "velkomst", "step-1" (bruges i URL)
+  
+  embed     Embed    @relation(fields: [embedId], references: [id], onDelete: Cascade)
+  embedId   String
+
+  variants  Variant[]
+
+  @@unique([embedId, slug]) // Man kan ikke have to grupper med samme slug i samme embed
+}
+
+model Variant {
+  id             String   @id @default(cuid())
+  lang           String   // Fx "da", "en"
+  
+  // URL er nu valgfri, da vi måske bruger Mux i stedet
+  dreamBrokerUrl String?
+
+  // Nye felter til Mux (Video Upload)
+  muxUploadId    String?
+  muxPlaybackId  String?
+
+  group          Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  groupId        String
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
