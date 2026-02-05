@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { createVariant } from "@/actions/create-variant";
+import { createVariant } from "@/actions/gemVideo";
 import VideoUploader from "@/components/admin/MuxUploader";
 import { useRouter } from "next/navigation";
 
