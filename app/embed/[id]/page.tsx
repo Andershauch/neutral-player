@@ -4,6 +4,8 @@ import PublicPlayer from "@/components/public/PublicPlayer"; // Vi laver denne o
 
 const prisma = new PrismaClient();
 
+export const dynamic = "force-dynamic";
+
 interface PageProps {
   params: Promise<{ id: string }>;
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;

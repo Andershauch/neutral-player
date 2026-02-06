@@ -104,6 +104,9 @@ model Variant {
   group          Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
   
   lang           String
+  
+  title          String? // ? betyder det er valgfrit (falder tilbage til gruppenavnet)
+  
   muxUploadId    String?
   dreamBrokerUrl String?
   

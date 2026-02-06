@@ -12,16 +12,22 @@ export default function PublicPlayer({ embed }: any) {
   const [currentPlaybackId, setCurrentPlaybackId] = useState<string | null>(null);
   const [loadingVideo, setLoadingVideo] = useState(false);
 
-  // Find aktiv gruppe og variant
+  // 1. Find aktiv gruppe
   const videoSlug = searchParams.get("video");
   const activeGroup = videoSlug 
     ? embed.groups.find((g: any) => g.slug === videoSlug) 
     : embed.groups[0];
 
+  // 2. Find aktiv variant (sprog)
   const urlLang = searchParams.get("lang");
   const activeVariant = activeGroup?.variants.find((v: any) => v.lang === urlLang)
     || activeGroup?.variants[0];
 
+  // --- NYT: Beregn den rigtige titel ---
+  // Hvis varianten har en specifik titel, brug den. Ellers brug gruppenavnet.
+  const displayTitle = activeVariant?.title || activeGroup?.name || "Video";
+
+  // 3. Hent Playback ID
   useEffect(() => {
     async function fetchPlaybackId() {
       if (!activeVariant?.muxUploadId) {
@@ -58,13 +64,19 @@ export default function PublicPlayer({ embed }: any) {
 
   if (!activeGroup) return <div className="p-10 text-center text-white">Ingen videoer fundet.</div>;
 
+// --- DEBUG START ---
+  // Dette viser os præcis, hvad databasen sender til os.
+  // Slet dette, når det virker!
+  console.log("AKTIV VARIANT:", activeVariant); 
+  // -------------------
+
   return (
     <div className="flex h-screen flex-col md:flex-row bg-black overflow-hidden">
       
       {/* MENU (Venstre side) */}
       <div className="w-full md:w-64 bg-zinc-900 border-r border-zinc-800 flex flex-col z-20 shadow-xl">
         <div className="p-4 bg-zinc-900 sticky top-0 border-b border-zinc-800 z-10">
-             <h1 className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Videoer</h1>
+             <h1 className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Indhold</h1>
         </div>
         <div className="p-2 flex flex-col gap-1 overflow-y-auto">
             {embed.groups.map((group: any) => (
@@ -95,7 +107,7 @@ export default function PublicPlayer({ embed }: any) {
             {/* VIDEO CONTAINER */}
             <div className="w-full max-w-6xl aspect-video bg-zinc-900 shadow-2xl rounded-xl overflow-hidden relative ring-1 ring-zinc-800 group">
                 
-                {/* --- NYT: SPROG OVERLAY (Øverst til højre) --- */}
+                {/* SPROG OVERLAY */}
                 {activeGroup.variants.length > 1 && (
                   <div className="absolute top-4 right-4 z-30 flex flex-col items-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     <span className="text-[10px] font-bold text-white uppercase bg-black/60 px-2 py-1 rounded backdrop-blur-sm">Sprog / Language</span>
@@ -112,7 +124,6 @@ export default function PublicPlayer({ embed }: any) {
                             }
                           `}
                         >
-                          {/* Lille prik hvis aktiv */}
                           <span className={`w-1.5 h-1.5 rounded-full ${activeVariant?.lang === v.lang ? "bg-white" : "bg-transparent"}`}></span>
                           {v.lang}
                         </button>
@@ -121,7 +132,7 @@ export default function PublicPlayer({ embed }: any) {
                   </div>
                 )}
 
-                {/* SELVE PLAYEREN */}
+                {/* PLAYEREN */}
                 {activeVariant ? (
                     <>
                         {loadingVideo && (
@@ -135,7 +146,8 @@ export default function PublicPlayer({ embed }: any) {
                                 <MuxPlayer
                                     streamType="on-demand"
                                     playbackId={currentPlaybackId}
-                                    metadata={{ video_title: activeGroup.name }}
+                                    // HER BRUGER VI DEN NYE TITEL TIL METADATA:
+                                    metadata={{ video_title: displayTitle }}
                                     accentColor="#2563eb"
                                     className="w-full h-full"
                                     autoPlay={false}
@@ -163,9 +175,17 @@ export default function PublicPlayer({ embed }: any) {
                 )}
             </div>
 
-            {/* Titel under video */}
+            {/* TITEL UNDER VIDEOEN */}
             <div className="mt-6 text-center max-w-2xl mx-auto">
-                <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight">{activeGroup.name}</h2>
+                {/* HER ER DEN VIGTIGE ÆNDRING: */}
+                <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight" dir="auto">
+                    {displayTitle}
+                </h2>
+                
+                {/* Vis original titel (gruppenavn) nedenunder, hvis vi viser en oversættelse */}
+                {activeVariant?.title && activeVariant.title !== activeGroup.name && (
+                    <p className="text-zinc-500 text-sm mt-2">{activeGroup.name}</p>
+                )}
             </div>
         </div>
       </div>
