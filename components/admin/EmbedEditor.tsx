@@ -88,7 +88,7 @@ export default function EmbedEditor({ embed }: any) {
       {/* HEADER */}
       <div className="flex justify-between items-center mb-8">
         <div>
-           <Link href="/admin" className="text-gray-500 hover:text-gray-800 mb-2 inline-block text-sm">← Tilbage til oversigt</Link>
+           <Link href="/admin/dashboard" className="text-gray-500 hover:text-gray-800 mb-2 inline-block text-sm">← Tilbage til oversigt</Link>
            <h1 className="text-3xl font-bold text-gray-800">{embed.name}</h1>
            <p className="text-gray-500 text-sm mt-1">ID: {embed.id}</p>
         </div>
