@@ -64,8 +64,13 @@ model Embed {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+// FØR: userId String
+  // NU: Vi sætter ? bagved for at gøre det valgfrit
+  userId      String?  
+  
+  // FØR: user User @relation(...)
+  // NU: Vi sætter ? bagved User
+  user        User?    @relation(fields: [userId], references: [id])
 
   groups      Group[]
 }
