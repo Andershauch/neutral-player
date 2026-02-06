@@ -3,200 +3,253 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import VideoUploader from "@/components/admin/MuxUploader";
+import MuxPlayer from "@mux/mux-player-react";
 
-// Types matchende Prisma output
-type EmbedData = any; // (I prod: Importér full type fra Prisma generated types)
-
-export default function EmbedEditor({ embed }: { embed: EmbedData }) {
+export default function EmbedEditor({ embed }: any) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
-  // Local state til "Ny Gruppe" formen
-  const [newGroupTitle, setNewGroupTitle] = useState("");
-  const [newGroupSlug, setNewGroupSlug] = useState("");
+  // --- STATE TIL MODALS (Preview & Embed Code) ---
+  const [previewId, setPreviewId] = useState<string | null>(null);
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+  
+  const [showEmbedCode, setShowEmbedCode] = useState(false);
+  const [embedCode, setEmbedCode] = useState("");
 
-  // --- HANDLERS ---
+  // --- FUNKTIONER ---
 
-  // 1. Slet en hel gruppe (Titel)
-  const deleteGroup = async (groupId: string) => {
-    if (!confirm("Er du sikker? Dette sletter titlen og alle dens sprogvarianter.")) return;
-    setLoading(true);
-    await fetch(`/api/delete?type=group&id=${groupId}`, { method: 'DELETE' });
-    router.refresh();
-    setLoading(false);
+  // 1. Generer Embed Kode
+  const generateEmbedCode = () => {
+    // Vi finder det nuværende domæne (fx localhost eller dit-site.com)
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    const url = `${origin}/embed/${embed.id}`;
+    
+    const code = `<iframe 
+  src="${url}" 
+  width="100%" 
+  height="600" 
+  frameBorder="0" 
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+  allowFullScreen
+></iframe>`;
+    
+    setEmbedCode(code);
+    setShowEmbedCode(true);
   };
 
-  // 2. Slet en enkelt variant (Sprog)
+  // 2. Håndter Video Preview (Henter Playback ID fra API)
+  const handlePreview = async (uploadId: string) => {
+    setIsLoadingPreview(true);
+    try {
+      const res = await fetch(`/api/get-playback-id?uploadId=${uploadId}`);
+      const data = await res.json();
+      
+      if (data.playbackId) {
+        setPreviewId(data.playbackId);
+      } else {
+        alert("Videoen behandles stadig hos Mux (eller er ikke klar). Prøv igen om lidt.");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Kunne ikke hente videoen.");
+    } finally {
+      setIsLoadingPreview(false);
+    }
+  };
+
+  // 3. Slet Hele Titlen (Group)
+  const deleteGroup = async (groupId: string) => {
+    if (!confirm("Er du sikker på, at du vil slette hele denne titel og alle dens sprog?")) return;
+    setLoading(true);
+    try {
+      await fetch(`/api/delete?type=group&id=${groupId}`, { method: 'DELETE' });
+      router.refresh();
+    } catch (e) {
+      alert("Fejl ved sletning");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 4. Slet Variant (Sprog)
   const deleteVariant = async (variantId: string) => {
     if (!confirm("Slet denne sprogversion?")) return;
-    setLoading(true);
-    await fetch(`/api/delete?type=variant&id=${variantId}`, { method: 'DELETE' });
-    router.refresh();
-    setLoading(false);
-  };
-
-  // 3. Opret ny Gruppe
-  const handleAddGroup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    const res = await fetch('/api/groups', {
-      method: 'POST',
-      body: JSON.stringify({
-        embedId: embed.id,
-        title: newGroupTitle,
-        slug: newGroupSlug,
-        // Vi opretter den uden varianter først, varianter tilføjes efterfølgende
-      })
-    });
-    
-    if (res.ok) {
-      setNewGroupTitle("");
-      setNewGroupSlug("");
+    try {
+      await fetch(`/api/delete?type=variant&id=${variantId}`, { method: 'DELETE' });
       router.refresh();
-    } else {
-      alert("Fejl: Slug findes måske allerede?");
+    } catch (e) {
+      alert("Fejl ved sletning");
     }
-    setLoading(false);
   };
-
-  // 4. Opret ny Variant (Inside a group)
-  const handleAddVariant = async (groupId: string, lang: string, url: string) => {
-    setLoading(true);
-    const res = await fetch('/api/variants', {
-      method: 'POST',
-      body: JSON.stringify({ groupId, lang, url })
-    });
-    if (res.ok) {
-      router.refresh(); // Refresh data
-    } else {
-      alert("Kunne ikke tilføje variant. Tjek URL og om sproget allerede findes.");
-    }
-    setLoading(false);
-  };
-
-  // --- RENDER ---
 
   return (
-    <div className="space-y-8">
-      
-      {/* HEADER: Embed Info */}
-      <div className="bg-white shadow rounded-lg p-6 flex justify-between items-start">
+    <div className="max-w-5xl mx-auto">
+      {/* HEADER */}
+      <div className="flex justify-between items-center mb-8">
         <div>
-          <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
-            <Link href="/admin/dashboard" className="hover:underline">Dashboard</Link> 
-            <span>/</span>
-            <span>Edit Embed</span>
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900">{embed.name}</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Default Sprog: <span className="font-mono bg-gray-100 px-1 rounded">{embed.defaultLang}</span>
-            <span className="mx-2">•</span>
-            Public ID: <code className="text-xs bg-gray-100 px-1 rounded">{embed.id}</code>
-          </p>
+           <Link href="/admin" className="text-gray-500 hover:text-gray-800 mb-2 inline-block text-sm">← Tilbage til oversigt</Link>
+           <h1 className="text-3xl font-bold text-gray-800">{embed.name}</h1>
+           <p className="text-gray-500 text-sm mt-1">ID: {embed.id}</p>
         </div>
-        <a 
-          href={`/embed/${embed.id}`} 
-          target="_blank" 
-          className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1"
-        >
-          Åbn Public Player ↗
-        </a>
+        
+        {/* KNAPPER I TOPPEN */}
+        <div className="flex gap-2">
+            <button
+                onClick={generateEmbedCode}
+                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors flex items-center gap-2 shadow-sm"
+            >
+                <span>📋</span> Hent Embed Kode
+            </button>
+            
+            <Link 
+                href={`/embed/${embed.id}`} 
+                target="_blank"
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium transition-colors shadow-sm flex items-center gap-2"
+            >
+                Åbn Public Player ↗
+            </Link>
+        </div>
       </div>
 
-      {/* LISTE AF VIDEO GRUPPER */}
+      {/* CONTENT LIST (Grupper) */}
       <div className="space-y-6">
-        <h2 className="text-lg font-medium text-gray-900">Video Titler (Groups)</h2>
-        
-        {embed.groups.length === 0 && (
-          <p className="text-gray-500 italic">Ingen titler endnu.</p>
-        )}
-
         {embed.groups.map((group: any) => (
           <VideoGroupCard 
             key={group.id} 
             group={group} 
             onDeleteGroup={deleteGroup}
-            onAddVariant={handleAddVariant}
             onDeleteVariant={deleteVariant}
+            onPreview={handlePreview} // Vi sender preview-funktionen ned til kortet
             loading={loading}
+            isLoadingPreview={isLoadingPreview}
           />
         ))}
+
+        {embed.groups.length === 0 && (
+            <div className="p-10 text-center bg-gray-50 rounded-lg border border-dashed border-gray-300 text-gray-500">
+                Du har ikke oprettet nogen videotitler endnu. Start ovenfor.
+            </div>
+        )}
       </div>
 
-      {/* FORM: OPRET NY GRUPPE */}
-      <div className="bg-gray-50 border border-dashed border-gray-300 rounded-lg p-6">
-        <h3 className="text-sm font-medium text-gray-900 mb-4">Tilføj ny Video Titel</h3>
-        <form onSubmit={handleAddGroup} className="flex gap-4 items-end">
-          <div className="flex-1">
-            <label className="block text-xs font-medium text-gray-500 uppercase">Titel (Menu tekst)</label>
-            <input 
-              type="text" 
-              required
-              value={newGroupTitle}
-              onChange={e => {
-                setNewGroupTitle(e.target.value);
-                // Auto-generate slug (simple)
-                if (!newGroupSlug) {
-                  setNewGroupSlug(e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
-                }
-              }}
-              placeholder="Fx. Introduktion"
-              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+      {/* --- MODAL: VIDEO PREVIEW --- */}
+      {previewId && (
+        <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4" onClick={() => setPreviewId(null)}>
+          <div className="bg-black rounded-lg overflow-hidden max-w-5xl w-full shadow-2xl ring-1 ring-gray-800" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between p-3 bg-gray-900 text-white border-b border-gray-800">
+              <span className="text-sm font-medium pl-2 flex items-center gap-2">
+                <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span> Preview
+              </span>
+              <button onClick={() => setPreviewId(null)} className="text-gray-400 hover:text-white px-2">Luk ✕</button>
+            </div>
+            <MuxPlayer
+              streamType="on-demand"
+              playbackId={previewId}
+              metadata={{ video_title: "Admin Preview" }}
+              autoPlay
+              accentColor="#2563eb"
+              className="w-full aspect-video"
             />
           </div>
-          <div className="w-48">
-             <label className="block text-xs font-medium text-gray-500 uppercase">Slug (?video=...)</label>
-             <input 
-              type="text" 
-              required
-              value={newGroupSlug}
-              onChange={e => setNewGroupSlug(e.target.value)}
-              placeholder="introduktion"
-              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm font-mono"
-            />
-          </div>
-          <button 
-            type="submit" 
-            disabled={loading}
-            className="bg-gray-800 text-white px-4 py-2 rounded-md text-sm hover:bg-gray-900 disabled:opacity-50"
-          >
-            Opret Titel
-          </button>
-        </form>
-      </div>
+        </div>
+      )}
 
+      {/* --- MODAL: EMBED CODE --- */}
+      {showEmbedCode && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={() => setShowEmbedCode(false)}>
+            <div className="bg-white rounded-lg p-6 max-w-2xl w-full shadow-xl transform transition-all" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-bold mb-2 text-gray-800">Din Embed Kode</h3>
+            <p className="text-sm text-gray-500 mb-4">Kopier koden herunder og indsæt den på din hjemmeside (Wordpress, Webflow, custom site etc.).</p>
+            
+            <div className="relative group">
+                <textarea 
+                readOnly 
+                value={embedCode}
+                className="w-full h-32 p-4 bg-gray-50 border border-gray-200 rounded font-mono text-xs text-gray-600 focus:outline-none resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+                <button 
+                onClick={() => {
+                    navigator.clipboard.writeText(embedCode);
+                    alert("Koden er kopieret til udklipsholderen!");
+                }}
+                className="absolute top-2 right-2 bg-white border border-gray-200 shadow-sm px-3 py-1 text-xs rounded font-bold hover:bg-gray-50 text-gray-700 transition-all opacity-0 group-hover:opacity-100"
+                >
+                Kopier
+                </button>
+            </div>
+
+            <div className="mt-4 flex justify-end">
+                <button onClick={() => setShowEmbedCode(false)} className="text-gray-500 hover:text-black text-sm font-medium px-4 py-2">Luk</button>
+            </div>
+            </div>
+        </div>
+        )}
     </div>
   );
 }
 
 // --- SUB-COMPONENT: GROUP CARD ---
-// For at holde koden ren, splitter vi kortet ud her i samme fil
-function VideoGroupCard({ group, onDeleteGroup, onAddVariant, onDeleteVariant, loading }: any) {
+// Denne komponent håndterer visningen af hver enkelt videotitel og dens varianter
+function VideoGroupCard({ group, onDeleteGroup, onDeleteVariant, onPreview, loading, isLoadingPreview }: any) {
+  const router = useRouter();
   const [lang, setLang] = useState("da");
-  const [url, setUrl] = useState("");
+  const [mode, setMode] = useState<'upload' | 'url'>('upload'); 
+  const [urlInput, setUrlInput] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleSubmitVariant = (e: React.FormEvent) => {
+  // Upload (Mux)
+  const handleUploadSuccess = async (uploadId: string) => {
+    setIsSaving(true);
+    await saveVariant({ groupId: group.id, lang, muxUploadId: uploadId });
+  };
+
+  // URL (Link)
+  const handleSaveUrl = async (e: React.FormEvent) => {
     e.preventDefault();
-    onAddVariant(group.id, lang, url).then(() => {
-      setUrl(""); // Clear URL input on success
-    });
+    if (!urlInput) return alert("Husk at skrive en URL");
+    setIsSaving(true);
+    await saveVariant({ groupId: group.id, lang, dreamBrokerUrl: urlInput });
+    setUrlInput(""); 
+  };
+
+  const saveVariant = async (payload: any) => {
+    try {
+      const res = await fetch('/api/variants', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        alert(err.error || "Fejl ved oprettelse");
+      } else {
+        router.refresh();
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Der skete en fejl.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden mb-6 shadow-sm hover:shadow-md transition-shadow">
       {/* Card Header */}
       <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex justify-between items-center">
         <div className="flex items-center gap-3">
-          <span className="font-mono text-xs text-gray-400">#{group.sortOrder}</span>
-          <h3 className="font-semibold text-gray-800">{group.title}</h3>
-          <span className="bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded-full font-mono">
+          <span className="font-mono text-xs text-gray-400 bg-gray-100 px-1.5 rounded">#{group.sortOrder}</span>
+          <h3 className="font-semibold text-gray-800">{group.name}</h3>
+          <span className="bg-blue-50 text-blue-700 border border-blue-100 text-[10px] px-2 py-0.5 rounded-full font-mono">
             ?video={group.slug}
           </span>
         </div>
         <button 
           onClick={() => onDeleteGroup(group.id)}
           disabled={loading}
-          className="text-red-600 hover:text-red-800 text-xs font-medium"
+          className="text-gray-400 hover:text-red-600 text-xs font-medium uppercase tracking-wide transition-colors"
         >
           Slet Titel
         </button>
@@ -205,62 +258,124 @@ function VideoGroupCard({ group, onDeleteGroup, onAddVariant, onDeleteVariant, l
       {/* Variants List */}
       <div className="p-4">
         <table className="min-w-full mb-4">
-          <thead className="bg-white">
+          <thead className="bg-white border-b border-gray-100">
             <tr>
-              <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">Sprog</th>
-              <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">DreamBroker URL</th>
+              <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider w-16 py-2 pl-2">Sprog</th>
+              <th className="text-left text-xs font-medium text-gray-400 uppercase tracking-wider py-2">Indhold / Preview</th>
               <th className="w-10"></th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-gray-50">
             {group.variants.map((v: any) => (
-              <tr key={v.id}>
-                <td className="py-2 text-sm font-medium text-gray-900 uppercase">{v.lang}</td>
-                <td className="py-2 text-sm text-gray-500 truncate max-w-xs">{v.dreamBrokerUrl}</td>
-                <td className="py-2 text-right">
+              <tr key={v.id} className="group/row">
+                <td className="py-3 pl-2 text-sm font-bold text-gray-700 uppercase align-middle">{v.lang}</td>
+                <td className="py-3 text-sm text-gray-600 align-middle">
+                  {v.muxUploadId ? (
+                    // KNAP: PREVIEW VIDEO
+                    <button 
+                      onClick={() => onPreview(v.muxUploadId)}
+                      disabled={isLoadingPreview}
+                      className="text-green-700 bg-green-50 px-3 py-1.5 rounded-md text-xs border border-green-100 flex items-center gap-2 hover:bg-green-100 hover:border-green-300 transition-all font-medium"
+                    >
+                      {isLoadingPreview ? '⏳' : '▶️'} Afspil Video
+                    </button>
+                  ) : (
+                    // LINK: URL VISNING
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-gray-400 uppercase font-bold tracking-wider mb-0.5">URL Link</span>
+                      <a 
+                        href={v.dreamBrokerUrl} 
+                        target="_blank" 
+                        className="text-blue-600 hover:underline truncate max-w-sm block font-medium"
+                      >
+                        {v.dreamBrokerUrl || "Ingen URL"}
+                      </a>
+                    </div>
+                  )}
+                </td>
+                <td className="py-3 text-right align-middle">
                   <button 
                     onClick={() => onDeleteVariant(v.id)}
-                    className="text-gray-400 hover:text-red-600"
+                    className="text-gray-300 hover:text-red-500 p-1.5 hover:bg-red-50 rounded transition-colors"
                     title="Slet variant"
                   >
-                    ×
+                    ✕
                   </button>
                 </td>
               </tr>
             ))}
             {group.variants.length === 0 && (
-               <tr><td colSpan={3} className="py-2 text-sm text-gray-400 italic">Ingen sprogversioner tilføjet endnu.</td></tr>
+               <tr><td colSpan={3} className="py-6 text-center text-sm text-gray-400 italic">Ingen videoer tilføjet endnu.</td></tr>
             )}
           </tbody>
         </table>
 
-        {/* Add Variant Mini-Form */}
-        <form onSubmit={handleSubmitVariant} className="flex gap-2 items-center mt-2 pt-3 border-t border-gray-100">
-           <select 
-             value={lang} 
-             onChange={e => setLang(e.target.value)}
-             className="block w-24 border-gray-300 rounded-md shadow-sm py-1.5 pl-3 pr-10 text-sm focus:ring-blue-500 focus:border-blue-500"
-           >
-             {['da', 'en', 'de', 'pl', 'uk', 'fa', 'ar'].map(l => (
-               <option key={l} value={l}>{l.toUpperCase()}</option>
-             ))}
-           </select>
-           <input 
-             type="text" 
-             value={url}
-             onChange={e => setUrl(e.target.value)}
-             required
-             placeholder="Paste DreamBroker Link (https://...)"
-             className="block flex-1 border-gray-300 rounded-md shadow-sm py-1.5 px-3 text-sm focus:ring-blue-500 focus:border-blue-500"
-           />
-           <button 
-             type="submit" 
-             disabled={loading}
-             className="bg-blue-50 text-blue-700 px-3 py-1.5 rounded-md text-sm font-medium hover:bg-blue-100 border border-blue-200"
-           >
-             + Tilføj
-           </button>
-        </form>
+        {/* --- TILFØJ NY VARIANT --- */}
+        <div className="bg-gray-50 p-4 rounded-md border border-dashed border-gray-300 mt-4">
+            <h4 className="text-[10px] font-bold text-gray-400 uppercase mb-3 tracking-widest">Tilføj ny variant</h4>
+            
+            <div className="flex flex-col gap-4">
+                {/* 1. Vælg Sprog og Type */}
+                <div className="flex flex-wrap gap-4 items-center">
+                   <select 
+                        value={lang} 
+                        onChange={e => setLang(e.target.value)}
+                        className="block w-32 border-gray-300 rounded-md shadow-sm py-1.5 pl-3 text-sm focus:ring-blue-500 focus:border-blue-500"
+                    >
+                        {['da', 'en', 'de', 'pl', 'uk', 'fa', 'ar', 'sv', 'no', 'fi', 'fr', 'es'].map(l => (
+                            <option key={l} value={l}>{l.toUpperCase()}</option>
+                        ))}
+                    </select>
+
+                    <div className="flex bg-gray-200 rounded p-1 text-xs font-medium">
+                      <button 
+                        onClick={() => setMode('upload')}
+                        className={`px-3 py-1 rounded transition-all ${mode === 'upload' ? 'bg-white shadow text-black' : 'text-gray-500 hover:text-gray-700'}`}
+                      >
+                        Upload Fil
+                      </button>
+                      <button 
+                         onClick={() => setMode('url')}
+                         className={`px-3 py-1 rounded transition-all ${mode === 'url' ? 'bg-white shadow text-black' : 'text-gray-500 hover:text-gray-700'}`}
+                      >
+                        Indsæt URL
+                      </button>
+                    </div>
+                </div>
+
+                {/* 2. Input feltet (Skifter baseret på mode) */}
+                {isSaving ? (
+                    <div className="text-blue-600 text-sm animate-pulse flex gap-2 items-center bg-blue-50 p-3 rounded border border-blue-100">
+                       <span className="h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></span>
+                       Gemmer og opdaterer...
+                    </div>
+                ) : (
+                    mode === 'upload' ? (
+                        <div className="bg-white p-2 rounded border border-gray-200">
+                            <VideoUploader onUploadSuccess={handleUploadSuccess} />
+                        </div>
+                    ) : (
+                        <form onSubmit={handleSaveUrl} className="flex gap-2">
+                          <input 
+                            type="url" 
+                            placeholder="https://..." 
+                            required
+                            value={urlInput}
+                            onChange={(e) => setUrlInput(e.target.value)}
+                            className="flex-1 border-gray-300 rounded-md text-sm p-2 shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                          />
+                          <button 
+                            type="submit"
+                            className="bg-blue-600 text-white px-4 py-2 rounded text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm"
+                          >
+                            Gem Link
+                          </button>
+                        </form>
+                    )
+                )}
+            </div>
+        </div>
+
       </div>
     </div>
   );

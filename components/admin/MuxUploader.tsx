@@ -1,31 +1,44 @@
-"use client";
-
+import { useRef } from "react";
 import MuxUploader from "@mux/mux-uploader-react";
 
-interface MuxUploaderProps {
+interface Props {
   onUploadSuccess: (uploadId: string) => void;
 }
 
-export default function VideoUploader({ onUploadSuccess }: MuxUploaderProps) {
+export default function VideoUploader({ onUploadSuccess }: Props) {
+  // Vi bruger en 'ref' til at huske ID'et midlertidigt
+  const uploadIdRef = useRef<string | null>(null);
+
   return (
-    <div className="border-2 border-dashed border-gray-600 rounded-lg p-6 bg-gray-900 text-center">
-      <p className="text-gray-400 mb-4 text-sm">
-        Træk din videofil herind, eller klik for at vælge
-      </p>
+    <MuxUploader
+      // Her er rettelsen: Funktionen returnerer nu KUN url-strengen (Promise<string>)
+      endpoint={async () => {
+        // 1. Vi beder vores API om en upload-billet
+        const response = await fetch("/api/mux-upload", {
+          method: "POST",
+        });
+        
+        const data = await response.json();
+        
+        // 2. Vi gemmer ID'et i vores 'ref', så vi har det til senere
+        if (data.id) {
+          uploadIdRef.current = data.id;
+        }
+
+        // 3. Vi returnerer KUN url'en til Mux-knappen, så TypeScript er glad
+        return data.url; 
+      }}
+
+      onSuccess={() => {
+        console.log("Upload succes! ID:", uploadIdRef.current);
+        
+        // Nu henter vi ID'et fra vores 'ref' og sender det videre
+        if (uploadIdRef.current) {
+          onUploadSuccess(uploadIdRef.current);
+        }
+      }}
       
-      <MuxUploader
-        endpoint="/api/upload"
-        // Vi skriver ": any" herunder for at få TypeScript til at tie stille
-        onSuccess={(event: any) => {
-          console.log("Upload færdig!", event);
-          
-          // Nu brokker den sig ikke længere, fordi vi har sagt det er 'any'
-          if (event.detail && event.detail.id) {
-            onUploadSuccess(event.detail.id);
-          }
-        }}
-        className="w-full"
-      />
-    </div>
+      className="mux-uploader"
+    />
   );
 }

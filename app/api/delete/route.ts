@@ -1,35 +1,40 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
-import { getServerSession } from "next-auth";
-import { auditLog } from "@/lib/api-utils";
-import { authOptions } from "@/lib/auth";
 
 const prisma = new PrismaClient();
 
-export async function DELETE(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session) return new NextResponse("Unauthorized", { status: 401 });
-  const userId = (session.user as any).id;
-
-  const { searchParams } = new URL(req.url);
-  const type = searchParams.get("type"); // 'group' | 'variant'
-  const id = searchParams.get("id");
-
-  if (!id || !type) return new NextResponse("Missing params", { status: 400 });
-
+export async function DELETE(request: Request) {
   try {
-    if (type === "group") {
-      // Sletning af gruppe sletter automatisk varianter pga. onDelete: Cascade i Prisma Schema
-      await prisma.videoGroup.delete({ where: { id } });
-      await auditLog(userId, "DELETE", "VideoGroup", id, { msg: "Deleted group and variants" });
-    } 
-    else if (type === "variant") {
-      await prisma.videoVariant.delete({ where: { id } });
-      await auditLog(userId, "DELETE", "VideoVariant", id, { msg: "Deleted variant" });
+    // 1. Hent ID og Type fra URL'en (f.eks. ?type=variant&id=123)
+    const { searchParams } = new URL(request.url);
+    const type = searchParams.get("type");
+    const id = searchParams.get("id");
+
+    if (!id || !type) {
+      return NextResponse.json({ error: "Mangler ID eller type" }, { status: 400 });
     }
-    
-    return new NextResponse("Deleted", { status: 200 });
+
+    // 2. Slet baseret på typen
+    if (type === "variant") {
+      // Slet en enkelt sprog-variant
+      await prisma.variant.delete({
+        where: { id: id },
+      });
+    } 
+    else if (type === "group") {
+      // Slet en hel titel-gruppe
+      await prisma.group.delete({
+        where: { id: id },
+      });
+    } 
+    else {
+      return NextResponse.json({ error: "Ugyldig type" }, { status: 400 });
+    }
+
+    return NextResponse.json({ success: true });
+
   } catch (error) {
-    return new NextResponse("Error deleting", { status: 500 });
+    console.error("Fejl ved sletning:", error);
+    return NextResponse.json({ error: "Kunne ikke slette elementet" }, { status: 500 });
   }
 }

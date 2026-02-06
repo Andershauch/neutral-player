@@ -1,43 +1,46 @@
-// app/api/variants/route.ts
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth"; // <--- Denne manglede!
 import { PrismaClient } from "@prisma/client";
-import { authOptions } from "@/lib/auth";
-import { auditLog, normalizeDreamBrokerUrl } from "@/lib/api-utils";
 
 const prisma = new PrismaClient();
 
-export async function POST(req: Request) {
-  const session = await getServerSession(authOptions);
-  
-  if (!session) {
-    return new NextResponse("Unauthorized", { status: 401 });
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    const { groupId, lang, muxUploadId, dreamBrokerUrl } = body;
+
+    if (!groupId || !lang) {
+      return NextResponse.json({ error: "Mangler groupId eller sprog" }, { status: 400 });
+    }
+
+    // FEJLEN VAR HER: Vi bruger prisma.variant i stedet for prisma.videoVariant
+    // Vi tjekker om varianten findes i forvejen
+    const existing = await prisma.variant.findUnique({
+      where: {
+        groupId_lang: { // Dette kræver at du har @@unique([groupId, lang]) i din schema
+          groupId: groupId,
+          lang: lang
+        }
+      }
+    });
+
+    if (existing) {
+      return NextResponse.json({ error: "Dette sprog findes allerede for denne titel" }, { status: 409 });
+    }
+
+    // Opret ny variant
+    const newVariant = await prisma.variant.create({
+      data: {
+        groupId,
+        lang,
+        muxUploadId,
+        dreamBrokerUrl,
+      },
+    });
+
+    return NextResponse.json(newVariant);
+
+  } catch (error) {
+    console.error("Fejl ved oprettelse af variant:", error);
+    return NextResponse.json({ error: "Kunne ikke oprette variant" }, { status: 500 });
   }
-  
-  const userId = (session.user as any).id;
-
-  const body = await req.json();
-  const { groupId, lang, url } = body;
-
-  // 1. Valider URL
-  const cleanUrl = normalizeDreamBrokerUrl(url);
-  if (!cleanUrl) return new NextResponse("Invalid DreamBroker URL", { status: 400 });
-
-  // 2. Tjek dubletter
-  const existing = await prisma.videoVariant.findUnique({
-    where: { groupId_lang: { groupId, lang } }
-  });
-  if (existing) {
-    return new NextResponse("Language already exists for this video", { status: 409 });
-  }
-
-  // 3. Opret
-  const variant = await prisma.videoVariant.create({
-    data: { groupId, lang, dreamBrokerUrl: cleanUrl }
-  });
-
-  // 4. Log
-  await auditLog(userId, "CREATE", "VideoVariant", variant.id, { groupId, lang, url: cleanUrl });
-
-  return NextResponse.json(variant);
 }

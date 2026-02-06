@@ -72,34 +72,39 @@ model Embed {
 
 model Group {
   id        String   @id @default(cuid())
+  name      String
+  
+  // FØR: slug String @unique
+  // NU: Vi fjerner @unique herfra:
+  slug      String   
+  
+  embedId   String
+  embed     Embed    @relation(fields: [embedId], references: [id], onDelete: Cascade)
+  
+  variants  Variant[]
+  
   sortOrder Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  name      String   // Fx "Velkomstvideo", "Instruktion 1"
-  slug      String   // Fx "velkomst", "step-1" (bruges i URL)
-  
-  embed     Embed    @relation(fields: [embedId], references: [id], onDelete: Cascade)
-  embedId   String
 
-  variants  Variant[]
-
-  @@unique([embedId, slug]) // Man kan ikke have to grupper med samme slug i samme embed
+  // OG TILFØJER DENNE LINJE I STEDET:
+  // Det betyder: "Kombinationen af embedId og slug skal være unik"
+  @@unique([embedId, slug])
 }
 
 model Variant {
   id             String   @id @default(cuid())
-  lang           String   // Fx "da", "en"
   
-  // URL er nu valgfri, da vi måske bruger Mux i stedet
-  dreamBrokerUrl String?
-
-  // Nye felter til Mux (Video Upload)
-  muxUploadId    String?
-  muxPlaybackId  String?
-
-  group          Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
   groupId        String
-
+  group          Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  
+  lang           String
+  muxUploadId    String?
+  dreamBrokerUrl String?
+  
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+
+  // TILFØJ DENNE LINJE:
+  @@unique([groupId, lang])
 }
