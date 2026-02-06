@@ -41,7 +41,8 @@ model User {
   email         String?   @unique
   emailVerified DateTime?
   image         String?
-  password      String?
+  role          String    @default("user") // Vigtigt: Husk denne linje!
+
   accounts      Account[]
   sessions      Session[]
   embeds        Embed[]
@@ -63,6 +64,8 @@ model Embed {
   defaultLang String   @default("da") // Fx "da", "en", "de"
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  isActive  Boolean  @default(true)
   
 // FØR: userId String
   // NU: Vi sætter ? bagved for at gøre det valgfrit
@@ -109,6 +112,8 @@ model Variant {
   
   muxUploadId    String?
   dreamBrokerUrl String?
+
+  sortOrder      Int     @default(0)
   
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -116,3 +121,4 @@ model Variant {
   // TILFØJ DENNE LINJE:
   @@unique([groupId, lang])
 }
+
