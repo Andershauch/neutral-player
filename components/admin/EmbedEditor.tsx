@@ -27,16 +27,15 @@ import { CSS } from "@dnd-kit/utilities";
 export default function EmbedEditor({ embed }: any) {
   const router = useRouter();
 
-  // --- HYDRATION FIX: Vent til vi er i browseren ---
+  // --- HYDRATION FIX ---
   const [isMounted, setIsMounted] = useState(false);
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
-  // Sorter grupperne pænt (selvom vi kun dragger varianter nu)
   const groups = embed.groups.sort((a: any, b: any) => a.sortOrder - b.sortOrder);
 
-  // --- MODAL STATES ---
+  // --- STATES ---
   const [loading, setLoading] = useState(false);
   const [newGroupTitle, setNewGroupTitle] = useState("");
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
@@ -44,9 +43,40 @@ export default function EmbedEditor({ embed }: any) {
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [showEmbedCode, setShowEmbedCode] = useState(false);
   const [embedCode, setEmbedCode] = useState("");
+  const [copySuccess, setCopySuccess] = useState(false);
 
-  // --- HOVED FUNKTIONER ---
+  // --- EMBED GENERATOR (DEN NYE SMOOTH VERSION) ---
+  const handleGenerateEmbedCode = () => {
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    
+    // Vi skaber en responsiv 16:9 container
+    const code = `
+<div style="position:relative;padding-top:56.25%;width:100%;overflow:hidden;border-radius:8px;background:#000;">
+  <iframe 
+    src="${origin}/embed/${embed.id}" 
+    loading="lazy"
+    style="position:absolute;top:0;left:0;bottom:0;right:0;width:100%;height:100%;border:none;" 
+    allow="autoplay; fullscreen; picture-in-picture" 
+    allowfullscreen
+    title="${embed.name}">
+  </iframe>
+</div>`.trim();
 
+    setEmbedCode(code);
+    setShowEmbedCode(true);
+  };
+
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(embedCode);
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+    } catch (err) {
+      alert("Kunne ikke kopiere koden automatisk.");
+    }
+  };
+
+  // --- ANDRE FUNKTIONER ---
   const handleCreateGroup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newGroupTitle.trim()) return;
@@ -63,13 +93,6 @@ export default function EmbedEditor({ embed }: any) {
       if (!res.ok) alert("Fejl ved oprettelse");
       else { setNewGroupTitle(""); router.refresh(); }
     } catch (error) { alert("Fejl"); } finally { setIsCreatingGroup(false); }
-  };
-
-  const generateEmbedCode = () => {
-    const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    const url = `${origin}/embed/${embed.id}`;
-    const code = `<iframe src="${url}" width="100%" height="600" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen></iframe>`;
-    setEmbedCode(code); setShowEmbedCode(true);
   };
 
   const handlePreview = async (uploadId: string) => {
@@ -96,11 +119,10 @@ export default function EmbedEditor({ embed }: any) {
     router.refresh();
   };
 
-  // VIGTIGT: Hvis ikke mounted, vis ingenting for at undgå hydration fejl
   if (!isMounted) return null;
 
   return (
-    <div className="max-w-5xl mx-auto pb-20">
+    <div className="max-w-5xl mx-auto pb-20 p-4">
       {/* HEADER */}
       <div className="flex justify-between items-center mb-8">
         <div>
@@ -109,8 +131,12 @@ export default function EmbedEditor({ embed }: any) {
            <p className="text-gray-500 text-sm mt-1">ID: {embed.id}</p>
         </div>
         <div className="flex gap-2">
-            <button onClick={generateEmbedCode} className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded text-sm font-medium flex items-center gap-2 shadow-sm"><span>📋</span> Hent Embed Kode</button>
-            <Link href={`/embed/${embed.id}`} target="_blank" className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium shadow-sm flex items-center gap-2">Åbn Public Player ↗</Link>
+            <button onClick={handleGenerateEmbedCode} className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded text-sm font-medium flex items-center gap-2 shadow-sm transition-all">
+                <span>📋</span> Hent Embed Kode
+            </button>
+            <Link href={`/embed/${embed.id}`} target="_blank" className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium shadow-sm flex items-center gap-2">
+                Åbn Public Player ↗
+            </Link>
         </div>
       </div>
 
@@ -120,9 +146,11 @@ export default function EmbedEditor({ embed }: any) {
         <form onSubmit={handleCreateGroup} className="flex gap-4 items-end">
             <div className="flex-1">
                 <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Titel Navn</label>
-                <input type="text" value={newGroupTitle} onChange={(e) => setNewGroupTitle(e.target.value)} placeholder="F.eks. 'Intro'..." className="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500" />
+                <input type="text" value={newGroupTitle} onChange={(e) => setNewGroupTitle(e.target.value)} placeholder="F.eks. 'Intro'..." className="w-full border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm" />
             </div>
-            <button type="submit" disabled={isCreatingGroup || !newGroupTitle} className="bg-black text-white px-6 py-2.5 rounded-md font-medium hover:bg-gray-800 disabled:opacity-50 transition-colors">{isCreatingGroup ? "Opretter..." : "+ Opret Titel"}</button>
+            <button type="submit" disabled={isCreatingGroup || !newGroupTitle} className="bg-black text-white px-6 py-2.5 rounded-md font-medium hover:bg-gray-800 disabled:opacity-50 transition-colors text-sm">
+                {isCreatingGroup ? "Opretter..." : "+ Opret Titel"}
+            </button>
         </form>
       </div>
 
@@ -145,18 +173,59 @@ export default function EmbedEditor({ embed }: any) {
           <div className="p-10 text-center bg-gray-50 rounded-lg border border-dashed border-gray-300 text-gray-500 mt-6">Ingen titler endnu.</div>
       )}
 
-      {/* MODALS */}
-      {previewId && <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4" onClick={() => setPreviewId(null)}><div className="bg-black rounded-lg overflow-hidden max-w-5xl w-full" onClick={e => e.stopPropagation()}><MuxPlayer streamType="on-demand" playbackId={previewId} autoPlay className="w-full aspect-video" /></div></div>}
-      {showEmbedCode && <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={() => setShowEmbedCode(false)}><div className="bg-white rounded-lg p-6 max-w-2xl w-full" onClick={e => e.stopPropagation()}><textarea readOnly value={embedCode} className="w-full h-32 p-4 bg-gray-50 border border-gray-200 rounded font-mono text-xs" /><button onClick={() => setShowEmbedCode(false)} className="text-gray-500 mt-2 text-sm">Luk</button></div></div>}
+      {/* MODAL: VIDEO PREVIEW */}
+      {previewId && (
+        <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4" onClick={() => setPreviewId(null)}>
+            <div className="bg-black rounded-lg overflow-hidden max-w-5xl w-full" onClick={e => e.stopPropagation()}>
+                <MuxPlayer streamType="on-demand" playbackId={previewId} autoPlay className="w-full aspect-video" />
+            </div>
+        </div>
+      )}
+
+      {/* MODAL: EMBED CODE (OPDATERET VERSION) */}
+      {showEmbedCode && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={() => setShowEmbedCode(false)}>
+            <div className="bg-white rounded-xl p-8 max-w-2xl w-full shadow-2xl" onClick={e => e.stopPropagation()}>
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-bold text-gray-800">Embed-kode</h2>
+                    <button onClick={() => setShowEmbedCode(false)} className="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
+                </div>
+                
+                <p className="text-sm text-gray-500 mb-4">Indsæt denne kode på din hjemmeside. Den tilpasser sig automatisk bredden og bevarer 16:9 formatet.</p>
+                
+                <div className="relative group">
+                    <textarea 
+                        readOnly 
+                        value={embedCode} 
+                        className="w-full h-48 p-4 bg-gray-900 text-blue-300 rounded-lg font-mono text-[11px] leading-relaxed border border-gray-700 outline-none" 
+                    />
+                    <button 
+                        onClick={copyToClipboard}
+                        className={`absolute top-3 right-3 px-4 py-2 rounded-md text-xs font-bold transition-all ${copySuccess ? 'bg-green-600 text-white' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+                    >
+                        {copySuccess ? "✓ KOPIERET" : "KOPIER KODE"}
+                    </button>
+                </div>
+                
+                <div className="mt-6 flex justify-end">
+                    <button 
+                        onClick={() => setShowEmbedCode(false)} 
+                        className="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-md font-medium text-sm transition-colors"
+                    >
+                        Luk
+                    </button>
+                </div>
+            </div>
+        </div>
+      )}
     </div>
   );
 }
 
-// --- SUB-COMPONENT: VIDEO GROUP CARD (Med Drag & Drop) ---
+// --- SUB-COMPONENT: VIDEO GROUP CARD ---
 function VideoGroupCard({ group, onDeleteGroup, onDeleteVariant, onPreview, loading, isLoadingPreview }: any) {
     const router = useRouter();
     
-    // Vi sorterer varianterne baseret på sortOrder
     const sortedVariants = (group.variants || []).sort((a: any, b: any) => a.sortOrder - b.sortOrder);
     const [variants, setVariants] = useState(sortedVariants);
 
@@ -170,7 +239,6 @@ function VideoGroupCard({ group, onDeleteGroup, onDeleteVariant, onPreview, load
     const [urlInput, setUrlInput] = useState("");
     const [isSaving, setIsSaving] = useState(false);
 
-    // DnD Konfiguration
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 5 } }), 
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -186,7 +254,6 @@ function VideoGroupCard({ group, onDeleteGroup, onDeleteVariant, onPreview, load
 
                 const updatedItems = newItems.map((item: any, index: number) => ({ ...item, sortOrder: index }));
                 
-                // Opdater i baggrunden
                 fetch('/api/reorder-variants', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
@@ -223,12 +290,11 @@ function VideoGroupCard({ group, onDeleteGroup, onDeleteVariant, onPreview, load
   
     return (
       <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-        {/* GROUP HEADER */}
         <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex justify-between items-center">
           <div className="flex items-center gap-3">
             <h3 className="font-semibold text-gray-800">{group.name}</h3>
           </div>
-          <button onClick={() => onDeleteGroup(group.id)} disabled={loading} className="text-gray-400 hover:text-red-600 text-xs font-medium uppercase">Slet Titel</button>
+          <button onClick={() => onDeleteGroup(group.id)} disabled={loading} className="text-gray-400 hover:text-red-600 text-xs font-medium uppercase transition-colors">Slet Titel</button>
         </div>
   
         <div className="p-4">
@@ -262,7 +328,6 @@ function VideoGroupCard({ group, onDeleteGroup, onDeleteVariant, onPreview, load
             </table>
           </DndContext>
 
-          {/* ADD VARIANT FORM */}
           <div className="bg-gray-50 p-4 rounded-md border border-dashed border-gray-300 mt-4">
               <h4 className="text-[10px] font-bold text-gray-400 uppercase mb-3 tracking-widest">Tilføj variant til "{group.name}"</h4>
               <div className="flex flex-col gap-4">
@@ -282,7 +347,6 @@ function VideoGroupCard({ group, onDeleteGroup, onDeleteVariant, onPreview, load
     );
 }
 
-// --- SUB-COMPONENT: SORTABLE ROW ---
 function SortableVariantRow({ variant, onDelete, onPreview, isLoadingPreview }: any) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: variant.id });
     
@@ -295,8 +359,7 @@ function SortableVariantRow({ variant, onDelete, onPreview, isLoadingPreview }: 
     };
 
     return (
-        <tr ref={setNodeRef} style={style} className="group/row">
-            {/* DRAG HANDLE */}
+        <tr ref={setNodeRef} style={style} className="group/row bg-white">
             <td className="py-3 pl-2 align-middle w-8">
                 <div {...attributes} {...listeners} className="cursor-grab text-gray-300 hover:text-gray-600 p-1 rounded hover:bg-gray-100 w-fit" title="Træk for at sortere">
                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="12" r="1"/><circle cx="9" cy="5" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="19" r="1"/></svg>
@@ -307,14 +370,14 @@ function SortableVariantRow({ variant, onDelete, onPreview, isLoadingPreview }: 
             <td className="py-3 text-sm text-gray-600 align-middle">
                 {variant.title && <div className="text-xs font-bold text-gray-800 mb-1" dir="auto">{variant.title}</div>}
                 {variant.muxUploadId ? (
-                    <button onClick={() => onPreview(variant.muxUploadId)} disabled={isLoadingPreview} className="text-green-700 bg-green-50 px-3 py-1.5 rounded-md text-xs border border-green-100 flex items-center gap-2 hover:bg-green-100">
+                    <button onClick={() => onPreview(variant.muxUploadId)} disabled={isLoadingPreview} className="text-green-700 bg-green-50 px-3 py-1.5 rounded-md text-xs border border-green-100 flex items-center gap-2 hover:bg-green-100 transition-colors">
                     {isLoadingPreview ? '⏳' : '▶️'} Afspil Video
                     </button>
                 ) : (
                     <div className="flex flex-col"><span className="text-[10px] text-gray-400 uppercase font-bold tracking-wider mb-0.5">URL Link</span><a href={variant.dreamBrokerUrl} target="_blank" className="text-blue-600 hover:underline truncate max-w-sm block font-medium">{variant.dreamBrokerUrl || "Ingen URL"}</a></div>
                 )}
             </td>
-            <td className="py-3 text-right align-middle"><button onClick={onDelete} className="text-gray-300 hover:text-red-500 p-1.5 hover:bg-red-50 rounded">✕</button></td>
+            <td className="py-3 text-right align-middle"><button onClick={onDelete} className="text-gray-300 hover:text-red-500 p-1.5 hover:bg-red-50 rounded transition-colors">✕</button></td>
         </tr>
     );
 }

@@ -61,7 +61,7 @@ export default function ProjectCard({ project }: { project: any }) {
 
   return (
     <Link 
-      href={`/admin/${project.id}`}
+      href={`/admin/embed/${project.id}`}
       className={`block bg-white border border-gray-200 rounded-xl p-6 hover:shadow-md transition-all group relative ${isDeleting ? 'opacity-50 pointer-events-none' : ''}`}
     >
       <div className="flex justify-between items-start mb-4">
