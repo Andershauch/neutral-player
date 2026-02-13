@@ -3,123 +3,41 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql" // Eller "sqlite" hvis du tester lokalt uden Neon endnu
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-// --- NextAuth Models (Til login) ---
-model Account {
-  id                String  @id @default(cuid())
-  userId            String
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String? @db.Text
-  session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([provider, providerAccountId])
-}
-
-model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  emailVerified DateTime?
-  image         String?
-  role          String    @default("user") // Vigtigt: Husk denne linje!
-  password      String?
-
-  accounts      Account[]
-  sessions      Session[]
-  embeds        Embed[]
-}
-
-model VerificationToken {
-  identifier String
-  token      String   @unique
-  expires    DateTime
-
-  @@unique([identifier, token])
-}
-
-// --- Video Platform Models ---
-
 model Embed {
-  id          String   @id @default(cuid())
-  name        String
-  defaultLang String   @default("da") // Fx "da", "en", "de"
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  isActive  Boolean  @default(true)
-  
-// FØR: userId String
-  // NU: Vi sætter ? bagved for at gøre det valgfrit
-  userId      String?  
-  
-  // FØR: user User @relation(...)
-  // NU: Vi sætter ? bagved User
-  user        User?    @relation(fields: [userId], references: [id])
-
-  groups      Group[]
+  id             String   @id @default(cuid())
+  name           String
+  thumbnailUrl   String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  allowedDomains String?  @default("*")
+  groups         Group[]
 }
 
 model Group {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   name      String
-  
-  // FØR: slug String @unique
-  // NU: Vi fjerner @unique herfra:
-  slug      String   
-  
+  sortOrder Int       @default(0)
   embedId   String
-  embed     Embed    @relation(fields: [embedId], references: [id], onDelete: Cascade)
-  
+  embed     Embed     @relation(fields: [embedId], references: [id], onDelete: Cascade)
   variants  Variant[]
-  
-  sortOrder Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // OG TILFØJER DENNE LINJE I STEDET:
-  // Det betyder: "Kombinationen af embedId og slug skal være unik"
-  @@unique([embedId, slug])
 }
 
 model Variant {
   id             String   @id @default(cuid())
-  
+  title          String?
+  lang           String   @default("da")
+  sortOrder      Int      @default(0)
+  muxUploadId    String?
+  muxPlaybackId  String?
+  muxAssetId     String?
+  dreamBrokerUrl String?
+  views          Int      @default(0)
   groupId        String
   group          Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  
-  lang           String
-  
-  title          String? // ? betyder det er valgfrit (falder tilbage til gruppenavnet)
-  
-  muxUploadId    String?
-  dreamBrokerUrl String?
-
-  sortOrder      Int     @default(0)
-  
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
-
-  // TILFØJ DENNE LINJE:
-  @@unique([groupId, lang])
 }
-

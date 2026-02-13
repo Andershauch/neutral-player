@@ -1,36 +1,54 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 📹 Video CMS Pro - Arkitektur & Systemhåndbog
 
-## Getting Started
+Dette dokument fungerer som den tekniske "Source of Truth" for Video CMS-projektet. Systemet er designet til professionel distribution af videoindhold via Mux, med særligt fokus på kravene til kommunale web-løsninger (WCAG, sikkerhed og performance).
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## 🧠 Systemets Design-filosofi
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 1. "Clean Embed" Strategien
+For at undgå konflikter med eksterne hjemmesiders CSS/JS, er `/embed/[id]` ruten totalt isoleret. Den benytter ikke det globale `layout.tsx` for at sikre, at ingen side-menuer eller admin-scripts "lækker" ind i iFramen.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 2. Role-Based Proxy (RBAC)
+Vi bruger en "Proxy"-model fremfor traditionel middleware-redirects for at understøtte de nyeste Next.js konventioner. Sikkerheden ligger i `proxy.ts`, som validerer sessionens `role` objekt før serveren overhovedet begynder at rendere siden.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 3. Mux-First Workflow
+Systemet er optimeret til Mux HLS (HTTP Live Streaming). Det betyder, at vi ikke serverer rå videofiler, men "streams", der automatisk skalerer i kvalitet baseret på brugerens båndbredde.
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## 📁 Komplet Fil-oversigt & Ansvar
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 🏰 Kerne & Sikkerhed
+| Fil | Ansvar |
+| :--- | :--- |
+| `proxy.ts` | **Portvagten.** Beskytter `/admin` ruterne. Validerer om brugeren er `admin` eller `contributor`. |
+| `lib/auth.ts` | **Hjernen bag login.** Konfigurerer Google, Credentials og sikrer at `role` feltet fra Prisma gemmes i JWT-tokenet. |
+| `types/next-auth.d.ts` | **Type-sikkerhed.** Fortæller TypeScript at `session.user` indeholder et `role` felt. |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 🛠️ Admin Grænseflade (`/admin`)
+| Fil | Ansvar |
+| :--- | :--- |
+| `app/admin/layout.tsx` | **Admin Rammen.** Indeholder sidebar med betinget visning (Brugere vises kun for admins). |
+| `app/admin/dashboard/page.tsx` | **Projektoversigt.** Henter alle embeds via Prisma. |
+| `components/admin/EmbedEditor.tsx` | **Værktøjskassen.** Håndterer drag-and-drop, Mux-upload og generering af 16:9 embed-koden. |
 
-## Deploy on Vercel
+### 🌍 Public Player (`/embed`)
+| Fil | Ansvar |
+| :--- | :--- |
+| `app/embed/[id]/page.tsx` | **Slutproduktet.** Den side omverdenen ser. Indeholder MuxPlayer og din custom variant-menu. |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 🛠️ Det Tekniske Maskinrum (Deep Dive)
+
+### Mux Integrationen
+Vi benytter `@mux/mux-player-react`. Afspilleren kræver et `playbackId`. 
+* **Flow:** Upload -> Mux behandler -> Playback ID genereres -> Gemmes i `Variant` tabellen under `muxUploadId`.
+
+
+
+### Den "Smooth" Embed-logik
+For at undgå "Layout Shift" (hvor siden hopper når videoen indlæses), genererer vi koden med et fast aspekt-forhold (Aspect Ratio):
+```css
+padding-top: 56.25%; /* Dette svarer præcis til 16:9 formatet */
