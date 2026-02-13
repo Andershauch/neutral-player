@@ -7,14 +7,32 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// --- NY MODEL: BRUGERE ---
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?   // Bruges til Email/Password login
+  role          String    @default("contributor") // "admin" eller "contributor"
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// --- EKSISTERENDE MODELLER ---
 model Embed {
   id             String   @id @default(cuid())
   name           String
   thumbnailUrl   String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
-  allowedDomains String?  @default("*")
-  groups         Group[]
+  
+  // Domæne whitelisting
+  allowedDomains String?  @default("*") 
+  
+  // Relationer
+  groups       Group[]
 }
 
 model Group {
@@ -31,11 +49,17 @@ model Variant {
   title          String?
   lang           String   @default("da")
   sortOrder      Int      @default(0)
-  muxUploadId    String?
-  muxPlaybackId  String?
-  muxAssetId     String?
+  
+  // Mux specifikke felter
+  muxUploadId    String?  
+  muxPlaybackId  String?  
+  muxAssetId     String?  
+  
   dreamBrokerUrl String?
+  
+  // Statistik
   views          Int      @default(0)
+
   groupId        String
   group          Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
   createdAt      DateTime @default(now())

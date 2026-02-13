@@ -1,87 +1,94 @@
-import { PrismaAdapter } from "@next-auth/prisma-adapter";
-import { PrismaClient } from "@prisma/client";
+import { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
-import AzureADProvider from "next-auth/providers/azure-ad";
 import CredentialsProvider from "next-auth/providers/credentials";
-import bcrypt from "bcrypt";
-import type { NextAuthOptions } from "next-auth";
+import { PrismaClient } from "@prisma/client";
+import { compare } from "bcryptjs";
 
-const prisma = new PrismaClient();
+// Vi sikrer, at Prisma ikke initialiseres flere gange i udvikling (Hydration fix)
+const globalForPrisma = global as unknown as { prisma: PrismaClient };
+export const prisma = globalForPrisma.prisma || new PrismaClient();
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
 
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
-  session: { strategy: "jwt" },
-  pages: { 
-    signIn: '/login', 
-    error: '/login' 
+  session: {
+    strategy: "jwt",
   },
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      allowDangerousEmailAccountLinking: true,
-    }),
-    AzureADProvider({
-      clientId: process.env.AZURE_AD_CLIENT_ID!,
-      clientSecret: process.env.AZURE_AD_CLIENT_SECRET!,
-      tenantId: process.env.AZURE_AD_TENANT_ID,
-      allowDangerousEmailAccountLinking: true,
     }),
     CredentialsProvider({
-      name: "credentials",
+      name: "Credentials",
       credentials: {
-        email: { label: "Email", type: "text" },
-        password: { label: "Password", type: "password" }
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          throw new Error("Mangler email eller password");
-        }
+        if (!credentials?.email || !credentials?.password) return null;
 
+        // Her bruger vi det lokale prisma objekt
         const user = await prisma.user.findUnique({
-          where: { email: credentials.email }
+          where: { email: credentials.email },
         });
 
-        // Tjek om brugeren findes og har et password (vigtigt for at skelne fra Google-brugere)
-        if (!user || !user.password) {
-          throw new Error("Bruger ikke fundet");
-        }
+        if (!user || !user.password) return null;
 
-        const passwordMatch = await bcrypt.compare(credentials.password, user.password);
+        const isValid = await compare(credentials.password, user.password);
+        if (!isValid) return null;
 
-        if (!passwordMatch) {
-          throw new Error("Forkert password");
-        }
-
-        // Returnér brugeren - det er her 'user' objektet sendes til JWT callback nedenfor
         return {
           id: user.id,
           email: user.email,
           name: user.name,
           role: user.role,
         };
-      }
-    })
+      },
+    }),
   ],
-callbacks: {
-    async jwt({ token, user }) {
-      // Ved login er 'user' objektet det, som din authorize() funktion returnerede
+  callbacks: {
+    async signIn({ user, account, profile }) {
+      if (account?.provider === "google") {
+        if (!user.email) return false;
+
+        // Tjek om brugeren findes i databasen
+        const existingUser = await prisma.user.findUnique({
+          where: { email: user.email },
+        });
+
+        // Hvis brugeren ikke findes, opretter vi dem automatisk som contributor
+        if (!existingUser) {
+          await prisma.user.create({
+            data: {
+              email: user.email,
+              name: user.name || "Google Bruger",
+              role: "contributor", // Standard rolle for nye Google logins
+            },
+          });
+        }
+      }
+      return true;
+    },
+    async jwt({ token, user, trigger, session }) {
+      // Ved første login, tilføj rolle fra databasen til tokenet
       if (user) {
-        token.role = (user as any).role;
-        token.id = (user as any).id;
-        // console.log("JWT CALLBACK: Gemmer rolle i token:", token.role);
+        const dbUser = await prisma.user.findUnique({
+          where: { email: user.email! },
+        });
+        if (dbUser) {
+          token.role = dbUser.role;
+        }
       }
       return token;
     },
     async session({ session, token }) {
-      // Her overfører vi rollen fra token til sessionen
       if (session.user) {
         (session.user as any).role = token.role;
-        (session.user as any).id = token.id;
-        // console.log("SESSION CALLBACK: Rolle i session:", (session.user as any).role);
       }
       return session;
     },
   },
-  secret: process.env.NEXTAUTH_SECRET,
+  pages: {
+    signIn: "/login",
+  },
 };
