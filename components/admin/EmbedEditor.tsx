@@ -2,173 +2,174 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
-// Her bruger vi det korrekte filnavn fra dit projekt:
-import VideoUploader from "@/components/admin/MuxUploader";
+import MuxUploader from "@/components/admin/MuxUploader";
 import MuxPlayer from "@mux/mux-player-react";
 
 interface EmbedEditorProps {
-  embed: any; // Du kan definere en strammere type her senere
+  embed: any;
 }
 
 export default function EmbedEditor({ embed }: EmbedEditorProps) {
   const router = useRouter();
   const [isMounted, setIsMounted] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [allowedDomains, setAllowedDomains] = useState(embed.allowedDomains || "");
-  const [showEmbedCode, setShowEmbedCode] = useState(false);
-  const [embedCode, setEmbedCode] = useState("");
+  const [newLang, setNewLang] = useState("da");
+  const [newTitle, setNewTitle] = useState("");
+  const [isAdding, setIsAdding] = useState(false);
 
-  // Hydration fix
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
-  const groups = embed.groups?.sort((a: any, b: any) => a.sortOrder - b.sortOrder) || [];
-
-  // Funktion til at gemme domæne-indstillinger
-  const saveSettings = async () => {
-    setIsSaving(true);
+  // FUNKTION: Hent Playback ID manuelt fra Mux (Vigtig lokalt!)
+  const handleRefreshId = async (variantId: string) => {
     try {
-      const res = await fetch(`/api/embeds/${embed.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ allowedDomains }),
+      const res = await fetch(`/api/variants/${variantId}/refresh`, {
+        method: "POST",
       });
-      if (!res.ok) throw new Error("Kunne ikke gemme");
-      router.refresh();
-    } catch (error) {
-      alert("Fejl ved gem: " + error);
-    } finally {
-      setIsSaving(false);
+      const data = await res.json();
+      
+      if (data.success) {
+        router.refresh();
+      } else {
+        alert(data.message || "Videoen er stadig under behandling hos Mux...");
+      }
+    } catch (err) {
+      alert("Der skete en fejl ved synkronisering.");
     }
   };
 
-  const generateEmbedCode = () => {
-    const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    const code = `
-<div style="position:relative;padding-top:56.25%;width:100%;overflow:hidden;border-radius:8px;background:#000;">
-  <iframe 
-    src="${origin}/embed/${embed.id}" 
-    loading="lazy"
-    style="position:absolute;top:0;left:0;bottom:0;right:0;width:100%;height:100%;border:none;" 
-    allow="autoplay; fullscreen; picture-in-picture" 
-    allowfullscreen
-    title="${embed.name}">
-  </iframe>
-</div>`.trim();
-    setEmbedCode(code);
-    setShowEmbedCode(true);
+  // FUNKTION: Opret ny variant
+  const addVariant = async () => {
+    if (!newTitle) return;
+    setIsAdding(true);
+    try {
+      const res = await fetch("/api/variants", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ embedId: embed.id, lang: newLang, title: newTitle }),
+      });
+      if (res.ok) {
+        setNewTitle("");
+        router.refresh();
+      }
+    } catch (error) {
+      console.error("Fejl ved oprettelse:", error);
+    } finally {
+      setIsAdding(false);
+    }
   };
 
   if (!isMounted) return null;
 
+  const groups = embed.groups || [];
+
   return (
-    <div className="max-w-5xl mx-auto pb-20 p-4">
-      {/* HEADER */}
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <Link href="/admin/dashboard" className="text-gray-500 hover:text-gray-800 mb-2 inline-block text-sm">
-            ← Tilbage til oversigt
-          </Link>
-          <h1 className="text-3xl font-bold text-gray-800">{embed.name}</h1>
-          <p className="text-gray-500 text-sm">Projekt ID: {embed.id}</p>
-        </div>
-        <div className="flex gap-2">
-          <button onClick={generateEmbedCode} className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded text-sm font-medium flex items-center gap-2">
-            <span>📋</span> Hent Embed Kode
-          </button>
-          <Link href={`/embed/${embed.id}`} target="_blank" className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-medium">
-            Åbn Public Player ↗
-          </Link>
-        </div>
+    <div className="max-w-5xl mx-auto p-6 space-y-10">
+      {/* PROJEKT NAVN */}
+      <div className="border-b pb-6">
+        <h1 className="text-4xl font-black text-gray-900">{embed.name}</h1>
+        <p className="text-gray-500 text-sm mt-1">ID: {embed.id}</p>
       </div>
 
-      {/* SIKKERHED: DOMÆNE WHITELISTING */}
-      <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm mb-8">
-        <h2 className="text-lg font-bold text-gray-800 mb-2 flex items-center gap-2">
-          🛡️ Domæne-sikkerhed
-        </h2>
-        <p className="text-sm text-gray-500 mb-4">
-          Indtast de domæner, der må vise denne video (adskilt med komma). 
-          Brug <code className="bg-gray-100 px-1 font-bold">*</code> for at tillade alle.
-        </p>
-        <div className="flex gap-3">
-          <input
-            type="text"
-            value={allowedDomains}
-            onChange={(e) => setAllowedDomains(e.target.value)}
-            placeholder="f.eks. roskilde.dk, slagelse.dk"
-            className="flex-1 border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm p-2"
+      {/* FORM: TILFØJ NY VARIANT */}
+      <div className="bg-blue-50 border border-blue-100 rounded-2xl p-6 shadow-sm">
+        <h3 className="text-sm font-bold text-blue-800 uppercase mb-4 tracking-wider">Tilføj ny sprogversion</h3>
+        <div className="flex flex-wrap gap-4">
+          <input 
+            type="text" 
+            placeholder="Titel (f.eks. Dansk Version)" 
+            className="flex-1 min-w-[200px] p-3 rounded-lg border border-blue-200 outline-none focus:ring-2 focus:ring-blue-500"
+            value={newTitle}
+            onChange={(e) => setNewTitle(e.target.value)}
           />
-          <button 
-            onClick={saveSettings}
-            disabled={isSaving}
-            className="bg-black text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-800 disabled:opacity-50"
+          <select 
+            className="p-3 rounded-lg border border-blue-200 bg-white outline-none focus:ring-2 focus:ring-blue-500"
+            value={newLang}
+            onChange={(e) => setNewLang(e.target.value)}
           >
-            {isSaving ? "Gemmer..." : "Gem Domæner"}
+            <option value="da">Dansk (DA)</option>
+            <option value="en">English (EN)</option>
+            <option value="de">Deutsch (DE)</option>
+            <option value="no">Norsk (NO)</option>
+            <option value="se">Svenska (SE)</option>
+          </select>
+          <button 
+            onClick={addVariant}
+            disabled={isAdding || !newTitle}
+            className="bg-blue-600 text-white px-8 py-3 rounded-lg font-bold hover:bg-blue-700 disabled:opacity-50 transition shadow-md"
+          >
+            {isAdding ? "Opretter..." : "+ Opret"}
           </button>
         </div>
       </div>
 
-      {/* GRUPPER & VIDEOER */}
-      <div className="space-y-6">
-        {groups.map((group: any) => (
-          <div key={group.id} className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm p-6">
-            <h3 className="font-bold text-gray-800 mb-4 border-b pb-2">{group.name}</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {group.variants?.map((v: any) => (
-                <div key={v.id} className="border rounded-lg p-4 bg-gray-50 relative">
-                  <div className="flex justify-between mb-2">
-                    <span className="text-xs font-bold uppercase text-gray-500">{v.lang}</span>
-                    <span className="text-xs text-blue-600 font-medium">👁️ {v.views} visninger</span>
-                  </div>
-                  <p className="text-sm font-semibold mb-3">{v.title || "Ingen titel"}</p>
-                  
-                  {v.muxPlaybackId ? (
-                    <div className="aspect-video bg-black rounded overflow-hidden">
-                      <MuxPlayer
-                        playbackId={v.muxPlaybackId}
-                        metadataVideoTitle={v.title}
-                        streamType="on-demand"
-                        style={{ width: '100%', height: '100%' }}
-                      />
-                    </div>
-                  ) : (
-                    <div className="bg-white border-2 border-dashed border-gray-200 rounded-lg p-4">
-                       <VideoUploader onUploadSuccess={() => router.refresh()} />
-                       <p className="text-[10px] text-gray-400 mt-2 text-center text-pretty">
-                         Video mangler - upload en fil for at generere Playback ID
-                       </p>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
+      {/* LISTE OVER EKSISTERENDE VARIANTER */}
+      <div className="space-y-8">
+        {groups.length === 0 ? (
+          <div className="text-center py-20 border-2 border-dashed border-gray-200 rounded-3xl">
+            <p className="text-gray-400 font-medium">Ingen varianter endnu. Start ved at bruge formularen ovenfor.</p>
           </div>
-        ))}
-      </div>
+        ) : (
+          groups.map((group: any) => (
+            <div key={group.id} className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+              <h2 className="text-lg font-bold text-gray-800 mb-6 flex items-center gap-2">
+                📂 {group.name}
+              </h2>
 
-      {/* MODAL: EMBED CODE */}
-      {showEmbedCode && (
-        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={() => setShowEmbedCode(false)}>
-          <div className="bg-white rounded-lg p-6 max-w-2xl w-full shadow-2xl" onClick={e => e.stopPropagation()}>
-            <h2 className="text-xl font-bold mb-4">Din Embed Kode</h2>
-            <textarea 
-              readOnly 
-              value={embedCode} 
-              className="w-full h-40 p-4 bg-gray-900 text-blue-300 rounded-lg font-mono text-xs border border-gray-700 mb-4" 
-            />
-            <div className="flex justify-end gap-2">
-              <button onClick={() => {
-                navigator.clipboard.writeText(embedCode);
-                alert("Kopieret!");
-              }} className="bg-blue-600 text-white px-4 py-2 rounded text-sm font-bold">Kopier</button>
-              <button onClick={() => setShowEmbedCode(false)} className="bg-gray-100 text-gray-600 px-4 py-2 rounded text-sm font-bold">Luk</button>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {group.variants.map((v: any) => (
+                  <div key={v.id} className="bg-gray-50 rounded-xl p-5 border border-gray-100 flex flex-col h-full">
+                    <div className="flex justify-between items-start mb-4">
+                      <span className="bg-white px-3 py-1 rounded-md text-xs font-black shadow-sm border border-gray-100">
+                        {v.lang.toUpperCase()}
+                      </span>
+                      <div className="text-right">
+                        <span className="text-blue-600 text-[11px] font-bold block">👁️ {v.views} visninger</span>
+                      </div>
+                    </div>
+
+                    <div className="flex-1 aspect-video bg-white rounded-lg border-2 border-dashed border-gray-200 overflow-hidden flex items-center justify-center relative">
+                      {v.muxPlaybackId ? (
+                        /* VIDEO ER KLAR */
+                        <MuxPlayer
+  playbackId={v.muxPlaybackId}
+  metadataVideoTitle={v.title}
+  streamType="on-demand"
+  style={{ width: '100%', height: '100%' }}
+  onPlay={() => {
+    fetch("/api/analytics/view", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ variantId: v.id }),
+    }).catch(err => console.error("Kunne ikke sende analytics:", err));
+  }}
+/>
+                      ) : v.muxUploadId ? (
+                        /* UPLOADET MEN MANGLER ID (LOKAL TILSTAND) */
+                        <div className="flex flex-col items-center text-center p-4">
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+                          <p className="text-[11px] text-gray-500 mb-4 font-medium">Video fundet hos Mux, men mangler ID lokalt.</p>
+                          <button 
+                            onClick={() => handleRefreshId(v.id)}
+                            className="bg-white text-blue-600 border border-blue-200 text-[10px] px-4 py-2 rounded-full font-black uppercase hover:bg-blue-50 transition shadow-sm"
+                          >
+                            🔄 Synkroniser nu
+                          </button>
+                        </div>
+                      ) : (
+                        /* INGEN VIDEO - VIS UPLOADER */
+                        <div className="w-full p-4">
+                          <MuxUploader variantId={v.id} onUploadSuccess={() => router.refresh()} />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          ))
+        )}
+      </div>
     </div>
   );
 }

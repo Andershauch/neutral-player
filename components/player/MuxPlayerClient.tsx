@@ -10,13 +10,25 @@ interface MuxPlayerClientProps {
 }
 
 export default function MuxPlayerClient({ playbackId, title, poster, variantId }: MuxPlayerClientProps) {
-  const handlePlay = () => {
-    // ANALYTICS: Kalder dit API uden at forstyrre brugeren
-    fetch("/api/analytics/view", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ variantId }),
-    }).catch((err) => console.error("Analytics fejl:", err));
+  const handlePlay = async () => {
+    console.log("Sender visning for variant:", variantId);
+    
+    try {
+      const res = await fetch("/api/analytics/view", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ variantId }),
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        console.error("Analytics server-fejl:", errorData);
+      } else {
+        console.log("Visning registreret!");
+      }
+    } catch (err) {
+      console.error("Analytics netværks-fejl:", err);
+    }
   };
 
   return (
