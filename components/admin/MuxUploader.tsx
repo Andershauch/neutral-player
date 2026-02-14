@@ -1,58 +1,61 @@
 "use client";
 
-import { useState } from "react";
 import MuxUploader from "@mux/mux-uploader-react";
+import { useState } from "react";
 
-interface MuxUploaderProps {
-  variantId: string; // Tilføjet så fejlen forsvinder
+interface Props {
+  variantId: string;
   onUploadSuccess: () => void;
 }
 
-export default function MuxUploaderComponent({ variantId, onUploadSuccess }: MuxUploaderProps) {
-  const [isUploading, setIsUploading] = useState(false);
-
-  // Denne funktion henter en sikker upload-URL fra din server
-  const getUploadUrl = async () => {
-    const res = await fetch("/api/mux/upload", {
-      method: "POST",
-      body: JSON.stringify({ variantId }), // Vi sender variantId med her
-    });
-    const data = await res.json();
-    return data.url; // URL fra Mux via din API rute
-  };
+export default function MuxVideoUploader({ variantId, onUploadSuccess }: Props) {
+  const [status, setStatus] = useState<string | null>(null);
 
   return (
-    <div className="w-full">
-      {!isUploading ? (
-        <div className="flex flex-col items-center">
-          <MuxUploader
-            endpoint={getUploadUrl}
-            onUploadStart={() => setIsUploading(true)}
-            onSuccess={() => {
-              setIsUploading(false);
-              onUploadSuccess();
-            }}
-            onUploadError={(err) => {
-              console.error("Upload fejl:", err);
-              setIsUploading(false);
-              alert("Der skete en fejl under upload.");
-            }}
-            style={{
-              "--upload-button-border-radius": "8px",
-              "--upload-button-background": "#2563eb",
-              "--button-color": "#ffffff",
-            } as React.CSSProperties}
-          />
-          <p className="mt-2 text-[10px] text-gray-400">Vælg en videofil (MP4, MOV osv.)</p>
-        </div>
-      ) : (
-        <div className="text-center py-4">
-          <div className="animate-pulse text-blue-600 font-bold text-xs uppercase tracking-widest">
-            Uploader...
-          </div>
-          <p className="text-[10px] text-gray-400 mt-1 italic">Lad vinduet forblive åbent</p>
-        </div>
+    <div className="w-full h-full flex flex-col items-center justify-center p-4 bg-gray-900/50 rounded-xl">
+      <MuxUploader
+        endpoint={async () => {
+          const res = await fetch("/api/uploads", {
+            method: "POST",
+            body: JSON.stringify({ variantId }),
+          });
+          
+          if (!res.ok) throw new Error("Kunne ikke hente upload endpoint");
+          
+          const data = await res.json();
+          return data.url;
+        }}
+        onSuccess={() => {
+          setStatus("Upload færdig! Behandler...");
+          onUploadSuccess();
+        }}
+        // Rettelse her: Vi caster 'e' til 'any' for at undgå detail-fejlen hurtigt
+        // eller bruger 'as CustomEvent' for den korrekte måde
+        onError={(e: any) => {
+          console.error("Uploader fejl:", e.detail);
+          setStatus("Fejl under upload.");
+        }}
+        onProgress={(e: any) => {
+          setStatus(`Uploader: ${Math.round(e.detail)}%`);
+        }}
+        className="w-full text-white"
+      />
+      
+      {status && (
+        <p className="mt-4 text-[10px] font-black uppercase tracking-widest text-blue-400 animate-pulse">
+          {status}
+        </p>
       )}
+
+      <style jsx global>{`
+        mux-uploader {
+          --progress-bar-fill-color: #2563eb;
+          --button-background-color: #ffffff;
+          --button-text-color: #000000;
+          --display: flex;
+          --flex-direction: column;
+        }
+      `}</style>
     </div>
   );
 }

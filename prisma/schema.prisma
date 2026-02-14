@@ -32,7 +32,7 @@ model Embed {
   allowedDomains String?  @default("*") 
   
   // Relationer
-  groups       Group[]
+  groups         Group[]
 }
 
 model Group {
@@ -40,6 +40,7 @@ model Group {
   name      String
   sortOrder Int       @default(0)
   embedId   String
+  // Cascade delete: Sletter gruppen hvis projektet (Embed) slettes
   embed     Embed     @relation(fields: [embedId], references: [id], onDelete: Cascade)
   variants  Variant[]
 }
@@ -53,15 +54,27 @@ model Variant {
   // Mux specifikke felter
   muxUploadId    String?  
   muxPlaybackId  String?  
-  muxAssetId     String?  
-  
+  muxAssetId     String?
+
   dreamBrokerUrl String?
   
   // Statistik
   views          Int      @default(0)
 
+  // Relation til Group
   groupId        String
+  // Cascade delete: Sletter varianten hvis gruppen slettes
   group          Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?   // ID på den person der udførte handlingen
+  userName  String?   // Navn eller e-mail for nem læsning
+  action    String   // f.eks. "DELETE_PROJECT", "CREATE_VARIANT"
+  target    String   // f.eks. projektets navn eller ID
+  createdAt DateTime @default(now())
 }

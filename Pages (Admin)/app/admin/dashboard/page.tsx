@@ -1,31 +1,34 @@
-import AdminNav from "@/components/admin/AdminNav";
-import EmbedList from "@/components/admin/EmbedList";
+import { prisma } from "@/lib/prisma"; // Tjek din prisma import sti
+import { getServerSession } from "next-auth"; // Hvis du bruger auth
+import ProjectListClient from "@/components/admin/ProjectListClient";
 
-export const metadata = {
-  title: "Admin Dashboard | EmbedManager",
-};
+export default async function DashboardPage() {
+  // 1. Hent projekter fra databasen
+  const projects = await prisma.embed.findMany({
+    include: {
+      groups: {
+        include: {
+          variants: true,
+        },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
 
-export default function DashboardPage() {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <AdminNav />
-      
-      <main className="py-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          
-          <div className="md:flex md:items-center md:justify-between mb-8">
-            <div className="flex-1 min-w-0">
-              <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
-                Dashboard
-              </h2>
-            </div>
-          </div>
-
-          {/* List Component */}
-          <EmbedList />
-          
+    <div className="max-w-7xl mx-auto p-8">
+      <div className="flex justify-between items-center mb-10">
+        <div>
+          <h1 className="text-4xl font-black text-gray-900">Projektoversigt</h1>
+          <p className="text-gray-500">Velkommen tilbage.</p>
         </div>
-      </main>
+        <button className="bg-black text-white px-6 py-3 rounded-xl font-bold hover:bg-gray-800 transition">
+          + Nyt Projekt
+        </button>
+      </div>
+
+      {/* 2. Send data videre til vores Client Component */}
+      <ProjectListClient initialProjects={projects} />
     </div>
   );
 }

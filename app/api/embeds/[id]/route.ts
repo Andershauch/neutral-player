@@ -1,66 +1,25 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import Mux from "@mux/mux-node";
 
-const prisma = new PrismaClient();
+const mux = new Mux({
+  tokenId: process.env.MUX_TOKEN_ID!,
+  tokenSecret: process.env.MUX_TOKEN_SECRET!,
+});
 
-export async function PATCH(
+export async function DELETE(
   req: Request,
-  { params }: { params: Promise<{ id: string }> } // Defineret som Promise
+  { params }: { params: Promise<{ id: string }> } // Vi fortæller TS at det er et Promise
 ) {
   try {
-    // 1. Pak params ud med await (Vigtigt i nyeste Next.js)
-    const resolvedParams = await params;
-    const id = resolvedParams.id;
+    // 1. FIX: Vi SKAL await params i Next.js 15
+    const { id } = await params;
 
-    console.log("PATCH anmodning modtaget for ID:", id);
+    console.log("Forsøger at slette projekt med ID:", id);
 
-    // 2. Tjek session
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      console.log("Ingen session fundet");
-      return NextResponse.json({ error: "Ikke logget ind" }, { status: 401 });
-    }
-
-    const body = await req.json();
-    console.log("Body modtaget:", body);
-
-    // 3. Opdater databasen med det udtrukne ID
-    const updated = await prisma.embed.update({
-      where: { id: id },
-      data: {
-        ...(body.name !== undefined && { name: body.name }),
-        ...(body.allowedDomains !== undefined && { allowedDomains: body.allowedDomains }),
-      },
-    });
-
-    console.log("Opdatering lykkedes for:", id);
-    return NextResponse.json(updated);
-
-  } catch (error: any) {
-    console.error("DETALJERET FEJL I API:", error);
-    return NextResponse.json(
-      { error: "Database fejl", details: error.message },
-      { status: 500 }
-    );
-  }
-}
-
-// GET handleren skal have samme tur for at undgå fejl i fremtiden
-export async function GET(
-  req: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const resolvedParams = await params;
-    const id = resolvedParams.id;
-
-    const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ error: "Uautoriseret" }, { status: 401 });
-
-    const embed = await prisma.embed.findUnique({
-      where: { id: id },
+    // 2. Find data så vi kan slette hos Mux
+    const project = await prisma.embed.findUnique({
+      where: { id },
       include: {
         groups: {
           include: {
@@ -70,10 +29,32 @@ export async function GET(
       },
     });
 
-    if (!embed) return NextResponse.json({ error: "Ikke fundet" }, { status: 404 });
+    if (!project) {
+      return NextResponse.json({ error: "Projekt ikke fundet" }, { status: 404 });
+    }
 
-    return NextResponse.json(embed);
-  } catch (error) {
-    return NextResponse.json({ error: "Fejl ved hentning" }, { status: 500 });
+    // 3. Slet Assets hos Mux
+    const variants = project.groups.flatMap((g) => g.variants);
+    for (const variant of variants) {
+      if (variant.muxAssetId) {
+        try {
+          await mux.video.assets.delete(variant.muxAssetId);
+          console.log("Slettede Mux Asset:", variant.muxAssetId);
+        } catch (muxErr) {
+          console.error("Mux sletning fejlede (kan ignoreres):", muxErr);
+        }
+      }
+    }
+
+    // 4. Slet i databasen
+    // Takket være 'onDelete: Cascade' i dit schema, sletter den selv grupper og varianter
+    await prisma.embed.delete({
+      where: { id },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    console.error("SLETNING FEJLEDE:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

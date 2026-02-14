@@ -1,8 +1,6 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/prisma"; // Brug din eksisterende instans
 import { notFound } from "next/navigation";
 import MuxPlayerClient from "@/components/player/MuxPlayerClient";
-
-const prisma = new PrismaClient();
 
 export default async function EmbedPage({
   params,
