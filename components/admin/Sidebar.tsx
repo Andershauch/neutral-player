@@ -23,39 +23,39 @@ export default function Sidebar() {
   return (
     <>
       {/* MOBIL TOP BAR (Vises kun på mobil) */}
-      <div className="md:hidden flex items-center justify-between bg-white border-b px-6 py-4 fixed top-0 left-0 right-0 z-50">
-        <h2 className="text-lg font-black tracking-tighter uppercase">
+      <div className="md:hidden flex items-center justify-between bg-white/80 backdrop-blur-md border-b border-gray-100 px-6 py-4 fixed top-0 left-0 right-0 z-50">
+        <h2 className="text-xl font-black tracking-tighter uppercase italic">
           Neutral<span className="text-blue-600">.</span>
         </h2>
         <button 
           onClick={() => setIsOpen(!isOpen)}
-          className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+          className="p-2.5 text-gray-900 bg-gray-50 hover:bg-gray-100 rounded-xl transition-all active:scale-90"
         >
           {isOpen ? (
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
           ) : (
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" /></svg>
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16m-7 6h7" /></svg>
           )}
         </button>
       </div>
 
       {/* SIDEBAR (Responsive) */}
       <aside className={`
-        fixed left-0 top-0 h-screen w-64 bg-white border-r border-gray-100 flex flex-col z-[60]
-        transition-transform duration-300 ease-in-out
-        ${isOpen ? "translate-x-0" : "-translate-x-full"} 
+        fixed left-0 top-0 h-screen w-72 bg-white border-r border-gray-100 flex flex-col z-[60]
+        transition-transform duration-500 cubic-bezier(0.4, 0, 0.2, 1)
+        ${isOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"} 
         md:translate-x-0
       `}>
         {/* Top: Brand */}
         <div className="p-8 hidden md:block">
-          <h2 className="text-xl font-black tracking-tighter text-gray-900 uppercase">
+          <h2 className="text-2xl font-black tracking-tighter text-gray-900 uppercase italic">
             Neutral<span className="text-blue-600">.</span>
           </h2>
         </div>
 
         {/* Mid: Navigation */}
-        <nav className="flex-1 px-4 pt-20 md:pt-0 space-y-1">
-          <p className="px-4 text-[10px] font-black uppercase tracking-widest text-gray-400 mb-4">
+        <nav className="flex-1 px-4 pt-24 md:pt-4 space-y-2">
+          <p className="px-4 text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 mb-6">
             Hovedmenu
           </p>
           {navItems.map((item) => {
@@ -65,10 +65,10 @@ export default function Sidebar() {
                 key={item.href}
                 href={item.href}
                 onClick={() => setIsOpen(false)} // Luk menuen ved klik på mobil
-                className={`flex items-center px-4 py-3 text-sm font-bold rounded-xl transition-all ${
+                className={`flex items-center px-4 py-4 text-xs font-black uppercase tracking-widest rounded-2xl transition-all ${
                   isActive
-                    ? "bg-blue-50 text-blue-600"
-                    : "text-gray-400 hover:bg-gray-50 hover:text-gray-700"
+                    ? "bg-blue-600 text-white shadow-lg shadow-blue-200"
+                    : "text-gray-400 hover:bg-gray-50 hover:text-gray-900"
                 }`}
               >
                 {item.name}
@@ -78,19 +78,25 @@ export default function Sidebar() {
         </nav>
 
         {/* Bottom: Bruger Profil & Logout */}
-        <div className="p-4 bg-gray-50/50 border-t border-gray-100">
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col px-2">
-              <span className="text-xs font-bold text-gray-900 truncate">
-                {session?.user?.name || "Bruger"}
-              </span>
-              <span className="text-[9px] font-black uppercase text-gray-400 tracking-tight">
-                {(session?.user as any)?.role || "bruger"}
-              </span>
+        <div className="p-6 bg-gray-50/50 border-t border-gray-100">
+          <div className="flex flex-col gap-5">
+            <div className="flex items-center gap-3 px-2">
+              <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-black text-sm shadow-inner">
+                {session?.user?.name?.[0] || "U"}
+              </div>
+              <div className="flex flex-col min-w-0">
+                <span className="text-[11px] font-black text-gray-900 uppercase tracking-tight truncate">
+                  {session?.user?.name || "Bruger"}
+                </span>
+                <span className="text-[9px] font-bold uppercase text-blue-600 tracking-widest">
+                  {(session?.user as any)?.role || "bruger"}
+                </span>
+              </div>
             </div>
+            
             <button
               onClick={() => signOut({ callbackUrl: "/login" })}
-              className="flex items-center justify-center w-full px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-100"
+              className="w-full py-3.5 text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-50 rounded-xl transition-all border border-transparent hover:border-red-100 active:scale-95"
             >
               Log ud
             </button>
@@ -101,7 +107,7 @@ export default function Sidebar() {
       {/* Overlay (Mørk baggrund når menuen er åben på mobil) */}
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[55] md:hidden"
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[55] md:hidden animate-in fade-in duration-300"
           onClick={() => setIsOpen(false)}
         />
       )}

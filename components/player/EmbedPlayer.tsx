@@ -1,81 +1,76 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { VideoGroup, VideoVariant, Embed } from "@prisma/client";
+import { Group, Variant, Embed } from "@prisma/client";
+import MuxPlayer from "@mux/mux-player-react";
 
-// Types der inkluderer relationer
-type GroupWithVariants = VideoGroup & { variants: VideoVariant[] };
-type EmbedData = Embed & { groups: GroupWithVariants[] };
+// 1. TYPEDEFINITIONER (Matcher dit schema 100%)
+type GroupWithVariants = Group & { 
+  variants: Variant[] 
+};
+
+type EmbedWithRelations = Embed & { 
+  groups: GroupWithVariants[] 
+};
 
 interface EmbedPlayerProps {
-  embed: EmbedData;
-  initialGroupSlug?: string;
+  embed: EmbedWithRelations;
+  initialGroupId?: string; // Vi bruger ID, da du ikke har et slug-felt
   initialLang?: string;
 }
 
-export default function EmbedPlayer({ embed, initialGroupSlug, initialLang }: EmbedPlayerProps) {
-  // 1. State Setup
+export default function EmbedPlayer({ embed, initialGroupId, initialLang }: EmbedPlayerProps) {
   const [mounted, setMounted] = useState(false);
+  
+  // State til valg af indhold
   const [selectedGroup, setSelectedGroup] = useState<GroupWithVariants>(embed.groups[0]);
-  const [selectedLang, setSelectedLang] = useState<string>(initialLang || embed.defaultLang);
+  const [selectedLang, setSelectedLang] = useState<string>(initialLang || "");
 
-  // 2. RTL Detection (for Farsi/Arabic)
+  // RTL Detection (for Farsi/Arabic)
   const isRtl = ["ar", "fa"].includes(selectedLang);
 
-  // 3. Initialization Logic (Kører kun i browseren)
   useEffect(() => {
     setMounted(true);
 
-    // A. Find Video Group (URL > LocalStorage > Default)
+    // A. FIND START GRUPPE (URL ID > LocalStorage > Første i listen)
     let targetGroup = embed.groups[0];
-    
-    // Tjek URL param (allerede passed som prop, men vi validerer den findes)
-    const urlGroup = embed.groups.find(g => g.slug === initialGroupSlug);
-    
-    // Tjek LocalStorage
-    const storedGroupSlug = localStorage.getItem(`embed_${embed.id}_video`);
-    const storedGroup = embed.groups.find(g => g.slug === storedGroupSlug);
+    const urlGroup = embed.groups.find((g: GroupWithVariants) => g.id === initialGroupId);
+    const storedGroupId = localStorage.getItem(`embed_${embed.id}_group_id`);
+    const storedGroup = embed.groups.find((g: GroupWithVariants) => g.id === storedGroupId);
 
     if (urlGroup) targetGroup = urlGroup;
     else if (storedGroup) targetGroup = storedGroup;
     
     setSelectedGroup(targetGroup);
 
-    // B. Find Sprog (URL > LocalStorage > Default)
-    let targetLang = embed.defaultLang;
-    
-    // Tjek URL param
-    if (initialLang && targetGroup.variants.some(v => v.lang === initialLang)) {
+    // B. FIND START SPROG (URL > LocalStorage > Første variant > "da")
+    let targetLang = "da"; 
+    const storedLang = localStorage.getItem(`embed_${embed.id}_lang`);
+    const firstAvailableLang = targetGroup.variants[0]?.lang || "da";
+
+    if (initialLang && targetGroup.variants.some((v: Variant) => v.lang === initialLang)) {
       targetLang = initialLang;
+    } else if (storedLang && targetGroup.variants.some((v: Variant) => v.lang === storedLang)) {
+      targetLang = storedLang;
     } else {
-      // Tjek LocalStorage
-      const storedLang = localStorage.getItem(`embed_${embed.id}_lang`);
-      if (storedLang && targetGroup.variants.some(v => v.lang === storedLang)) {
-        targetLang = storedLang;
-      }
+      targetLang = firstAvailableLang;
     }
     
     setSelectedLang(targetLang);
-  }, [embed.id, embed.groups, embed.defaultLang, initialGroupSlug, initialLang]);
+  }, [embed, initialGroupId, initialLang]);
 
-  // 4. Handlers
-  const handleGroupChange = (slug: string) => {
-    const group = embed.groups.find((g) => g.slug === slug);
+  // --- HANDLERS ---
+  const handleGroupChange = (id: string) => {
+    const group = embed.groups.find((g: GroupWithVariants) => g.id === id);
     if (!group) return;
-
+    
     setSelectedGroup(group);
-    localStorage.setItem(`embed_${embed.id}_video`, slug);
+    localStorage.setItem(`embed_${embed.id}_group_id`, id);
 
-    // Soft Fallback: Hvis det valgte sprog ikke findes i den nye video, reset til default
-    const hasCurrentLang = group.variants.some((v) => v.lang === selectedLang);
-    if (!hasCurrentLang) {
-      // Prøv at finde embed default, ellers tag første tilgængelige
-      const fallback = group.variants.some(v => v.lang === embed.defaultLang) 
-        ? embed.defaultLang 
-        : group.variants[0]?.lang;
-      
-      setSelectedLang(fallback);
-      // Vi opdaterer IKKE localstorage sprog her, da det er en tvungen ændring
+    // Hvis den nye gruppe ikke har det nuværende sprog, så skift til gruppens første sprog
+    const hasCurrentLang = group.variants.some((v: Variant) => v.lang === selectedLang);
+    if (!hasCurrentLang && group.variants.length > 0) {
+      setSelectedLang(group.variants[0].lang);
     }
   };
 
@@ -84,71 +79,85 @@ export default function EmbedPlayer({ embed, initialGroupSlug, initialLang }: Em
     localStorage.setItem(`embed_${embed.id}_lang`, lang);
   };
 
-  // 5. Find den aktive variant URL
-  const activeVariant = selectedGroup.variants.find((v) => v.lang === selectedLang) 
-    || selectedGroup.variants.find((v) => v.lang === embed.defaultLang) // Fallback 1
-    || selectedGroup.variants[0]; // Fallback 2 (Panic)
+  // FIND AKTIV VARIANT (Den video der faktisk skal vises)
+  const activeVariant = selectedGroup.variants.find((v: Variant) => v.lang === selectedLang) 
+    || selectedGroup.variants[0];
 
-  // Prevent hydration mismatch ved at vente på mount, eller render en loading state/skeleton
-  if (!mounted) return <div className="aspect-video bg-gray-100 animate-pulse" />;
+  // Forhindrer hydration mismatch
+  if (!mounted) return <div className="aspect-video bg-gray-50 animate-pulse rounded-[2rem] border border-gray-100" />;
 
   return (
-    <div className="w-full max-w-4xl mx-auto flex flex-col gap-3 font-sans" dir={isRtl ? "rtl" : "ltr"}>
+    <div className="w-full flex flex-col gap-4 font-sans antialiased" dir={isRtl ? "rtl" : "ltr"}>
       
-      {/* VIDEO CONTAINER (16:9 Aspect Ratio) */}
-      <div className="relative w-full pt-[56.25%] bg-black rounded overflow-hidden shadow-sm">
+      {/* VIDEO CONTAINER: 16:9 Responsiv */}
+      <div className="relative w-full aspect-video bg-black rounded-[1.5rem] md:rounded-[2.5rem] overflow-hidden shadow-2xl border border-gray-100">
         {activeVariant ? (
-          <iframe
-            src={activeVariant.dreamBrokerUrl}
-            className="absolute top-0 left-0 w-full h-full border-0"
-            allowFullScreen
-            title={`${selectedGroup.title} - ${selectedLang}`}
-          />
+          <div className="w-full h-full">
+            {activeVariant.muxPlaybackId ? (
+              <MuxPlayer
+                playbackId={activeVariant.muxPlaybackId}
+                className="w-full h-full object-contain"
+                streamType="on-demand"
+                accentColor="#2563eb"
+                primaryColor="#ffffff"
+              />
+            ) : (
+              <iframe
+                src={activeVariant.dreamBrokerUrl || ""}
+                className="absolute top-0 left-0 w-full h-full border-0"
+                allowFullScreen
+                allow="autoplay; fullscreen; picture-in-picture"
+                title={`${selectedGroup.name} - ${selectedLang}`}
+              />
+            )}
+          </div>
         ) : (
-          <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center text-white">
-            Video unavailable
+          <div className="absolute inset-0 flex items-center justify-center text-gray-400 font-black uppercase text-[10px] tracking-widest">
+            Ingen video fundet
           </div>
         )}
       </div>
 
-      {/* CONTROLS (Neutral UI) */}
-      <div className="flex flex-col sm:flex-row gap-3 justify-between items-stretch sm:items-center px-1">
+      {/* CONTROLS: Responsivt layout */}
+      <div className="flex flex-col sm:flex-row gap-3 px-1">
         
-        {/* Titel Vælger */}
-        <div className="flex-1 min-w-0">
-          <label htmlFor="video-select" className="sr-only">Vælg video</label>
+        {/* TITEL VÆLGER (Kapitler/Grupper) */}
+        <div className="flex-1 relative">
           <select
-            id="video-select"
-            value={selectedGroup.slug}
+            value={selectedGroup.id}
             onChange={(e) => handleGroupChange(e.target.value)}
-            className="w-full sm:w-auto bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-md focus:ring-blue-500 focus:border-blue-500 block p-2.5 truncate cursor-pointer hover:bg-gray-100 transition-colors"
+            className="w-full bg-white border border-gray-100 text-gray-900 text-sm font-black uppercase tracking-widest rounded-2xl p-4 md:p-5 cursor-pointer hover:bg-gray-50 transition-all shadow-sm appearance-none outline-none focus:ring-2 focus:ring-blue-500"
           >
-            {embed.groups.map((group) => (
-              <option key={group.id} value={group.slug}>
-                {group.title}
+            {embed.groups.map((group: GroupWithVariants) => (
+              <option key={group.id} value={group.id}>
+                {group.name}
               </option>
             ))}
           </select>
+          <div className={`absolute ${isRtl ? 'left-5' : 'right-5'} top-1/2 -translate-y-1/2 pointer-events-none text-blue-600`}>
+             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+          </div>
         </div>
 
-        {/* Sprog Vælger */}
-        <div className="w-full sm:w-auto">
-          <label htmlFor="lang-select" className="sr-only">Vælg sprog</label>
+        {/* SPROG VÆLGER */}
+        <div className="w-full sm:w-auto relative">
           <select
-            id="lang-select"
             value={selectedLang}
             onChange={(e) => handleLangChange(e.target.value)}
-            className="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-md focus:ring-blue-500 focus:border-blue-500 block p-2.5 cursor-pointer hover:bg-gray-50 transition-colors"
+            className="w-full sm:w-auto bg-gray-900 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl p-4 md:p-5 pr-12 cursor-pointer hover:bg-blue-600 transition-all shadow-lg appearance-none outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-30"
             disabled={selectedGroup.variants.length <= 1}
           >
-            {/* Vi lister unikke sprog der er tilgængelige for denne titel */}
-            {selectedGroup.variants.map((variant) => (
+            {selectedGroup.variants.map((variant: Variant) => (
               <option key={variant.id} value={variant.lang}>
-                {variant.lang.toUpperCase()}
+                {variant.lang} VERSION
               </option>
             ))}
           </select>
+          <div className={`absolute ${isRtl ? 'left-5' : 'right-5'} top-1/2 -translate-y-1/2 pointer-events-none text-white opacity-50`}>
+             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" /></svg>
+          </div>
         </div>
+
       </div>
     </div>
   );

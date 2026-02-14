@@ -1,7 +1,6 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-// 1. Importér din nye provider
 import { Providers } from "@/components/Providers"; 
 
 const geistSans = Geist({
@@ -19,17 +18,27 @@ export const metadata: Metadata = {
   description: "Administrationspanel",
 };
 
+// Vi tilføjer viewport indstillinger for at sikre korrekt zoom på mobil
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="da">
+    <html lang="da" className="scroll-smooth">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50 text-gray-900 min-h-screen selection:bg-blue-100 selection:text-blue-900 overflow-x-hidden`}
       >
-        {/* 2. Pak children ind i Providers */}
+        {/* overflow-x-hidden på body er en 'life saver' på mobil. 
+            Det forhindrer at siden kan "vippe" sidelæns.
+        */}
         <Providers>
           {children}
         </Providers>

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { signIn } from "next-auth/react"; // <--- NY IMPORT
+import { signIn } from "next-auth/react";
 import Link from "next/link";
 
 export default function RegisterPage() {
@@ -25,7 +25,6 @@ export default function RegisterPage() {
     setError("");
 
     try {
-      // 1. Opret brugeren via API
       const res = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -33,23 +32,19 @@ export default function RegisterPage() {
       });
 
       if (res.ok) {
-        // 2. Hvis oprettelse lykkedes -> Log ind automatisk
-        // Vi bruger de data, brugeren lige har indtastet i felterne
         const loginRes = await signIn("credentials", {
-          redirect: false, // Vi styrer selv redirect for at undgå reload
+          redirect: false,
           email: formData.email,
           password: formData.password,
-          callbackUrl: "/admin/dashboard", // <--- Sender dem direkte til dashboard
+          callbackUrl: "/admin/dashboard",
         });
 
         if (loginRes?.ok) {
            router.push("/admin/dashboard");
-           router.refresh(); // Sikrer at menuen opdateres med det samme
+           router.refresh();
         } else {
-           // Fallback hvis auto-login fejler (usandsynligt)
            router.push("/login?success=account-created");
         }
-
       } else {
         const data = await res.json();
         setError(data.error || "Noget gik galt.");
@@ -62,29 +57,29 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4">
-      <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-xl shadow-lg border border-gray-100">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4 py-12">
+      <div className="max-w-sm w-full space-y-8 bg-white p-6 sm:p-10 rounded-[2rem] shadow-xl shadow-blue-900/5 border border-gray-100">
         
         <div className="text-center">
-          <h2 className="mt-2 text-3xl font-bold text-gray-900">
-            Opret konto
+          <h2 className="text-3xl font-black tracking-tighter text-gray-900 uppercase">
+            Opret Konto<span className="text-blue-600">.</span>
           </h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Få adgang til dashboardet med det samme
+          <p className="mt-2 text-xs font-black uppercase tracking-[0.2em] text-gray-400">
+            Start din administration
           </p>
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded text-sm text-center">
+          <div className="bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-2xl text-[11px] font-bold uppercase text-center">
             {error}
           </div>
         )}
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="rounded-md shadow-sm -space-y-px">
+        <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
+          <div className="space-y-3">
             {/* NAVN */}
-            <div className="mb-4">
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+            <div>
+              <label htmlFor="name" className="block text-[10px] font-black uppercase text-gray-400 ml-1 mb-1">
                 Fulde Navn
               </label>
               <input
@@ -92,7 +87,7 @@ export default function RegisterPage() {
                 name="name"
                 type="text"
                 required
-                className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                className="block w-full px-4 py-3 border border-gray-200 rounded-2xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all placeholder:text-gray-300"
                 placeholder="Anders Andersen"
                 value={formData.name}
                 onChange={handleChange}
@@ -101,8 +96,8 @@ export default function RegisterPage() {
             </div>
 
             {/* EMAIL */}
-            <div className="mb-4">
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+            <div>
+              <label htmlFor="email" className="block text-[10px] font-black uppercase text-gray-400 ml-1 mb-1">
                 Email adresse
               </label>
               <input
@@ -111,7 +106,7 @@ export default function RegisterPage() {
                 type="email"
                 autoComplete="email"
                 required
-                className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                className="block w-full px-4 py-3 border border-gray-200 rounded-2xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all placeholder:text-gray-300"
                 placeholder="mail@eksempel.dk"
                 value={formData.email}
                 onChange={handleChange}
@@ -120,8 +115,8 @@ export default function RegisterPage() {
             </div>
 
             {/* PASSWORD */}
-            <div className="mb-6">
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+            <div>
+              <label htmlFor="password" className="block text-[10px] font-black uppercase text-gray-400 ml-1 mb-1">
                 Adgangskode
               </label>
               <input
@@ -130,8 +125,8 @@ export default function RegisterPage() {
                 type="password"
                 autoComplete="new-password"
                 required
-                className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="Vælg en stærk kode"
+                className="block w-full px-4 py-3 border border-gray-200 rounded-2xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all placeholder:text-gray-300"
+                placeholder="Min. 6 tegn"
                 minLength={6}
                 value={formData.password}
                 onChange={handleChange}
@@ -140,26 +135,24 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          <div>
+          <div className="pt-2">
             <button
               type="submit"
               disabled={isLoading}
-              className={`group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all ${
-                isLoading ? "opacity-70 cursor-not-allowed" : ""
-              }`}
+              className="w-full flex justify-center py-4 px-4 rounded-2xl text-xs font-black uppercase tracking-widest text-white bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-100 disabled:opacity-50 transition-all active:scale-[0.98]"
             >
-              {isLoading ? "Opretter og logger ind..." : "Opret Bruger"}
+              {isLoading ? "Opretter..." : "Opret Bruger"}
             </button>
           </div>
         </form>
 
-        <div className="text-center mt-4">
-          <p className="text-sm text-gray-600">
-            Har du allerede en konto?{" "}
-            <Link href="/login" className="font-medium text-blue-600 hover:text-blue-500">
-              Log ind her
-            </Link>
+        <div className="text-center pt-6 border-t border-gray-50">
+          <p className="text-[11px] font-bold text-gray-400 uppercase tracking-tight">
+            Har du allerede en konto?
           </p>
+          <Link href="/login" className="text-xs font-black text-blue-600 hover:text-blue-700 uppercase tracking-widest mt-2 inline-block">
+            Log ind her →
+          </Link>
         </div>
 
       </div>
