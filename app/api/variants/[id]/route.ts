@@ -49,15 +49,44 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params;
-    const { lang } = await req.json();
+    const json = await req.json();
+    const { lang, uploadId } = json;
 
-    const updatedVariant = await prisma.variant.update({
-      where: { id },
-      data: { lang },
-    });
+    // Hvis der kommer et uploadId, skal vi hente info fra Mux
+    if (uploadId) {
+      const upload = await mux.video.uploads.retrieve(uploadId);
+      const assetId = upload.asset_id;
 
-    return NextResponse.json(updatedVariant);
+      if (!assetId) {
+        return NextResponse.json({ error: "Asset er ikke genereret endnu" }, { status: 400 });
+      }
+
+      const asset = await mux.video.assets.retrieve(assetId);
+      const playbackId = asset.playback_ids?.[0]?.id;
+
+      const updated = await prisma.variant.update({
+        where: { id },
+        data: {
+          muxAssetId: assetId,
+          muxPlaybackId: playbackId,
+          muxUploadId: uploadId,
+        },
+      });
+      return NextResponse.json(updated);
+    }
+
+    // Hvis der kun kommer sprog (din gamle logik)
+    if (lang) {
+      const updated = await prisma.variant.update({
+        where: { id },
+        data: { lang },
+      });
+      return NextResponse.json(updated);
+    }
+
+    return NextResponse.json({ error: "Ingen data sendt" }, { status: 400 });
   } catch (error: any) {
+    console.error("PATCH FEJL:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

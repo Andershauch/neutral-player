@@ -192,8 +192,20 @@ export default function EmbedEditor({ embed }: EmbedEditorProps) {
                     {v.muxPlaybackId ? (
                       <MuxPlayer playbackId={v.muxPlaybackId} className="w-full h-full object-contain" onPlay={() => trackView(v.id)} />
                     ) : (
-                      /* Her er fixet til argumentet */
-                      <MuxVideoUploader onUploadSuccess={(uploadId: string) => router.refresh()} />
+                      <MuxVideoUploader 
+  onUploadSuccess={async (uploadId: string) => {
+    // Vi kalder nu den almindelige variant-rute med uploadId
+    const res = await fetch(`/api/variants/${v.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ uploadId }), // Vi sender uploadId i stedet for lang
+    });
+
+    if (res.ok) {
+      router.refresh(); // Dette tvinger Next.js til at hente de nye Mux-id'er
+    }
+  }} 
+/>
                     )}
                   </div>
                   
