@@ -1,12 +1,16 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
+import { canEditContent } from "@/lib/authz";
 
 export async function POST(request: Request) {
   try {
+    const canEdit = await canEditContent();
+    if (!canEdit) {
+      return NextResponse.json({ error: "Ingen adgang" }, { status: 403 });
+    }
+
     const body = await request.json();
-    const { name } = body;
+    const name = typeof body?.name === "string" ? body.name.trim() : "";
 
     const newEmbed = await prisma.embed.create({
       data: {
@@ -15,7 +19,7 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json(newEmbed);
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Kunne ikke oprette projekt" }, { status: 500 });
   }
 }

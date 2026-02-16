@@ -1,16 +1,14 @@
 "use server";
 
-import { PrismaClient } from "@prisma/client";
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 export async function createVariant(groupId: string, lang: string, muxUploadId: string) {
   try {
     await prisma.variant.create({
       data: {
-        groupId: groupId,
-        lang: lang,
-        muxUploadId: muxUploadId,
-        // Vi efterlader dreamBrokerUrl tom/null
+        groupId,
+        lang,
+        muxUploadId,
       },
     });
     return { success: true };

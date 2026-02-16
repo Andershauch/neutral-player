@@ -9,7 +9,7 @@ export default function Sidebar() {
   const pathname = usePathname();
   const { data: session } = useSession();
   const [isOpen, setIsOpen] = useState(false); // Til mobil-menu
-  const isAdmin = (session?.user as any)?.role === "admin";
+  const isAdmin = session?.user?.role === "admin";
 
   const navItems = [
     { name: "Dashboard", href: "/admin/dashboard" },
@@ -89,7 +89,7 @@ export default function Sidebar() {
                   {session?.user?.name || "Bruger"}
                 </span>
                 <span className="text-[9px] font-bold uppercase text-blue-600 tracking-widest">
-                  {(session?.user as any)?.role || "bruger"}
+                  {session?.user?.role || "bruger"}
                 </span>
               </div>
             </div>

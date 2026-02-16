@@ -1,35 +1,31 @@
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { redirect } from "next/navigation";
-import Link from "next/link";
+import Image from "next/image";
 import DeleteUserButton from "./DeleteUserButton";
 import RoleSelector from "./RoleSelector";
-
-const prisma = new PrismaClient();
 
 export const dynamic = "force-dynamic";
 
 export default async function UsersPage() {
   const session = await getServerSession(authOptions);
-  
-  if ((session?.user as any)?.role !== "admin") {
-     return (
-       <div className="flex items-center justify-center min-h-[50vh]">
-         <div className="bg-red-50 text-red-600 px-6 py-4 rounded-2xl font-bold uppercase text-xs tracking-widest border border-red-100">
-           Ingen adgang
-         </div>
-       </div>
-     );
+
+  if (!session || session.user.role !== "admin") {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="bg-red-50 text-red-600 px-6 py-4 rounded-2xl font-bold uppercase text-xs tracking-widest border border-red-100">
+          Ingen adgang
+        </div>
+      </div>
+    );
   }
 
   const users = await prisma.user.findMany({
-    orderBy: { email: 'asc' }
+    orderBy: { email: "asc" },
   });
 
   return (
     <div className="space-y-8">
-      {/* HEADER: Responsiv tekst og layout */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl md:text-3xl font-black text-gray-900 uppercase tracking-tight">
@@ -41,7 +37,6 @@ export default async function UsersPage() {
         </div>
       </div>
 
-      {/* TABEL CONTAINER: overflow-x-auto er nøglen til mobil-venlighed */}
       <div className="bg-white rounded-[2rem] shadow-sm overflow-hidden border border-gray-100">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-100">
@@ -59,38 +54,42 @@ export default async function UsersPage() {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       {user.image ? (
-                        <img className="h-9 w-9 rounded-full mr-3 border border-gray-100 object-cover" src={user.image} alt="" />
+                        <Image
+                          className="h-9 w-9 rounded-full mr-3 border border-gray-100 object-cover"
+                          src={user.image}
+                          alt=""
+                          width={36}
+                          height={36}
+                        />
                       ) : (
                         <div className="h-9 w-9 rounded-full mr-3 bg-blue-50 flex items-center justify-center text-blue-600 text-xs font-black border border-blue-100">
                           {user.name?.[0] || "U"}
                         </div>
                       )}
                       <div>
-                        <div className="text-sm font-bold text-gray-900">{user.name}</div>
-                        <div className="text-[10px] font-mono text-gray-400">ID: {user.id.slice(0, 8)}</div>
+                        <div className="text-sm font-bold text-gray-900">{user.name || "Navn mangler"}</div>
+                        <div className="text-[10px] font-mono text-gray-400 uppercase tracking-tighter">ID: {user.id.slice(0, 8)}</div>
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-500">
-                    {user.email}
-                  </td>
-                  
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-500">{user.email}</td>
+
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="min-w-[160px]"> {/* Sikrer at dropdown ikke bliver for lille på mobil */}
-                      <RoleSelector 
-                        userId={user.id} 
-                        currentRole={user.role} 
+                    <div className="min-w-[160px]">
+                      <RoleSelector
+                        userId={user.id}
+                        currentRole={user.role}
                         currentUserEmail={session?.user?.email}
                         targetUserEmail={user.email}
                       />
                     </div>
                   </td>
 
-                  <td className="px-6 py-4 whitespace-nowrap text-right">
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-[10px]">
                     {user.email !== session?.user?.email ? (
-                       <DeleteUserButton userId={user.id} />
+                      <DeleteUserButton userId={user.id} userName={user.name || user.email} />
                     ) : (
-                      <span className="text-[10px] font-black uppercase text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+                      <span className="font-black uppercase text-blue-600 bg-blue-50 px-4 py-2 rounded-full tracking-widest">
                         Dig selv
                       </span>
                     )}

@@ -1,43 +1,30 @@
-"use server";
-
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-const prisma = new PrismaClient();
-
 export async function createEmbed(formData: FormData) {
-  // 1. Tjek om brugeren er logget ind
   const session = await getServerSession(authOptions);
-  
+
   if (!session || !session.user?.email) {
     return { error: "Ikke logget ind" };
   }
 
-  // 2. Find brugerens ID i databasen
-  const user = await prisma.user.findUnique({
-    where: { email: session.user.email }
-  });
-
-  if (!user) {
-    return { error: "Bruger ikke fundet" };
+  const role = session.user.role;
+  if (role !== "admin" && role !== "contributor") {
+    return { error: "Ingen adgang" };
   }
 
-  // 3. Hent navnet fra formularen
   const name = formData.get("name") as string;
-
-  if (!name) {
+  if (!name?.trim()) {
     return { error: "Navn mangler" };
   }
 
-  // 4. Opret Embed
   try {
     await prisma.embed.create({
       data: {
-        name: name,
-        userId: user.id,
+        name: name.trim(),
       },
     });
   } catch (error) {
@@ -45,7 +32,6 @@ export async function createEmbed(formData: FormData) {
     return { error: "Database fejl" };
   }
 
-  // 5. Opdater siden
   revalidatePath("/admin/dashboard");
   redirect("/admin/dashboard");
 }

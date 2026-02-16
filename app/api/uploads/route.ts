@@ -1,37 +1,33 @@
 import Mux from "@mux/mux-node";
 import { NextResponse } from "next/server";
+import { canEditContent } from "@/lib/authz";
 
 const mux = new Mux({
   tokenId: process.env.MUX_TOKEN_ID,
   tokenSecret: process.env.MUX_TOKEN_SECRET,
 });
 
-export async function POST(req: Request) {
+export async function POST() {
   try {
-    // 1. Tjek miljøvariabler
+    const canEdit = await canEditContent();
+    if (!canEdit) {
+      return NextResponse.json({ error: "Ingen adgang" }, { status: 403 });
+    }
+
     if (!process.env.MUX_TOKEN_ID || !process.env.MUX_TOKEN_SECRET) {
-      console.error("Mangler MUX credentials i Vercel!");
       return NextResponse.json({ error: "Missing Mux credentials" }, { status: 500 });
     }
 
-    // 2. Opret Direct Upload hos Mux
     const upload = await mux.video.uploads.create({
-      cors_origin: "*", // Eller din specifikke vercel domæne
+      cors_origin: "*",
       new_asset_settings: {
         playback_policy: ["public"],
       },
     });
 
-    // 3. Returner svar (Sørg for det er gyldig JSON)
-    return NextResponse.json({
-      id: upload.id,
-      url: upload.url,
-    });
-  } catch (error: any) {
-    console.error("MUX API FEJL:", error);
-    return NextResponse.json({ 
-      error: "Mux upload failed", 
-      details: error.message 
-    }, { status: 500 });
+    return NextResponse.json({ id: upload.id, url: upload.url });
+  } catch (error) {
+    const details = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: "Mux upload failed", details }, { status: 500 });
   }
 }

@@ -58,8 +58,9 @@ export async function POST(
       message: `Videoen er ikke klar hos Mux endnu (Status: ${upload.status})` 
     });
 
-  } catch (error: any) {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Ukendt fejl";
     console.error("Refresh error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

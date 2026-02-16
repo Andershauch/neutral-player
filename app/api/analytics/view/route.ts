@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 export async function POST(req: Request) {
   try {
@@ -11,7 +9,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Manglende variantId" }, { status: 400 });
     }
 
-    // Vi bruger increment for at undgå race-conditions i databasen
     const updated = await prisma.variant.update({
       where: { id: variantId },
       data: {
@@ -22,8 +19,7 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({ success: true, views: updated.views });
-  } catch (error) {
-    console.error("Analytics fejl:", error);
+  } catch {
     return NextResponse.json({ error: "Kunne ikke registrere visning" }, { status: 500 });
   }
 }

@@ -27,7 +27,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ error: "Videoen behandles stadig..." }, { status: 202 });
 
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Kunne ikke finde video" }, { status: 500 });
   }
 }

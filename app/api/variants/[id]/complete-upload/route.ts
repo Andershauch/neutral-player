@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma"; // Din prisma instans
+import { prisma } from "@/lib/prisma";
 import Mux from "@mux/mux-node";
+import { canEditContent } from "@/lib/authz";
 
 const mux = new Mux({
   tokenId: process.env.MUX_TOKEN_ID,
@@ -9,12 +10,17 @@ const mux = new Mux({
 
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { uploadId } = await req.json();
-
   try {
-    // 1. Hent upload-info fra Mux for at få Asset ID
+    const canEdit = await canEditContent();
+    if (!canEdit) {
+      return NextResponse.json({ error: "Ingen adgang" }, { status: 403 });
+    }
+
+    const { uploadId } = await req.json();
+    const { id } = await params;
+
     const upload = await mux.video.uploads.retrieve(uploadId);
     const assetId = upload.asset_id;
 
@@ -22,13 +28,11 @@ export async function PATCH(
       return NextResponse.json({ error: "Asset ikke klar endnu" }, { status: 400 });
     }
 
-    // 2. Hent Asset-info for at få Playback ID
     const asset = await mux.video.assets.retrieve(assetId);
     const playbackId = asset.playback_ids?.[0]?.id;
 
-    // 3. Opdater databasen
     const updatedVariant = await prisma.variant.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         muxAssetId: assetId,
         muxPlaybackId: playbackId,
@@ -37,8 +41,7 @@ export async function PATCH(
     });
 
     return NextResponse.json(updatedVariant);
-  } catch (error) {
-    console.error(error);
+  } catch {
     return NextResponse.json({ error: "Fejl ved opdatering" }, { status: 500 });
   }
 }

@@ -32,12 +32,15 @@ export default function MuxVideoUploader({ onUploadSuccess }: Props) {
           // Sender ID'et tilbage til EmbedEditor for at opdatere databasen
           onUploadSuccess(currentUploadId);
         }}
-        onError={(e: any) => {
-          console.error("Uploader fejl:", e.detail);
+        onError={(event) => {
+          const detail = (event as unknown as { detail?: unknown }).detail;
+          console.error("Uploader fejl:", detail);
           setStatus("Fejl under upload.");
         }}
-        onProgress={(e: any) => {
-          setStatus(`Uploader: ${Math.round(e.detail)}%`);
+        onProgress={(event) => {
+          const detail = (event as unknown as { detail?: unknown }).detail;
+          const progress = typeof detail === "number" ? detail : 0;
+          setStatus(`Uploader: ${Math.round(progress)}%`);
         }}
         className="w-full"
       />

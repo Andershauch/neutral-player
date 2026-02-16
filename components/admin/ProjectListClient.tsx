@@ -6,7 +6,10 @@ import { useRouter } from "next/navigation";
 import EmbedCodeGenerator from "./EmbedCodeGenerator"; 
 
 interface ProjectListClientProps {
-  initialProjects: any[];
+  initialProjects: Array<{
+    id: string;
+    name: string;
+  }>;
 }
 
 export default function ProjectListClient({ initialProjects }: ProjectListClientProps) {

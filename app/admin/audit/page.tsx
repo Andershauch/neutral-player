@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 export default async function AuditPage() {
   const session = await getServerSession(authOptions);
 
-  if (!session || (session.user as any).role !== "admin") {
+  if (!session || session.user.role !== "admin") {
     redirect("/admin/dashboard");
   }
 

@@ -28,7 +28,21 @@ const LANGUAGES = [
 ];
 
 interface EmbedEditorProps {
-  embed: any;
+  embed: {
+    id: string;
+    name: string;
+    groups?: Array<{
+      id: string;
+      name: string;
+      variants: Array<{
+        id: string;
+        title: string | null;
+        lang: string;
+        muxPlaybackId: string | null;
+        views: number;
+      }>;
+    }>;
+  };
 }
 
 export default function EmbedEditor({ embed }: EmbedEditorProps) {
@@ -161,7 +175,7 @@ export default function EmbedEditor({ embed }: EmbedEditorProps) {
 
       {/* VARIANTER */}
       <div className="space-y-12">
-        {embed.groups?.map((group: any) => (
+        {embed.groups?.map((group) => (
           <div key={group.id} className="space-y-6">
             <div className="flex items-center gap-4">
               <div className="h-px flex-1 bg-gray-100"></div>
@@ -170,10 +184,12 @@ export default function EmbedEditor({ embed }: EmbedEditorProps) {
             </div>
 
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 md:gap-8">
-              {[...group.variants].sort((a, b) => a.title.localeCompare(b.title)).map((v: any) => (
+              {[...group.variants]
+                .sort((a, b) => (a.title ?? "").localeCompare(b.title ?? ""))
+                .map((v) => (
                 <div key={v.id} className="group relative bg-white border border-gray-100 rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-8 flex flex-col gap-6 shadow-sm hover:shadow-xl transition-all">
                   <button 
-                    onClick={() => deleteVariant(v.id, v.title)} 
+                    onClick={() => deleteVariant(v.id, v.title ?? "Untitled")} 
                     className="absolute top-4 right-4 md:top-6 md:right-6 p-2.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>

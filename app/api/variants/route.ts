@@ -1,37 +1,35 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { canEditContent } from "@/lib/authz";
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    console.log("API MODTOG DATA:", body);
+    const canEdit = await canEditContent();
+    if (!canEdit) {
+      return NextResponse.json({ error: "Ingen adgang" }, { status: 403 });
+    }
 
+    const body = await req.json();
     const { embedId, groupId, lang, title } = body;
 
     let targetGroupId = groupId;
 
-    // Hvis vi ikke har fået et groupId, men har et embedId (fra et helt nyt projekt)
     if (!targetGroupId && embedId) {
-      // Find den første gruppe i projektet eller opret en "Standard" gruppe
-      const existingGroup = await prisma.group.findFirst({
-        where: { embedId: embedId }
-      });
+      const existingGroup = await prisma.group.findFirst({ where: { embedId } });
 
       if (existingGroup) {
         targetGroupId = existingGroup.id;
       } else {
-        // Opret en ny gruppe automatisk, hvis projektet er tomt
         const newGroup = await prisma.group.create({
           data: {
             name: "Standard",
-            embedId: embedId
-          }
+            embedId,
+          },
         });
         targetGroupId = newGroup.id;
       }
     }
 
-    // Nu har vi med sikkerhed et targetGroupId
     if (!targetGroupId) {
       return NextResponse.json({ error: "groupId eller embedId mangler" }, { status: 400 });
     }
@@ -40,15 +38,14 @@ export async function POST(req: Request) {
       data: {
         groupId: targetGroupId,
         lang: lang || "da",
-        title: title,
-        // Vi initialiserer visninger til 0
-        views: 0
-      }
+        title,
+        views: 0,
+      },
     });
 
     return NextResponse.json(variant);
-  } catch (error: any) {
-    console.error("API FEJL:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Ukendt fejl";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import Mux from "@mux/mux-node";
+import { canEditContent } from "@/lib/authz";
 
 const mux = new Mux({
   tokenId: process.env.MUX_TOKEN_ID!,
@@ -12,47 +13,48 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const canEdit = await canEditContent();
+    if (!canEdit) {
+      return NextResponse.json({ error: "Ingen adgang" }, { status: 403 });
+    }
+
     const { id } = await params;
 
-    // 1. Find varianten
-    const variant = await prisma.variant.findUnique({
-      where: { id },
-    });
-
+    const variant = await prisma.variant.findUnique({ where: { id } });
     if (!variant) {
       return NextResponse.json({ error: "Variant ikke fundet" }, { status: 404 });
     }
 
-    // 2. Slet kun hos Mux, hvis der rent faktisk ER et assetId
-    if (variant.muxAssetId && variant.muxAssetId !== "") {
+    if (variant.muxAssetId) {
       try {
         await mux.video.assets.delete(variant.muxAssetId);
-      } catch (muxErr) {
-        console.log("Mux asset kunne ikke slettes eller findes ikke – vi fortsætter.");
+      } catch {
+        // Ignore stale Mux assets
       }
     }
 
-    // 3. Slet altid fra databasen til sidst
-    await prisma.variant.delete({
-      where: { id },
-    });
-
+    await prisma.variant.delete({ where: { id } });
     return NextResponse.json({ success: true });
-  } catch (error: any) {
-    console.error("FEJL VED SLETNING:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Ukendt fejl";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
+
 export async function PATCH(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const canEdit = await canEditContent();
+    if (!canEdit) {
+      return NextResponse.json({ error: "Ingen adgang" }, { status: 403 });
+    }
+
     const { id } = await params;
     const json = await req.json();
     const { lang, uploadId } = json;
 
-    // Hvis der kommer et uploadId, skal vi hente info fra Mux
     if (uploadId) {
       const upload = await mux.video.uploads.retrieve(uploadId);
       const assetId = upload.asset_id;
@@ -75,7 +77,6 @@ export async function PATCH(
       return NextResponse.json(updated);
     }
 
-    // Hvis der kun kommer sprog (din gamle logik)
     if (lang) {
       const updated = await prisma.variant.update({
         where: { id },
@@ -85,8 +86,8 @@ export async function PATCH(
     }
 
     return NextResponse.json({ error: "Ingen data sendt" }, { status: 400 });
-  } catch (error: any) {
-    console.error("PATCH FEJL:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Ukendt fejl";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

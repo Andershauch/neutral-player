@@ -1,13 +1,8 @@
 import { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { PrismaClient } from "@prisma/client";
 import { compare } from "bcryptjs";
-
-// Vi sikrer, at Prisma ikke initialiseres flere gange i udvikling (Hydration fix)
-const globalForPrisma = global as unknown as { prisma: PrismaClient };
-export const prisma = globalForPrisma.prisma || new PrismaClient();
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+import { prisma } from "@/lib/prisma";
 
 export const authOptions: NextAuthOptions = {
   session: {
@@ -27,7 +22,6 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
-        // Her bruger vi det lokale prisma objekt
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
         });
@@ -47,44 +41,44 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async signIn({ user, account, profile }) {
+    async signIn({ user, account }) {
       if (account?.provider === "google") {
         if (!user.email) return false;
 
-        // Tjek om brugeren findes i databasen
         const existingUser = await prisma.user.findUnique({
           where: { email: user.email },
         });
 
-        // Hvis brugeren ikke findes, opretter vi dem automatisk som contributor
         if (!existingUser) {
           await prisma.user.create({
             data: {
               email: user.email,
               name: user.name || "Google Bruger",
-              role: "contributor", // Standard rolle for nye Google logins
+              role: "contributor",
             },
           });
         }
       }
       return true;
     },
-    async jwt({ token, user, trigger, session }) {
-      // Ved første login, tilføj rolle fra databasen til tokenet
-      if (user) {
+    async jwt({ token, user }) {
+      if (user?.email) {
         const dbUser = await prisma.user.findUnique({
-          where: { email: user.email! },
+          where: { email: user.email },
         });
+
         if (dbUser) {
+          token.id = dbUser.id;
           token.role = dbUser.role;
         }
       }
+
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
-        (session.user as any).role = token.role;
-        (session.user as any).id = token.id; // Tilføj denne linje
+        session.user.id = token.id ?? "";
+        session.user.role = token.role ?? null;
       }
       return session;
     },

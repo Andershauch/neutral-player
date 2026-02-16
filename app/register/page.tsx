@@ -50,7 +50,7 @@ export default function RegisterPage() {
         setError(data.error || "Noget gik galt.");
         setIsLoading(false);
       }
-    } catch (err) {
+    } catch {
       setError("Der opstod en fejl. Prøv igen senere.");
       setIsLoading(false);
     }

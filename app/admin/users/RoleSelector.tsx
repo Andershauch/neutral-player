@@ -15,7 +15,6 @@ export default function RoleSelector({ userId, currentRole, currentUserEmail, ta
   const [loading, setLoading] = useState(false);
   const [role, setRole] = useState(currentRole);
 
-  // Forhindrer at man fjerner sin egen admin-status ved en fejl
   const isMe = currentUserEmail === targetUserEmail;
 
   const handleChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -23,28 +22,33 @@ export default function RoleSelector({ userId, currentRole, currentUserEmail, ta
     
     if (isMe && newRole !== "admin") {
         if(!confirm("ADVARSEL: Du er ved at fjerne dine egne administrator-rettigheder. Du vil miste adgangen til denne side. Er du sikker?")) {
-            // Nulstil valget hvis man fortryder
             e.target.value = role; 
             return;
         }
     }
 
     setLoading(true);
-    setRole(newRole); // Opdater visuelt med det samme
+    // Vi fjerner setRole(newRole) herfra og gør det kun hvis res.ok er sandt, 
+    // eller beholder den hvis du ønsker "optimistic UI". 
 
     try {
-      const res = await fetch("/api/update-role", {
-        method: "PUT",
+      // 1. RETTELSE: Brug den nye dynamiske sti /api/users/[id]
+      // 2. RETTELSE: Brug PATCH i stedet for PUT
+      const res = await fetch(`/api/users/${userId}`, {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, newRole }),
+        // 3. RETTELSE: Send kun 'role' (din API forventer { role })
+        body: JSON.stringify({ role: newRole }),
       });
 
-      if (!res.ok) throw new Error("Fejl");
+      if (!res.ok) throw new Error("Fejl ved opdatering");
       
-      router.refresh(); // Genindlæs siden for at sikre alt er synkroniseret
-    } catch (error) {
-      alert("Noget gik galt. Prøv igen.");
-      setRole(role); // Rul tilbage ved fejl
+      setRole(newRole); 
+      router.refresh(); 
+    } catch {
+      alert("Noget gik galt. Rolle blev ikke opdateret.");
+      e.target.value = role; // Nulstil dropdown
+      setRole(role); 
     } finally {
       setLoading(false);
     }
@@ -55,9 +59,9 @@ export default function RoleSelector({ userId, currentRole, currentUserEmail, ta
       <select
         value={role}
         onChange={handleChange}
-        disabled={loading || (isMe && role !== 'admin')} // Man kan ikke ændre sig selv hvis man ikke er admin
+        disabled={loading}
         className={`
-            block w-full pl-3 pr-8 py-1.5 text-xs font-semibold rounded-full border-0 focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-sm
+            block w-full pl-3 pr-8 py-1.5 text-xs font-semibold rounded-full border-0 focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-sm transition-colors
             ${role === 'admin' ? 'bg-purple-100 text-purple-800' : ''}
             ${role === 'contributor' ? 'bg-blue-100 text-blue-800' : ''}
             ${role === 'user' ? 'bg-gray-100 text-gray-600' : ''}
@@ -69,7 +73,7 @@ export default function RoleSelector({ userId, currentRole, currentUserEmail, ta
       </select>
       
       {loading && (
-         <div className="absolute right-2 top-2">
+         <div className="absolute right-7 top-1/2 -translate-y-1/2">
             <div className="animate-spin h-3 w-3 border-2 border-blue-500 rounded-full border-t-transparent"></div>
          </div>
       )}

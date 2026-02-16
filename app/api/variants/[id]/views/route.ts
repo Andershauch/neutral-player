@@ -18,7 +18,8 @@ export async function POST(
     });
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Ukendt fejl";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
