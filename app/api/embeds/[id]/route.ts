@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import Mux from "@mux/mux-node";
-import { canEditContent } from "@/lib/authz";
+import { getOrgContextForContentEdit } from "@/lib/authz";
 
 const mux = new Mux({
   tokenId: process.env.MUX_TOKEN_ID!,
@@ -13,15 +13,18 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const canEdit = await canEditContent();
-    if (!canEdit) {
+    const orgCtx = await getOrgContextForContentEdit();
+    if (!orgCtx) {
       return NextResponse.json({ error: "Ingen adgang" }, { status: 403 });
     }
 
     const { id } = await params;
 
-    const project = await prisma.embed.findUnique({
-      where: { id },
+    const project = await prisma.embed.findFirst({
+      where: {
+        id,
+        organizationId: orgCtx.orgId,
+      },
       include: {
         groups: {
           include: {
@@ -46,7 +49,23 @@ export async function DELETE(
       }
     }
 
-    await prisma.embed.delete({ where: { id } });
+    const actor = await prisma.user.findUnique({
+      where: { id: orgCtx.userId },
+      select: { name: true, email: true },
+    });
+
+    await prisma.$transaction([
+      prisma.embed.delete({ where: { id: project.id } }),
+      prisma.auditLog.create({
+        data: {
+          organizationId: orgCtx.orgId,
+          userId: orgCtx.userId,
+          userName: actor?.name || actor?.email || null,
+          action: "SLET_PROJEKT",
+          target: `${project.name} (ID: ${project.id})`,
+        },
+      }),
+    ]);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("SLETNING FEJLEDE:", error);

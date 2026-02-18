@@ -8,9 +8,10 @@ interface Props {
   currentRole: string;
   currentUserEmail: string | null | undefined;
   targetUserEmail: string | null;
+  canAssignOwner: boolean;
 }
 
-export default function RoleSelector({ userId, currentRole, currentUserEmail, targetUserEmail }: Props) {
+export default function RoleSelector({ userId, currentRole, currentUserEmail, targetUserEmail, canAssignOwner }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [role, setRole] = useState(currentRole);
@@ -19,36 +20,37 @@ export default function RoleSelector({ userId, currentRole, currentUserEmail, ta
 
   const handleChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newRole = e.target.value;
-    
-    if (isMe && newRole !== "admin") {
-        if(!confirm("ADVARSEL: Du er ved at fjerne dine egne administrator-rettigheder. Du vil miste adgangen til denne side. Er du sikker?")) {
-            e.target.value = role; 
-            return;
-        }
+
+    if (newRole === "owner" && !canAssignOwner) {
+      alert("Kun en ejer kan give ejer-rolle.");
+      e.target.value = role;
+      return;
+    }
+
+    if (isMe && newRole !== "owner") {
+      if (!confirm("Advarsel: Du er ved at fjerne din egen ejer-rolle. Du kan miste adgangen til denne side. Vil du fortsætte?")) {
+        e.target.value = role;
+        return;
+      }
     }
 
     setLoading(true);
-    // Vi fjerner setRole(newRole) herfra og gør det kun hvis res.ok er sandt, 
-    // eller beholder den hvis du ønsker "optimistic UI". 
 
     try {
-      // 1. RETTELSE: Brug den nye dynamiske sti /api/users/[id]
-      // 2. RETTELSE: Brug PATCH i stedet for PUT
       const res = await fetch(`/api/users/${userId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        // 3. RETTELSE: Send kun 'role' (din API forventer { role })
         body: JSON.stringify({ role: newRole }),
       });
 
-      if (!res.ok) throw new Error("Fejl ved opdatering");
-      
-      setRole(newRole); 
-      router.refresh(); 
+      if (!res.ok) throw new Error("Kunne ikke opdatere rollen.");
+
+      setRole(newRole);
+      router.refresh();
     } catch {
-      alert("Noget gik galt. Rolle blev ikke opdateret.");
-      e.target.value = role; // Nulstil dropdown
-      setRole(role); 
+      alert("Noget gik galt. Rollen blev ikke opdateret.");
+      e.target.value = role;
+      setRole(role);
     } finally {
       setLoading(false);
     }
@@ -62,20 +64,22 @@ export default function RoleSelector({ userId, currentRole, currentUserEmail, ta
         disabled={loading}
         className={`
             block w-full pl-3 pr-8 py-1.5 text-xs font-semibold rounded-full border-0 focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-sm transition-colors
-            ${role === 'admin' ? 'bg-purple-100 text-purple-800' : ''}
-            ${role === 'contributor' ? 'bg-blue-100 text-blue-800' : ''}
-            ${role === 'user' ? 'bg-gray-100 text-gray-600' : ''}
+            ${role === "owner" ? "bg-purple-100 text-purple-800" : ""}
+            ${role === "admin" ? "bg-blue-100 text-blue-800" : ""}
+            ${role === "editor" ? "bg-emerald-100 text-emerald-800" : ""}
+            ${role === "viewer" ? "bg-gray-100 text-gray-600" : ""}
         `}
       >
-        <option value="admin">Administrator 👑</option>
-        <option value="contributor">Bidragsyder ✏️</option>
-        <option value="user">Ingen Adgang ⛔</option>
+        {canAssignOwner && <option value="owner">Ejer</option>}
+        <option value="admin">Administrator</option>
+        <option value="editor">Editor</option>
+        <option value="viewer">Læser</option>
       </select>
-      
+
       {loading && (
-         <div className="absolute right-7 top-1/2 -translate-y-1/2">
-            <div className="animate-spin h-3 w-3 border-2 border-blue-500 rounded-full border-t-transparent"></div>
-         </div>
+        <div className="absolute right-7 top-1/2 -translate-y-1/2">
+          <div className="animate-spin h-3 w-3 border-2 border-blue-500 rounded-full border-t-transparent"></div>
+        </div>
       )}
     </div>
   );

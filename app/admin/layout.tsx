@@ -1,18 +1,31 @@
 import Sidebar from "@/components/admin/Sidebar";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { getCurrentOrgContext } from "@/lib/org-context";
+import { prisma } from "@/lib/prisma";
 
 export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const session = await getServerSession(authOptions);
-
-  // Global beskyttelse af hele /admin ruten
-  if (!session) {
+  const orgCtx = await getCurrentOrgContext();
+  if (!orgCtx) {
     redirect("/login");
+  }
+
+  const subscription = await prisma.subscription.findFirst({
+    where: { organizationId: orgCtx.orgId },
+    orderBy: { updatedAt: "desc" },
+    select: { status: true },
+  });
+
+  const hasAdminAccess =
+    subscription?.status === "active" ||
+    subscription?.status === "trialing" ||
+    subscription?.status === "past_due";
+
+  if (!hasAdminAccess) {
+    redirect("/pricing");
   }
 
   return (

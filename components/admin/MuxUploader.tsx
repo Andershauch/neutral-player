@@ -1,41 +1,39 @@
 "use client";
 
 import MuxUploader from "@mux/mux-uploader-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 interface Props {
-  // onUploadSuccess tager imod uploadId strengen fra Mux
   onUploadSuccess: (uploadId: string) => void;
 }
 
 export default function MuxVideoUploader({ onUploadSuccess }: Props) {
   const [status, setStatus] = useState<string | null>(null);
-  const [currentUploadId, setCurrentUploadId] = useState<string>("");
+  const uploadIdRef = useRef<string>("");
 
   return (
     <div className="w-full flex flex-col items-center justify-center p-4 md:p-8 bg-gray-50 rounded-[1.5rem] md:rounded-[2rem] border-2 border-dashed border-gray-100 transition-all hover:border-blue-200">
       <MuxUploader
         endpoint={async () => {
-          const res = await fetch("/api/uploads", {
-            method: "POST",
-          });
-          
-          if (!res.ok) throw new Error("Kunne ikke hente upload endpoint");
-          
-          const data = await res.json();
-          // Gem uploadId lokalt så vi kan sende det videre i onSuccess
-          setCurrentUploadId(data.id); 
+          const res = await fetch("/api/uploads", { method: "POST" });
+          if (!res.ok) throw new Error("Kunne ikke hente upload-endpoint.");
+
+          const data = (await res.json()) as { id: string; url: string };
+          uploadIdRef.current = data.id;
           return data.url;
         }}
         onSuccess={() => {
-          setStatus("Upload færdig! Behandler...");
-          // Sender ID'et tilbage til EmbedEditor for at opdatere databasen
-          onUploadSuccess(currentUploadId);
+          setStatus("Upload er færdig. Vi behandler videoen...");
+          if (!uploadIdRef.current) {
+            setStatus("Kunne ikke finde upload-ID. Prøv igen.");
+            return;
+          }
+          onUploadSuccess(uploadIdRef.current);
         }}
         onError={(event) => {
           const detail = (event as unknown as { detail?: unknown }).detail;
-          console.error("Uploader fejl:", detail);
-          setStatus("Fejl under upload.");
+          console.error("Uploader-fejl:", detail);
+          setStatus("Der opstod en fejl under upload.");
         }}
         onProgress={(event) => {
           const detail = (event as unknown as { detail?: unknown }).detail;
@@ -44,12 +42,10 @@ export default function MuxVideoUploader({ onUploadSuccess }: Props) {
         }}
         className="w-full"
       />
-      
+
       {status && (
         <div className="mt-4 px-4 py-2 bg-blue-50 border border-blue-100 rounded-xl animate-in fade-in slide-in-from-top-2">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600 text-center">
-            {status}
-          </p>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600 text-center">{status}</p>
         </div>
       )}
 
@@ -69,25 +65,25 @@ export default function MuxVideoUploader({ onUploadSuccess }: Props) {
           --gap: 1.5rem;
         }
 
-        /* Mobil-optimering af Mux-knappen */
         mux-uploader::part(button) {
-           width: 100%;
-           cursor: pointer;
-           transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-           box-shadow: 0 4px 6px -1px rgb(37 99 235 / 0.1), 0 2px 4px -2px rgb(37 99 235 / 0.1);
+          width: 100%;
+          cursor: pointer;
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          box-shadow:
+            0 4px 6px -1px rgb(37 99 235 / 0.1),
+            0 2px 4px -2px rgb(37 99 235 / 0.1);
         }
 
         mux-uploader::part(button):hover {
-           background-color: #1d4ed8;
-           transform: translateY(-1px);
-           box-shadow: 0 10px 15px -3px rgb(37 99 235 / 0.2);
+          background-color: #1d4ed8;
+          transform: translateY(-1px);
+          box-shadow: 0 10px 15px -3px rgb(37 99 235 / 0.2);
         }
 
         mux-uploader::part(button):active {
-           transform: scale(0.98);
+          transform: scale(0.98);
         }
 
-        /* Gør progress baren mere lækker */
         mux-uploader::part(progress) {
           background-color: #f1f5f9;
           border-radius: 999px;

@@ -12,22 +12,22 @@ export default function CreateProjectForm() {
       <div className="mb-6">
         <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">Opret nyt projekt</h2>
         <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest mt-1">
-          Tilføj en ny video-container til dit dashboard
+          Tilføj et nyt videoprojekt til dit dashboard
         </p>
       </div>
-      
-      <form 
+
+      <form
         action={async (formData) => {
           setIsPending(true);
           try {
             await createEmbed(formData);
-            formRef.current?.reset(); 
+            formRef.current?.reset();
           } catch (error) {
             console.error("Fejl ved oprettelse:", error);
           } finally {
             setIsPending(false);
           }
-        }} 
+        }}
         ref={formRef}
         className="flex flex-col sm:flex-row gap-4 items-end"
       >
@@ -35,22 +35,22 @@ export default function CreateProjectForm() {
           <label className="block text-[10px] font-black text-gray-400 uppercase ml-1 mb-2 tracking-widest">
             Navn på projekt
           </label>
-          <input 
-            type="text" 
-            name="name" 
-            placeholder="Fx: Onboarding Videoer 2026"
+          <input
+            type="text"
+            name="name"
+            placeholder="F.eks. Onboarding-videoer 2026"
             className="w-full p-4 rounded-2xl bg-gray-50 border border-gray-100 focus:ring-2 focus:ring-blue-500 outline-none text-gray-900 font-bold text-sm transition-all placeholder:text-gray-300"
-            required 
+            required
             disabled={isPending}
           />
         </div>
-        
-        <button 
+
+        <button
           type="submit"
           disabled={isPending}
           className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-100 active:scale-[0.98] disabled:opacity-50"
         >
-          {isPending ? "Opretter..." : "Opret Projekt +"}
+          {isPending ? "Opretter..." : "Opret projekt"}
         </button>
       </form>
     </div>

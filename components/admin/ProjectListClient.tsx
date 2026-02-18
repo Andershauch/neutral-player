@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import EmbedCodeGenerator from "./EmbedCodeGenerator"; 
+import EmbedCodeGenerator from "./EmbedCodeGenerator";
 
 interface ProjectListClientProps {
   initialProjects: Array<{
@@ -21,23 +21,13 @@ export default function ProjectListClient({ initialProjects }: ProjectListClient
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`Er du sikker på, at du vil slette "${name}"?`)) return;
     setIsDeleting(id);
-    
+
     try {
       const res = await fetch(`/api/embeds/${id}`, { method: "DELETE" });
-      
       if (res.ok) {
-        await fetch("/api/audit", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "SLET_PROJEKT",
-            target: `${name} (ID: ${id})`
-          })
-        });
-
         router.refresh();
       } else {
-        alert("Der skete en fejl ved sletning af projektet.");
+        alert("Der opstod en fejl under sletning af projektet.");
       }
     } catch (error) {
       console.error("Sletning fejlede:", error);
@@ -50,8 +40,8 @@ export default function ProjectListClient({ initialProjects }: ProjectListClient
     <div className="space-y-4">
       <div className="grid grid-cols-1 gap-6">
         {initialProjects.map((project) => (
-          <div 
-            key={project.id} 
+          <div
+            key={project.id}
             className="bg-white border border-gray-100 p-6 md:p-8 rounded-[2rem] flex flex-col lg:flex-row lg:items-center justify-between shadow-sm hover:shadow-xl transition-all duration-300 gap-6"
           >
             <div className="space-y-1">
@@ -65,33 +55,32 @@ export default function ProjectListClient({ initialProjects }: ProjectListClient
               </div>
             </div>
 
-            {/* KNAPPER: Stables lodret på mobil, vandret på desktop */}
             <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-              <button 
+              <button
                 onClick={() => setShowEmbedId(project.id)}
                 className="flex-1 sm:flex-none bg-gray-50 text-gray-700 px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-100 transition flex items-center justify-center gap-2 active:scale-95"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 6.75 22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3-4.5 16.5" />
                 </svg>
-                Hent kode
+                Hent embed-kode
               </button>
 
-              <Link 
+              <Link
                 href={`/admin/embed/${project.id}`}
                 className="flex-1 sm:flex-none bg-blue-50 text-blue-600 px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-100 transition text-center active:scale-95"
               >
-                Rediger
+                Redigér
               </Link>
-              
-              <button 
+
+              <button
                 onClick={() => setPreviewId(project.id)}
                 className="flex-1 sm:flex-none bg-black text-white px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-800 transition text-center active:scale-95 shadow-lg shadow-black/10"
               >
                 Vis
               </button>
 
-              <button 
+              <button
                 onClick={() => handleDelete(project.id, project.name)}
                 disabled={isDeleting === project.id}
                 className="w-full sm:w-auto p-3 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-2xl transition flex items-center justify-center active:scale-90"
@@ -105,27 +94,25 @@ export default function ProjectListClient({ initialProjects }: ProjectListClient
         ))}
       </div>
 
-      {/* EMBED KODE MODAL */}
       {showEmbedId && (
         <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setShowEmbedId(null)} />
           <div className="relative w-full max-w-xl bg-white rounded-[2.5rem] p-8 md:p-10 shadow-2xl animate-in slide-in-from-bottom-10 sm:zoom-in duration-300">
             <button onClick={() => setShowEmbedId(null)} className="absolute top-6 right-6 text-gray-300 hover:text-gray-900 transition-colors">
-               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
             <div className="mb-8">
               <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tight">Embed-kode</h2>
-              <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest mt-2">Integrer video-playeren på din platform</p>
+              <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest mt-2">Integrér videoafspilleren på din platform</p>
             </div>
-            <EmbedCodeGenerator 
-              projectId={showEmbedId} 
-              projectTitle={initialProjects.find(p => p.id === showEmbedId)?.name || "Video"} 
+            <EmbedCodeGenerator
+              projectId={showEmbedId}
+              projectTitle={initialProjects.find((p) => p.id === showEmbedId)?.name || "Video"}
             />
           </div>
         </div>
       )}
 
-      {/* PREVIEW MODAL */}
       {previewId && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setPreviewId(null)} />

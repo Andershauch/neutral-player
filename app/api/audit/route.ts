@@ -1,24 +1,34 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { getCurrentOrgContext } from "@/lib/org-context";
+import { canManageMembersRole } from "@/lib/authz";
 
 export async function POST(req: Request) {
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session || !session.user) {
+    const orgCtx = await getCurrentOrgContext();
+    if (!orgCtx) {
       return NextResponse.json({ error: "Ikke autoriseret" }, { status: 401 });
     }
 
     const { action, target } = await req.json();
+    const normalizedAction = typeof action === "string" ? action.trim() : "";
+    const normalizedTarget = typeof target === "string" ? target.trim() : "";
+    if (!normalizedAction || !normalizedTarget) {
+      return NextResponse.json({ error: "action og target er paakraevet" }, { status: 400 });
+    }
+
+    const actor = await prisma.user.findUnique({
+      where: { id: orgCtx.userId },
+      select: { name: true, email: true },
+    });
 
     const newLog = await prisma.auditLog.create({
       data: {
-        userId: session.user.id || null,
-        userName: session.user.name || session.user.email || "System",
-        action,
-        target,
+        organizationId: orgCtx.orgId,
+        userId: orgCtx.userId,
+        userName: actor?.name || actor?.email || null,
+        action: normalizedAction,
+        target: normalizedTarget,
       },
     });
 
@@ -30,14 +40,13 @@ export async function POST(req: Request) {
 
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
-    const role = session?.user?.role;
-
-    if (!session || (role !== "admin" && role !== "contributor")) {
+    const orgCtx = await getCurrentOrgContext();
+    if (!orgCtx || !canManageMembersRole(orgCtx.role)) {
       return NextResponse.json({ error: "Ikke autoriseret" }, { status: 401 });
     }
 
     const logs = await prisma.auditLog.findMany({
+      where: { organizationId: orgCtx.orgId },
       orderBy: { createdAt: "desc" },
       take: 50,
     });

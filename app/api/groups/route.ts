@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { canEditContent } from "@/lib/authz";
+import { getOrgContextForContentEdit } from "@/lib/authz";
 
 export async function POST(request: Request) {
   try {
-    const canEdit = await canEditContent();
-    if (!canEdit) {
+    const orgCtx = await getOrgContextForContentEdit();
+    if (!orgCtx) {
       return NextResponse.json({ error: "Ingen adgang" }, { status: 403 });
     }
 
@@ -17,10 +17,23 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Mangler data" }, { status: 400 });
     }
 
+    const embed = await prisma.embed.findFirst({
+      where: {
+        id: embedId,
+        organizationId: orgCtx.orgId,
+      },
+      select: { id: true },
+    });
+
+    if (!embed) {
+      return NextResponse.json({ error: "Projekt ikke fundet" }, { status: 404 });
+    }
+
     const newGroup = await prisma.group.create({
       data: {
         name: title,
         embedId,
+        organizationId: orgCtx.orgId,
       },
     });
 

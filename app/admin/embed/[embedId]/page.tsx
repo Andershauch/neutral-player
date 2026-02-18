@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import EmbedEditor from "@/components/admin/EmbedEditor";
+import { getOrgContextForContentEdit } from "@/lib/authz";
 
 interface PageProps {
   params: Promise<{
@@ -10,9 +11,16 @@ interface PageProps {
 
 export default async function AdminEmbedPage({ params }: PageProps) {
   const { embedId } = await params;
+  const orgCtx = await getOrgContextForContentEdit();
+  if (!orgCtx) {
+    return notFound();
+  }
 
-  const embed = await prisma.embed.findUnique({
-    where: { id: embedId },
+  const embed = await prisma.embed.findFirst({
+    where: {
+      id: embedId,
+      organizationId: orgCtx.orgId,
+    },
     include: {
       groups: {
         orderBy: { sortOrder: "asc" },

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 interface Props {
   userId: string;
-  userName: string; // Tilføjet for bedre feedback og logning
+  userName: string;
 }
 
 export default function DeleteUserButton({ userId, userName }: Props) {
@@ -13,24 +13,22 @@ export default function DeleteUserButton({ userId, userName }: Props) {
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDelete = async () => {
-    if (!confirm(`Er du helt sikker på, at du vil slette brugeren "${userName}"? Handlingen kan ikke fortrydes.`)) {
+    if (!confirm(`Er du sikker på, at du vil fjerne brugeren "${userName}"? Handlingen kan ikke fortrydes.`)) {
       return;
     }
 
     setIsDeleting(true);
-    
+
     try {
-      // RETTELSE: Vi kalder nu den specifikke bruger-rute direkte
-      const res = await fetch(`/api/users/${userId}`, { 
-        method: "DELETE" 
+      const res = await fetch(`/api/users/${userId}`, {
+        method: "DELETE",
       });
 
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Kunne ikke slette bruger");
+        const data = (await res.json()) as { error?: string };
+        throw new Error(data.error || "Kunne ikke fjerne brugeren.");
       }
 
-      // Succes! Opdater siden
       router.refresh();
     } catch (error) {
       const message = error instanceof Error ? error.message : "Ukendt fejl";
@@ -41,18 +39,19 @@ export default function DeleteUserButton({ userId, userName }: Props) {
   };
 
   return (
-    <button 
-      onClick={handleDelete} 
+    <button
+      onClick={handleDelete}
       disabled={isDeleting}
       className={`
         text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-xl transition-all
-        ${isDeleting 
-          ? "bg-gray-100 text-gray-400 cursor-not-allowed" 
-          : "bg-red-50 text-red-600 hover:bg-red-600 hover:text-white active:scale-95"
+        ${
+          isDeleting
+            ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+            : "bg-red-50 text-red-600 hover:bg-red-600 hover:text-white active:scale-95"
         }
       `}
     >
-      {isDeleting ? "Sletter..." : "Slet bruger"}
+      {isDeleting ? "Fjerner..." : "Fjern bruger"}
     </button>
   );
 }

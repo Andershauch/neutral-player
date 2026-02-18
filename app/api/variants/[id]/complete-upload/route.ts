@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import Mux from "@mux/mux-node";
-import { canEditContent } from "@/lib/authz";
+import { getOrgContextForContentEdit } from "@/lib/authz";
 
 const mux = new Mux({
   tokenId: process.env.MUX_TOKEN_ID,
@@ -13,13 +13,20 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const canEdit = await canEditContent();
-    if (!canEdit) {
+    const orgCtx = await getOrgContextForContentEdit();
+    if (!orgCtx) {
       return NextResponse.json({ error: "Ingen adgang" }, { status: 403 });
     }
 
     const { uploadId } = await req.json();
     const { id } = await params;
+    const variant = await prisma.variant.findFirst({
+      where: { id, organizationId: orgCtx.orgId },
+      select: { id: true },
+    });
+    if (!variant) {
+      return NextResponse.json({ error: "Variant ikke fundet" }, { status: 404 });
+    }
 
     const upload = await mux.video.uploads.retrieve(uploadId);
     const assetId = upload.asset_id;
@@ -32,7 +39,7 @@ export async function PATCH(
     const playbackId = asset.playback_ids?.[0]?.id;
 
     const updatedVariant = await prisma.variant.update({
-      where: { id },
+      where: { id: variant.id },
       data: {
         muxAssetId: assetId,
         muxPlaybackId: playbackId,

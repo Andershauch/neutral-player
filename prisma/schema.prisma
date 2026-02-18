@@ -7,42 +7,130 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// --- NY MODEL: BRUGERE ---
 model User {
   id            String    @id @default(cuid())
   name          String?
   email         String    @unique
   emailVerified DateTime?
   image         String?
-  password      String?   // Bruges til Email/Password login
-  role          String    @default("contributor") // "admin" eller "contributor"
+  password      String?
+  role          String    @default("contributor")
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+
+  organizations OrganizationUser[]
+  invitesSent   Invite[]           @relation("InvitesSent")
 }
 
-// --- EKSISTERENDE MODELLER ---
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String?  @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users               OrganizationUser[]
+  invites             Invite[]
+  subscriptions       Subscription[]
+  stripeWebhookEvents StripeWebhookEvent[]
+  embeds              Embed[]
+  groups              Group[]
+  variants            Variant[]
+  auditLogs           AuditLog[]
+}
+
+model Invite {
+  id              String    @id @default(cuid())
+  organizationId  String
+  invitedByUserId String?
+  email           String
+  role            String    @default("viewer")
+  tokenHash       String    @unique
+  expiresAt       DateTime
+  acceptedAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  invitedBy    User?        @relation("InvitesSent", fields: [invitedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([email])
+}
+
+model OrganizationUser {
+  id             String   @id @default(cuid())
+  organizationId String
+  userId         String
+  role           String   @default("viewer")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@unique([userId])
+  @@index([organizationId])
+  @@index([userId])
+}
+
+model Subscription {
+  id                   String    @id @default(cuid())
+  organizationId       String
+  plan                 String    @default("free")
+  status               String    @default("inactive")
+  stripeCustomerId     String?   @unique
+  stripeSubscriptionId String?   @unique
+  currentPeriodEnd     DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+}
+
+model StripeWebhookEvent {
+  id             String    @id @default(cuid())
+  organizationId String?
+  stripeEventId  String    @unique
+  type           String
+  processedAt    DateTime?
+  createdAt      DateTime  @default(now())
+
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+}
+
 model Embed {
   id             String   @id @default(cuid())
   name           String
   thumbnailUrl   String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
-  
-  // Domæne whitelisting
-  allowedDomains String?  @default("*") 
-  
-  // Relationer
+  allowedDomains String?  @default("*")
+
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   groups         Group[]
+
+  @@index([organizationId])
 }
 
 model Group {
-  id        String    @id @default(cuid())
-  name      String
-  sortOrder Int       @default(0)
-  embedId   String
-  // Cascade delete: Sletter gruppen hvis projektet (Embed) slettes
-  embed     Embed     @relation(fields: [embedId], references: [id], onDelete: Cascade)
-  variants  Variant[]
+  id             String  @id @default(cuid())
+  name           String
+  sortOrder      Int     @default(0)
+  embedId        String
+  organizationId String?
+
+  embed        Embed         @relation(fields: [embedId], references: [id], onDelete: Cascade)
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  variants     Variant[]
+
+  @@index([organizationId])
 }
 
 model Variant {
@@ -50,31 +138,32 @@ model Variant {
   title          String?
   lang           String   @default("da")
   sortOrder      Int      @default(0)
-  
-  // Mux specifikke felter
-  muxUploadId    String?  
-  muxPlaybackId  String?  
+  muxUploadId    String?
+  muxPlaybackId  String?
   muxAssetId     String?
-
   dreamBrokerUrl String?
-  
-  // Statistik
   views          Int      @default(0)
-
-  // Relation til Group
   groupId        String
-  // Cascade delete: Sletter varianten hvis gruppen slettes
-  group          Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  
+  organizationId String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+
+  group        Group         @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
 }
 
 model AuditLog {
-  id        String   @id @default(cuid())
-  userId    String?   // ID på den person der udførte handlingen
-  userName  String?   // Navn eller e-mail for nem læsning
-  action    String   // f.eks. "DELETE_PROJECT", "CREATE_VARIANT"
-  target    String   // f.eks. projektets navn eller ID
-  createdAt DateTime @default(now())
+  id             String   @id @default(cuid())
+  organizationId String?
+  userId         String?
+  userName       String?
+  action         String
+  target         String
+  createdAt      DateTime @default(now())
+
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
 }

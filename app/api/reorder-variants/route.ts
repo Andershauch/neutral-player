@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { canEditContent } from "@/lib/authz";
+import { getOrgContextForContentEdit } from "@/lib/authz";
 
 export async function POST(request: Request) {
   try {
-    const canEdit = await canEditContent();
-    if (!canEdit) {
+    const orgCtx = await getOrgContextForContentEdit();
+    if (!orgCtx) {
       return NextResponse.json({ error: "Ingen adgang" }, { status: 403 });
     }
 
@@ -14,14 +14,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Ugyldigt payload" }, { status: 400 });
     }
 
-    await prisma.$transaction(
-      items.map((item: { id: string; sortOrder: number }) =>
-        prisma.variant.update({
-          where: { id: item.id },
+    await prisma.$transaction(async (tx) => {
+      for (const item of items as Array<{ id: string; sortOrder: number }>) {
+        const result = await tx.variant.updateMany({
+          where: { id: item.id, organizationId: orgCtx.orgId },
           data: { sortOrder: item.sortOrder },
-        })
-      )
-    );
+        });
+        if (result.count !== 1) {
+          throw new Error("En eller flere varianter blev ikke fundet.");
+        }
+      }
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

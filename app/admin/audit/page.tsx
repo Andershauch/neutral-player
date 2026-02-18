@@ -1,18 +1,23 @@
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import { getOrgContextForMemberManagement } from "@/lib/authz";
 
 export const dynamic = "force-dynamic";
 
 export default async function AuditPage() {
-  const session = await getServerSession(authOptions);
-
-  if (!session || session.user.role !== "admin") {
+  const orgCtx = await getOrgContextForMemberManagement();
+  if (!orgCtx) {
     redirect("/admin/dashboard");
   }
 
   const logs = await prisma.auditLog.findMany({
+    where: {
+      OR: [
+        { organizationId: orgCtx.orgId },
+        // Legacy logs from before tenant-scoping migration.
+        { organizationId: null, userId: orgCtx.userId },
+      ],
+    },
     orderBy: { createdAt: "desc" },
     take: 100,
   });
@@ -68,7 +73,7 @@ export default async function AuditPage() {
                       })}
                     </td>
                     <td className="px-4 md:px-6 py-4 font-bold text-gray-900 whitespace-nowrap">
-                      {log.userName}
+                      {log.userName || log.userId || "-"}
                     </td>
                     <td className="px-4 md:px-6 py-4">
                       <span className={`inline-flex items-center px-2 py-0.5 rounded text-[9px] font-black uppercase border ${

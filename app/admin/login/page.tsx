@@ -23,7 +23,7 @@ export default function LoginPage() {
     });
 
     if (res?.error) {
-      setError("Forkert email eller password. Prøv igen.");
+      setError("Forkert email eller adgangskode. Prøv igen.");
       setLoading(false);
     } else {
       router.push("/admin/dashboard");
@@ -34,18 +34,13 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
       <div className="w-full max-w-sm space-y-10">
-        
-        {/* Header - Større font på mobil for bedre læsbarhed */}
         <div className="text-center">
           <h2 className="text-3xl font-black tracking-tighter text-gray-900 uppercase">
             Neutral<span className="text-blue-600">.</span>
           </h2>
-          <p className="mt-3 text-sm font-medium text-gray-500 uppercase tracking-widest">
-            Admin Login
-          </p>
+          <p className="mt-3 text-sm font-medium text-gray-500 uppercase tracking-widest">Log ind</p>
         </div>
 
-        {/* Login Form */}
         <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
           <div className="space-y-3">
             <div>
@@ -66,7 +61,7 @@ export default function LoginPage() {
             </div>
             <div>
               <label htmlFor="password" className="text-[10px] font-black uppercase text-gray-400 ml-1">
-                Password
+                Adgangskode
               </label>
               <input
                 id="password"
@@ -82,14 +77,12 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {/* Fejlbesked med bedre styling */}
           {error && (
             <div className="bg-red-50 border border-red-100 text-red-600 text-[11px] font-bold uppercase p-4 rounded-2xl text-center">
               {error}
             </div>
           )}
 
-          {/* Log ind knap - Højere og kraftigere til mobil-touch */}
           <div className="pt-2">
             <button
               type="submit"

@@ -1,12 +1,9 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 import Mux from "@mux/mux-node";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getOrgContextForContentEdit } from "@/lib/authz";
+import { markOnboardingStep } from "@/lib/onboarding";
 
-const prisma = new PrismaClient();
-
-// Initialiser Mux (v9+ stil)
 const muxClient = new Mux({
   tokenId: process.env.MUX_TOKEN_ID!,
   tokenSecret: process.env.MUX_TOKEN_SECRET!,
@@ -17,31 +14,29 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) return NextResponse.json({ error: "Uautoriseret" }, { status: 401 });
+    const orgCtx = await getOrgContextForContentEdit();
+    if (!orgCtx) {
+      return NextResponse.json({ error: "Uautoriseret" }, { status: 401 });
+    }
 
     const resolvedParams = await params;
     const variantId = resolvedParams.id;
 
-    // 1. Hent varianten fra databasen
-    const variant = await prisma.variant.findUnique({
-      where: { id: variantId },
+    const variant = await prisma.variant.findFirst({
+      where: { id: variantId, organizationId: orgCtx.orgId },
     });
 
     if (!variant || !variant.muxUploadId) {
       return NextResponse.json({ error: "Ingen Mux upload fundet" }, { status: 404 });
     }
 
-    // 2. Spørg Mux om status på denne upload (v9+ syntaks)
     const upload = await muxClient.video.uploads.retrieve(variant.muxUploadId);
 
     if (upload.status === "asset_created" && upload.asset_id) {
-      // 3. Hvis et asset er skabt, hent detaljerne for det asset
       const asset = await muxClient.video.assets.retrieve(upload.asset_id);
       const playbackId = asset.playback_ids?.[0]?.id;
 
       if (playbackId) {
-        // 4. Opdater databasen manuelt
         await prisma.variant.update({
           where: { id: variantId },
           data: {
@@ -49,15 +44,26 @@ export async function POST(
             muxAssetId: upload.asset_id,
           },
         });
+
+        const actor = await prisma.user.findUnique({
+          where: { id: orgCtx.userId },
+          select: { name: true, email: true },
+        });
+        await markOnboardingStep({
+          orgId: orgCtx.orgId,
+          userId: orgCtx.userId,
+          userName: actor?.name || actor?.email || null,
+          step: "variant_uploaded",
+        });
+
         return NextResponse.json({ success: true, playbackId });
       }
     }
 
-    return NextResponse.json({ 
-      success: false, 
-      message: `Videoen er ikke klar hos Mux endnu (Status: ${upload.status})` 
+    return NextResponse.json({
+      success: false,
+      message: `Videoen er ikke klar hos Mux endnu (Status: ${upload.status})`,
     });
-
   } catch (error) {
     const message = error instanceof Error ? error.message : "Ukendt fejl";
     console.error("Refresh error:", error);
