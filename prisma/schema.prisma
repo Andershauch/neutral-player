@@ -33,6 +33,7 @@ model Organization {
   invites             Invite[]
   subscriptions       Subscription[]
   stripeWebhookEvents StripeWebhookEvent[]
+  muxWebhookEvents    MuxWebhookEvent[]
   embeds              Embed[]
   groups              Group[]
   variants            Variant[]
@@ -95,6 +96,19 @@ model StripeWebhookEvent {
   id             String    @id @default(cuid())
   organizationId String?
   stripeEventId  String    @unique
+  type           String
+  processedAt    DateTime?
+  createdAt      DateTime  @default(now())
+
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+}
+
+model MuxWebhookEvent {
+  id             String    @id @default(cuid())
+  organizationId String?
+  muxEventId     String    @unique
   type           String
   processedAt    DateTime?
   createdAt      DateTime  @default(now())

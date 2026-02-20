@@ -1,13 +1,16 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import CreateProjectButton from "@/components/admin/CreateProjectButton";
 import ProjectListClient from "@/components/admin/ProjectListClient";
 import BillingPlansCard from "@/components/admin/BillingPlansCard";
+import UsageLimitsCard from "@/components/admin/UsageLimitsCard";
 import OnboardingChecklistCard from "@/components/admin/OnboardingChecklistCard";
 import { canManageBillingRole, getOrgContextForContentEdit } from "@/lib/authz";
 import { getMessages } from "@/lib/i18n/messages";
 import { getBillingPlansForDisplay } from "@/lib/plans";
 import { getOnboardingStatus } from "@/lib/onboarding";
+import { getOrgUsageSummary } from "@/lib/plan-limits";
 
 export const dynamic = "force-dynamic";
 
@@ -46,6 +49,8 @@ export default async function DashboardPage({
     },
   });
   const onboarding = await getOnboardingStatus(orgCtx.orgId);
+  const usageSummary = await getOrgUsageSummary(orgCtx.orgId);
+  const canManageBilling = canManageBillingRole(orgCtx.role);
 
   return (
     <div className="space-y-8">
@@ -76,11 +81,29 @@ export default async function DashboardPage({
         </div>
       )}
 
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <Link href="/admin/projects" className="bg-white border border-gray-100 rounded-2xl px-4 py-4 text-xs font-black uppercase tracking-widest text-gray-700 hover:bg-gray-50">
+          Projekter
+        </Link>
+        <Link href="/admin/team" className="bg-white border border-gray-100 rounded-2xl px-4 py-4 text-xs font-black uppercase tracking-widest text-gray-700 hover:bg-gray-50">
+          Team
+        </Link>
+        <Link href="/admin/billing" className="bg-white border border-gray-100 rounded-2xl px-4 py-4 text-xs font-black uppercase tracking-widest text-gray-700 hover:bg-gray-50">
+          Billing
+        </Link>
+      </div>
+
       <BillingPlansCard
         plans={plans}
         currentPlan={activeSubscription?.plan || "free"}
-        canManageBilling={canManageBillingRole(orgCtx.role)}
+        canManageBilling={canManageBilling}
         hasStripeCustomer={Boolean(activeSubscription?.stripeCustomerId)}
+      />
+
+      <UsageLimitsCard
+        plan={usageSummary.plan}
+        items={usageSummary.items}
+        canManageBilling={canManageBilling}
       />
 
       <OnboardingChecklistCard

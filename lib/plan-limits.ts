@@ -8,6 +8,12 @@ export interface PlanLimits {
   seats: number | null;
 }
 
+export interface LimitUsageItem {
+  resource: LimitResource;
+  used: number;
+  limit: number | null;
+}
+
 const PLAN_LIMITS: Record<string, PlanLimits> = {
   free: { projects: 1, variants: 10, seats: 1 },
   starter_monthly: { projects: 3, variants: 50, seats: 5 },
@@ -93,4 +99,26 @@ function getUpgradeMessage(resource: LimitResource, limit: number): string {
     return `Plan-grænse nået: Maks ${limit} varianter. Opgradér for at oprette flere.`;
   }
   return `Plan-grænse nået: Maks ${limit} seats (medlemmer/invites). Opgradér for at tilføje flere.`;
+}
+
+export async function getOrgUsageSummary(orgId: string): Promise<{
+  plan: string;
+  items: LimitUsageItem[];
+}> {
+  const plan = await getOrgCurrentPlan(orgId);
+  const limits = getPlanLimits(plan);
+  const [projectsUsed, variantsUsed, seatsUsed] = await Promise.all([
+    getCurrentUsage(orgId, "projects"),
+    getCurrentUsage(orgId, "variants"),
+    getCurrentUsage(orgId, "seats"),
+  ]);
+
+  return {
+    plan,
+    items: [
+      { resource: "projects", used: projectsUsed, limit: limits.projects },
+      { resource: "variants", used: variantsUsed, limit: limits.variants },
+      { resource: "seats", used: seatsUsed, limit: limits.seats },
+    ],
+  };
 }

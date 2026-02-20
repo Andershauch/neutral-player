@@ -11,7 +11,7 @@ function RegisterContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const invite = searchParams.get("invite");
-  const callbackUrl = invite ? `/invite/${encodeURIComponent(invite)}` : "/admin/dashboard";
+  const callbackUrl = invite ? `/invite/${encodeURIComponent(invite)}` : "/setup/workspace";
 
   const [formData, setFormData] = useState({
     name: "",

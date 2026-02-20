@@ -5,11 +5,15 @@ import { getOrgContextForBilling } from "@/lib/authz";
 import { getBillingPlanByKey } from "@/lib/plans";
 import { getBaseUrl } from "@/lib/invites";
 import { prisma } from "@/lib/prisma";
+import { getRequestIdFromRequest, logApiError, logApiInfo, logApiWarn } from "@/lib/observability";
 
 export async function POST(req: Request) {
+  const requestId = getRequestIdFromRequest(req);
   try {
+    logApiInfo(req, "Billing checkout started");
     const orgCtx = await getOrgContextForBilling();
     if (!orgCtx) {
+      logApiWarn(req, "Billing checkout denied: missing org context");
       return NextResponse.json({ error: "Ingen adgang til billing." }, { status: 403 });
     }
 
@@ -74,6 +78,11 @@ export async function POST(req: Request) {
     const stripeJson = (await stripeRes.json()) as { url?: string; error?: { message?: string } };
     if (!stripeRes.ok || !stripeJson.url) {
       const message = stripeJson.error?.message || "Stripe checkout fejlede.";
+      logApiWarn(req, "Billing checkout failed in Stripe", {
+        orgId: orgCtx.orgId,
+        stripeStatus: stripeRes.status,
+        message,
+      });
       return NextResponse.json({ error: message }, { status: 500 });
     }
 
@@ -89,7 +98,8 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ url: stripeJson.url });
   } catch (error) {
+    logApiError(req, "Billing checkout route crashed", error);
     const message = error instanceof Error ? error.message : "Ukendt fejl";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: message, requestId }, { status: 500 });
   }
 }

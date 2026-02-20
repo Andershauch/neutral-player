@@ -15,6 +15,7 @@ export default function AddMemberForm({ canAssignOwner }: AddMemberFormProps) {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [inviteUrl, setInviteUrl] = useState<string | null>(null);
+  const [upgrading, setUpgrading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,8 +31,11 @@ export default function AddMemberForm({ canAssignOwner }: AddMemberFormProps) {
         body: JSON.stringify({ email, role }),
       });
 
-      const data = (await res.json()) as { error?: string; emailSent?: boolean; inviteUrl?: string };
+      const data = (await res.json()) as { error?: string; code?: string; emailSent?: boolean; inviteUrl?: string };
       if (!res.ok) {
+        if (data.code === "UPGRADE_REQUIRED") {
+          throw new Error(data.error || "Plan-grænse nået.");
+        }
         throw new Error(data.error || "Kunne ikke sende invitation.");
       }
 
@@ -49,6 +53,30 @@ export default function AddMemberForm({ canAssignOwner }: AddMemberFormProps) {
       setError(text);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const startUpgrade = async () => {
+    setUpgrading(true);
+    try {
+      const res = await fetch("/api/billing/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          plan: "pro_monthly",
+          returnTo: "/admin/dashboard",
+          cancelReturnTo: "/admin/dashboard",
+        }),
+      });
+      const data = (await res.json()) as { url?: string; error?: string };
+      if (!res.ok || !data.url) {
+        throw new Error(data.error || "Kunne ikke starte checkout.");
+      }
+      window.location.assign(data.url);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Ukendt fejl";
+      setError(message);
+      setUpgrading(false);
     }
   };
 
@@ -96,7 +124,21 @@ export default function AddMemberForm({ canAssignOwner }: AddMemberFormProps) {
       </form>
 
       {message && <p className="mt-3 text-xs font-semibold text-emerald-700">{message}</p>}
-      {error && <p className="mt-3 text-xs font-semibold text-red-600">{error}</p>}
+      {error && (
+        <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 space-y-2">
+          <p className="text-xs font-semibold text-amber-800">{error}</p>
+          {error.toLowerCase().includes("plan-grænse") && (
+            <button
+              type="button"
+              onClick={startUpgrade}
+              disabled={upgrading}
+              className="px-3 py-2 rounded-lg bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 disabled:opacity-50 transition-all"
+            >
+              {upgrading ? "Åbner checkout..." : "Opgradér nu"}
+            </button>
+          )}
+        </div>
+      )}
       {inviteUrl && (
         <div className="mt-3 p-3 bg-blue-50 border border-blue-100 rounded-xl">
           <p className="text-[11px] text-blue-900 font-semibold break-all">{inviteUrl}</p>

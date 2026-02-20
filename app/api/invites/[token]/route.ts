@@ -35,14 +35,28 @@ export async function GET(
     }
 
     if (invite.expiresAt < new Date()) {
+      const hasAccount = Boolean(
+        await prisma.user.findUnique({
+          where: { email: invite.email.toLowerCase() },
+          select: { id: true },
+        })
+      );
       return NextResponse.json({
         status: "expired",
         email: invite.email,
         role: invite.role,
         organizationName: invite.organization.name,
         expiresAt: invite.expiresAt,
+        hasAccount,
       });
     }
+
+    const hasAccount = Boolean(
+      await prisma.user.findUnique({
+        where: { email: invite.email.toLowerCase() },
+        select: { id: true },
+      })
+    );
 
     return NextResponse.json({
       status: "pending",
@@ -50,6 +64,7 @@ export async function GET(
       role: invite.role,
       organizationName: invite.organization.name,
       expiresAt: invite.expiresAt,
+      hasAccount,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Ukendt fejl";

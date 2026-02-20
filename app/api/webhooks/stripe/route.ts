@@ -1,7 +1,8 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { createHmac, timingSafeEqual } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { getBillingPlanByStripePriceId, getBillingPlanByKey } from "@/lib/plans";
+import { getRequestIdFromRequest, logApiError, logApiInfo, logApiWarn } from "@/lib/observability";
 
 interface StripeEventEnvelope {
   id: string;
@@ -35,10 +36,13 @@ interface StripeSubscription {
 }
 
 export async function POST(req: Request) {
+  const requestId = getRequestIdFromRequest(req);
+
   try {
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
     const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
     if (!webhookSecret || !stripeSecretKey) {
+      logApiWarn(req, "Stripe webhook misconfigured: missing secrets");
       return NextResponse.json(
         { error: "STRIPE_WEBHOOK_SECRET eller STRIPE_SECRET_KEY mangler." },
         { status: 500 }
@@ -48,13 +52,17 @@ export async function POST(req: Request) {
     const payload = await req.text();
     const signature = req.headers.get("stripe-signature");
     if (!isValidStripeSignature(payload, signature, webhookSecret)) {
+      logApiWarn(req, "Stripe webhook rejected: invalid signature");
       return NextResponse.json({ error: "Invalid Stripe signature." }, { status: 400 });
     }
 
     const event = JSON.parse(payload) as StripeEventEnvelope;
     if (!event?.id || !event?.type) {
+      logApiWarn(req, "Stripe webhook rejected: invalid event payload");
       return NextResponse.json({ error: "Ugyldig Stripe event payload." }, { status: 400 });
     }
+
+    logApiInfo(req, "Stripe webhook received", { stripeEventId: event.id, stripeEventType: event.type });
 
     const initialOrgId = getOrganizationIdFromEvent(event);
     const dedupe = await prisma.stripeWebhookEvent.upsert({
@@ -69,6 +77,7 @@ export async function POST(req: Request) {
     });
 
     if (dedupe.processedAt) {
+      logApiInfo(req, "Stripe webhook duplicate ignored", { stripeEventId: event.id });
       return NextResponse.json({ received: true, idempotent: true });
     }
 
@@ -97,10 +106,17 @@ export async function POST(req: Request) {
       },
     });
 
+    logApiInfo(req, "Stripe webhook processed", {
+      stripeEventId: event.id,
+      stripeEventType: event.type,
+      organizationId: resolvedOrgId ?? dedupe.organizationId ?? null,
+    });
+
     return NextResponse.json({ received: true });
   } catch (error) {
+    logApiError(req, "Stripe webhook route crashed", error);
     const message = error instanceof Error ? error.message : "Ukendt fejl";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: message, requestId }, { status: 500 });
   }
 }
 

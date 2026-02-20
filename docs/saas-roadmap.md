@@ -112,7 +112,7 @@
   - New customer can complete first value flow without docs.
 
 ### TASK-3.2 Dashboard and navigation IA
-**Status:** `IN PROGRESS`
+**Status:** `DONE`
 - Core sections:
   - Dashboard
   - Projects
@@ -125,7 +125,7 @@
   - Key metrics visible on dashboard.
 
 ### TASK-3.3 Usage and upgrade UX
-**Status:** `TODO`
+**Status:** `DONE`
 - Show usage vs plan limits.
 - Add upgrade prompts at limit boundaries.
 - **Acceptance criteria:**
@@ -144,7 +144,7 @@
   - Pricing page is connected to checkout.
 
 ### TASK-4.2 Signup and workspace setup
-**Status:** `IN PROGRESS`
+**Status:** `DONE`
 - Flow: signup -> verify -> workspace setup -> trial/checkout.
 - **Acceptance criteria:**
   - End-to-end acquisition flow works from public site.
@@ -155,7 +155,7 @@
 **Goal:** Operate safely at SaaS level.
 
 ### TASK-5.1 Webhook hardening
-**Status:** `TODO`
+**Status:** `DONE`
 - Validate signatures for Stripe and Mux.
 - Add idempotency/replay protection.
 - **Acceptance criteria:**
@@ -168,7 +168,7 @@
   - Excessive requests are throttled predictably.
 
 ### TASK-5.3 Observability
-**Status:** `TODO`
+**Status:** `DONE`
 - Add Sentry (frontend + backend).
 - Structured logs with request correlation ID.
 - **Acceptance criteria:**
@@ -205,6 +205,9 @@
 ---
 
 ## Recently delivered outside roadmap IDs
+- `DONE`: Observability baseline med request-correlation ID (`x-request-id` i proxy) og strukturerede JSON-logs på kritiske API-ruter (checkout, register, stripe webhook, invites, embeds, workspace).
+- `DONE`: Sentry integration i Next.js (client, server, edge, global error capture) + guide i `docs/sentry-setup.md`.
+- `DONE`: Webhook hardening: Mux-signaturvalidering (raw body + `mux-signature`) samt idempotency/replay-beskyttelse via `MuxWebhookEvent`.
 - `DONE`: Team invite flow with real token links and accept page.
 - `DONE`: Pending invites list with `resend` and `cancel` actions in `app/admin/users/page.tsx`.
 - `DONE`: Public pricing page (`/pricing`) and pre-admin plan selection flow.
@@ -213,12 +216,17 @@
 - `DONE`: Server-side plan-grænser (projekter, varianter, seats) med upgrade-required svar.
 - `DONE`: UX copy polish på tværs af public + admin (naturligt dansk, konsistent ordvalg, ryddet tegnkodning).
 - `DONE`: Onboarding-guide i dashboard med progress (projekt -> upload -> embed-kopi -> gennemført), auto-opdatering af trin og menupunktet `Vis onboarding`.
+- `DONE`: Usage & upgrade UX med forbrugsbarer i dashboard og 1-klik `Opgradér nu` fra blokerede handlinger (projekter, varianter, seats/invites).
+- `DONE`: Tydelig sektionering i navigationen med dedikerede admin-sider: Dashboard, Projekter, Team, Domains, Billing, Audit.
+- `DONE`: Signup/workspace-setup flow med verify-link (`/verify-email`), resend verify endpoint, ny side `/setup/workspace`, gem af workspace-navn (`/api/workspace`) og registrering der guider nye brugere via setup før dashboard/pricing.
+- `DONE`: Invitation-flow forbedret, så inviterede uden eksisterende konto guides til `Opret konto` som primær handling før accept.
+- `DONE`: Email setup dokumenteret i `docs/email-setup.md` (Resend + Vercel + DNS + test/fejlfinding).
 
 ---
 
 ## Next Logical Step
-- `TASK-3.3 Usage and upgrade UX` (næste prioritet).
-- Hvorfor: Onboarding-flowet er nu på plads, så næste store forbedring er tydelig visning af forbrug vs. plan-grænser og en enkel upgrade-vej direkte fra de handlinger, der bliver blokeret.
+- `TASK-5.2 Rate limiting and abuse protection` (næste prioritet).
+- Hvorfor: Webhook-sikkerhed og observability er på plads. Næste driftssikring er at begrænse misbrug på auth, uploads og write-heavy endpoints.
 
 ---
 
@@ -226,6 +234,9 @@
 - `Implement TASK-1.2 from docs/saas-roadmap.md. Keep changes minimal and include tests.`
 - `Implement TASK-2.3 from docs/saas-roadmap.md and list required env vars.`
 - `Implement TASK-3.3 from docs/saas-roadmap.md with clear usage bars and one-click upgrade CTAs.`
+
+
+
 
 
 

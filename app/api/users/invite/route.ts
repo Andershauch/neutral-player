@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getOrgContextForMemberManagement } from "@/lib/authz";
 import {
@@ -11,11 +11,17 @@ import {
 } from "@/lib/invites";
 import { sendInviteEmail } from "@/lib/invite-email";
 import { assertLimit } from "@/lib/plan-limits";
+import { getRequestIdFromRequest, logApiError, logApiInfo, logApiWarn } from "@/lib/observability";
 
 export async function POST(req: Request) {
+  const requestId = getRequestIdFromRequest(req);
+
   try {
+    logApiInfo(req, "Invite flow started");
+
     const orgCtx = await getOrgContextForMemberManagement();
     if (!orgCtx) {
+      logApiWarn(req, "Invite denied: missing org member-management context");
       return NextResponse.json({ error: "Ingen adgang" }, { status: 403 });
     }
 
@@ -24,10 +30,14 @@ export async function POST(req: Request) {
     const role = body?.role as InviteRole;
 
     if (!email || !inviteRoles.includes(role)) {
+      logApiWarn(req, "Invite validation failed: invalid email or role", { role });
       return NextResponse.json({ error: "Ugyldig email eller rolle" }, { status: 400 });
     }
 
     if (role === "owner" && orgCtx.role !== "owner") {
+      logApiWarn(req, "Invite denied: non-owner tried assigning owner role", {
+        actorRole: orgCtx.role,
+      });
       return NextResponse.json({ error: "Kun en ejer kan tildele ejer-rolle." }, { status: 403 });
     }
 
@@ -41,6 +51,7 @@ export async function POST(req: Request) {
         select: { id: true },
       });
       if (existingInOrg) {
+        logApiWarn(req, "Invite blocked: user already member of workspace", { email, orgId: orgCtx.orgId });
         return NextResponse.json({ error: "Brugeren er allerede medlem af workspace." }, { status: 409 });
       }
 
@@ -49,6 +60,11 @@ export async function POST(req: Request) {
         select: { organizationId: true },
       });
       if (existingElsewhere && existingElsewhere.organizationId !== orgCtx.orgId) {
+        logApiWarn(req, "Invite blocked: user already belongs to other workspace", {
+          email,
+          orgId: orgCtx.orgId,
+          existingOrgId: existingElsewhere.organizationId,
+        });
         return NextResponse.json(
           { error: "Brugeren er allerede tilknyttet et andet workspace." },
           { status: 409 }
@@ -56,7 +72,6 @@ export async function POST(req: Request) {
       }
     }
 
-    // Remove previous pending invite for same email so seat-limit reflects replacement invites.
     await prisma.invite.deleteMany({
       where: {
         organizationId: orgCtx.orgId,
@@ -67,6 +82,11 @@ export async function POST(req: Request) {
 
     const seatLimit = await assertLimit(orgCtx.orgId, "seats");
     if (!seatLimit.ok) {
+      logApiWarn(req, "Invite blocked by plan seat limit", {
+        orgId: orgCtx.orgId,
+        limit: seatLimit.limit,
+        used: seatLimit.used,
+      });
       return NextResponse.json(
         { error: seatLimit.error, code: seatLimit.code, limit: seatLimit.limit, used: seatLimit.used },
         { status: 402 }
@@ -120,6 +140,13 @@ export async function POST(req: Request) {
       },
     });
 
+    logApiInfo(req, "Invite completed", {
+      orgId: orgCtx.orgId,
+      inviteId: invite.id,
+      emailSent: emailResult.sent,
+      emailReason: emailResult.reason ?? null,
+    });
+
     return NextResponse.json({
       success: true,
       inviteId: invite.id,
@@ -128,7 +155,8 @@ export async function POST(req: Request) {
       emailReason: emailResult.reason ?? null,
     });
   } catch (error) {
+    logApiError(req, "Invite route crashed", error);
     const message = error instanceof Error ? error.message : "Ukendt fejl";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: message, requestId }, { status: 500 });
   }
 }

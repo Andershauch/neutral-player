@@ -8,12 +8,15 @@ export default function CreateProjectButton() {
   const [isOpen, setIsOpen] = useState(false);
   const [name, setName] = useState("");
   const [isCreating, setIsCreating] = useState(false);
+  const [limitError, setLimitError] = useState<string | null>(null);
+  const [upgrading, setUpgrading] = useState(false);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
 
     setIsCreating(true);
+    setLimitError(null);
 
     try {
       const res = await fetch("/api/embeds", {
@@ -31,14 +34,42 @@ export default function CreateProjectButton() {
         router.push(`/admin/embed/${project.id}`);
         router.refresh();
       } else {
-        const data = (await res.json()) as { error?: string };
-        alert(data.error || "Noget gik galt under oprettelsen.");
+        const data = (await res.json()) as { error?: string; code?: string };
+        if (data.code === "UPGRADE_REQUIRED") {
+          setLimitError(data.error || "Plan-grænse nået.");
+        } else {
+          alert(data.error || "Noget gik galt under oprettelsen.");
+        }
       }
     } catch (error) {
       console.error("Fejl:", error);
       alert("Kunne ikke oprette projektet.");
     } finally {
       setIsCreating(false);
+    }
+  };
+
+  const startUpgrade = async () => {
+    setUpgrading(true);
+    try {
+      const res = await fetch("/api/billing/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          plan: "pro_monthly",
+          returnTo: "/admin/dashboard",
+          cancelReturnTo: "/admin/dashboard",
+        }),
+      });
+      const data = (await res.json()) as { url?: string; error?: string };
+      if (!res.ok || !data.url) {
+        throw new Error(data.error || "Kunne ikke starte checkout.");
+      }
+      window.location.assign(data.url);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Ukendt fejl";
+      alert(message);
+      setUpgrading(false);
     }
   };
 
@@ -99,6 +130,20 @@ export default function CreateProjectButton() {
                   {isCreating ? "Opretter..." : "Opret og fortsæt"}
                 </button>
               </div>
+
+              {limitError && (
+                <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 space-y-2">
+                  <p className="text-xs font-semibold text-amber-800">{limitError}</p>
+                  <button
+                    type="button"
+                    onClick={startUpgrade}
+                    disabled={upgrading}
+                    className="px-3 py-2 rounded-lg bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 disabled:opacity-50 transition-all"
+                  >
+                    {upgrading ? "Åbner checkout..." : "Opgradér nu"}
+                  </button>
+                </div>
+              )}
             </div>
           </form>
         </div>

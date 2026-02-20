@@ -1,30 +1,43 @@
-import { withAuth } from "next-auth/middleware";
+﻿import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
+import type { NextRequestWithAuth } from "next-auth/middleware";
+import { REQUEST_ID_HEADER, createRequestId } from "@/lib/observability";
 
 export default withAuth(
-  function middleware(req) {
+  function proxy(req: NextRequestWithAuth) {
     const role = req.nextauth.token?.role;
     const path = req.nextUrl.pathname;
+    const requestId = req.headers.get(REQUEST_ID_HEADER) || createRequestId();
 
-    // Kun kør logik hvis vi er på en admin-sti
+    const requestHeaders = new Headers(req.headers);
+    requestHeaders.set(REQUEST_ID_HEADER, requestId);
+
     if (path.startsWith("/admin")) {
-      // 1. BESKYT BRUGERSTYRING (Kun Admin)
       if (path.startsWith("/admin/users") && role !== "admin") {
-        return NextResponse.redirect(new URL("/unauthorized", req.url));
+        const redirect = NextResponse.redirect(new URL("/unauthorized", req.url));
+        redirect.headers.set(REQUEST_ID_HEADER, requestId);
+        return redirect;
       }
 
-      // 2. TILLAD DASHBOARD OG RESTEN AF ADMIN (Admin + Contributor)
       if (role !== "admin" && role !== "contributor") {
-        return NextResponse.redirect(new URL("/unauthorized", req.url));
+        const redirect = NextResponse.redirect(new URL("/unauthorized", req.url));
+        redirect.headers.set(REQUEST_ID_HEADER, requestId);
+        return redirect;
       }
     }
+
+    const response = NextResponse.next({
+      request: {
+        headers: requestHeaders,
+      },
+    });
+    response.headers.set(REQUEST_ID_HEADER, requestId);
+    return response;
   },
   {
     callbacks: {
       authorized: ({ token, req }) => {
-        // Embed-sider skal være offentlige
         if (req.nextUrl.pathname.startsWith("/embed")) return true;
-        // Alt andet kræver token
         return !!token;
       },
     },
@@ -32,7 +45,6 @@ export default withAuth(
 );
 
 export const config = {
-  // Vi tilføjer /embed her for at være sikre på at callbacks kører, 
-  // men authorized returnerer altid true for den sti.
   matcher: ["/admin/:path*", "/embed/:path*"],
 };
+

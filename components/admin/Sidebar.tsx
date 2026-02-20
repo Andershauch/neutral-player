@@ -10,25 +10,41 @@ export default function Sidebar() {
   const searchParams = useSearchParams();
   const { data: session } = useSession();
   const [isOpen, setIsOpen] = useState(false);
-  const isAdmin = session?.user?.role === "admin";
+  const role = session?.user?.role;
+  const canSeeAudit = role === "admin" || role === "owner";
 
-  const navItems = [
+  const sections = [
     {
-      name: "Dashboard",
-      href: "/admin/dashboard",
-      isActive: pathname === "/admin/dashboard" && searchParams.get("onboarding") !== "1",
+      label: "Oversigt",
+      items: [
+        {
+          name: "Dashboard",
+          href: "/admin/dashboard",
+          isActive: pathname === "/admin/dashboard" && searchParams.get("onboarding") !== "1",
+        },
+        {
+          name: "Vis onboarding",
+          href: "/admin/dashboard?onboarding=1",
+          isActive: pathname === "/admin/dashboard" && searchParams.get("onboarding") === "1",
+        },
+      ],
     },
     {
-      name: "Vis onboarding",
-      href: "/admin/dashboard?onboarding=1",
-      isActive: pathname === "/admin/dashboard" && searchParams.get("onboarding") === "1",
+      label: "Indhold",
+      items: [
+        { name: "Projekter", href: "/admin/projects", isActive: pathname === "/admin/projects" || pathname.startsWith("/admin/embed/") },
+        { name: "Domains", href: "/admin/domains", isActive: pathname === "/admin/domains" },
+      ],
     },
-    { name: "Brugere", href: "/admin/users", isActive: pathname === "/admin/users" },
+    {
+      label: "Organisation",
+      items: [
+        { name: "Team", href: "/admin/team", isActive: pathname === "/admin/team" || pathname === "/admin/users" },
+        { name: "Billing", href: "/admin/billing", isActive: pathname === "/admin/billing" },
+        ...(canSeeAudit ? [{ name: "Audit", href: "/admin/audit", isActive: pathname === "/admin/audit" }] : []),
+      ],
+    },
   ];
-
-  if (isAdmin) {
-    navItems.push({ name: "Audit-log", href: "/admin/audit", isActive: pathname === "/admin/audit" });
-  }
 
   return (
     <>
@@ -62,24 +78,30 @@ export default function Sidebar() {
           </h2>
         </div>
 
-        <nav className="flex-1 px-4 pt-24 md:pt-4 space-y-2">
-          <p className="px-4 text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 mb-6">Hovedmenu</p>
-          {navItems.map((item) => {
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setIsOpen(false)}
-                className={`flex items-center px-4 py-4 text-xs font-black uppercase tracking-widest rounded-2xl transition-all ${
-                  item.isActive
-                    ? "bg-blue-600 text-white shadow-lg shadow-blue-200"
-                    : "text-gray-400 hover:bg-gray-50 hover:text-gray-900"
-                }`}
-              >
-                {item.name}
-              </Link>
-            );
-          })}
+        <nav className="flex-1 px-4 pt-24 md:pt-4 space-y-5">
+          {sections.map((section) => (
+            <div key={section.label}>
+              <p className="px-4 text-[10px] font-black uppercase tracking-[0.3em] text-gray-400 mb-2">
+                {section.label}
+              </p>
+              <div className="space-y-2">
+                {section.items.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setIsOpen(false)}
+                    className={`flex items-center px-4 py-4 text-xs font-black uppercase tracking-widest rounded-2xl transition-all ${
+                      item.isActive
+                        ? "bg-blue-600 text-white shadow-lg shadow-blue-200"
+                        : "text-gray-400 hover:bg-gray-50 hover:text-gray-900"
+                    }`}
+                  >
+                    {item.name}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          ))}
         </nav>
 
         <div className="p-6 bg-gray-50/50 border-t border-gray-100">

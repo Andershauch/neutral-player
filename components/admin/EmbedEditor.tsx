@@ -51,6 +51,8 @@ export default function EmbedEditor({ embed }: EmbedEditorProps) {
   const [newTitle, setNewTitle] = useState("");
   const [newLang, setNewLang] = useState("da");
   const [showPreview, setShowPreview] = useState(false);
+  const [variantLimitError, setVariantLimitError] = useState<string | null>(null);
+  const [upgrading, setUpgrading] = useState(false);
 
   const updateVariantLang = async (id: string, lang: string) => {
     try {
@@ -68,6 +70,7 @@ export default function EmbedEditor({ embed }: EmbedEditorProps) {
   const addVariant = async () => {
     if (!newTitle) return;
     setIsAdding(true);
+    setVariantLimitError(null);
     try {
       const res = await fetch("/api/variants", {
         method: "POST",
@@ -79,11 +82,39 @@ export default function EmbedEditor({ embed }: EmbedEditorProps) {
         setNewTitle("");
         router.refresh();
       } else {
-        const data = (await res.json()) as { error?: string };
-        alert(data.error || "Kunne ikke oprette sprogversionen.");
+        const data = (await res.json()) as { error?: string; code?: string };
+        if (data.code === "UPGRADE_REQUIRED") {
+          setVariantLimitError(data.error || "Plan-grænse nået.");
+        } else {
+          alert(data.error || "Kunne ikke oprette sprogversionen.");
+        }
       }
     } finally {
       setIsAdding(false);
+    }
+  };
+
+  const startUpgrade = async () => {
+    setUpgrading(true);
+    try {
+      const res = await fetch("/api/billing/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          plan: "pro_monthly",
+          returnTo: "/admin/dashboard",
+          cancelReturnTo: "/admin/dashboard",
+        }),
+      });
+      const data = (await res.json()) as { url?: string; error?: string };
+      if (!res.ok || !data.url) {
+        throw new Error(data.error || "Kunne ikke starte checkout.");
+      }
+      window.location.assign(data.url);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Ukendt fejl";
+      alert(message);
+      setUpgrading(false);
     }
   };
 
@@ -153,6 +184,19 @@ export default function EmbedEditor({ embed }: EmbedEditorProps) {
             </button>
           </div>
         </div>
+        {variantLimitError && (
+          <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 space-y-2">
+            <p className="text-xs font-semibold text-amber-800">{variantLimitError}</p>
+            <button
+              type="button"
+              onClick={startUpgrade}
+              disabled={upgrading}
+              className="px-3 py-2 rounded-lg bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 disabled:opacity-50 transition-all"
+            >
+              {upgrading ? "Åbner checkout..." : "Opgradér nu"}
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="space-y-12">
