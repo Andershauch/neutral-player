@@ -1,15 +1,43 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: "Apex New";
+  src: url("/fonts/apex-new-400.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Apex New";
+  src: url("/fonts/apex-new-700.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f8fafc;
+  --surface: #ffffff;
+  --foreground: #0f172a;
+  --muted: #64748b;
+  --line: #e2e8f0;
+  --primary: #2563eb;
+  --primary-strong: #1d4ed8;
+  --success-bg: #ecfdf5;
+  --success-fg: #047857;
+  --warning-bg: #fffbeb;
+  --warning-fg: #b45309;
+  --radius-card: 2rem;
+  --radius-pill: 0.75rem;
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.05);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: "Apex New", "ApexNew", "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -22,5 +50,74 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Apex New", "ApexNew", "Segoe UI", sans-serif;
+  font-weight: 400;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: "Apex New", "ApexNew", "Segoe UI", sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+@layer components {
+  .np-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow-card);
+  }
+
+  .np-card-pad {
+    padding: 1.25rem;
+  }
+
+  @media (min-width: 768px) {
+    .np-card-pad {
+      padding: 2rem;
+    }
+  }
+
+  .np-kicker {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .np-btn-primary {
+    border-radius: var(--radius-pill);
+    background: var(--primary);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    transition: background-color 0.2s ease;
+  }
+
+  .np-btn-primary:hover {
+    background: var(--primary-strong);
+  }
+
+  .np-btn-ghost {
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--line);
+    color: #475569;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    transition: background-color 0.2s ease;
+  }
+
+  .np-btn-ghost:hover {
+    background: #f8fafc;
+  }
 }

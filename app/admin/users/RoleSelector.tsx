@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -63,11 +63,11 @@ export default function RoleSelector({ userId, currentRole, currentUserEmail, ta
         onChange={handleChange}
         disabled={loading}
         className={`
-            block w-full pl-3 pr-8 py-1.5 text-xs font-semibold rounded-full border-0 focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-sm transition-colors
-            ${role === "owner" ? "bg-purple-100 text-purple-800" : ""}
-            ${role === "admin" ? "bg-blue-100 text-blue-800" : ""}
-            ${role === "editor" ? "bg-emerald-100 text-emerald-800" : ""}
-            ${role === "viewer" ? "bg-gray-100 text-gray-600" : ""}
+          block w-full pl-3 pr-8 py-1.5 text-xs font-semibold rounded-full border-0 focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-sm transition-colors
+          ${role === "owner" ? "bg-amber-100 text-amber-800" : ""}
+          ${role === "admin" ? "bg-blue-100 text-blue-800" : ""}
+          ${role === "editor" ? "bg-emerald-100 text-emerald-800" : ""}
+          ${role === "viewer" ? "bg-gray-100 text-gray-600" : ""}
         `}
       >
         {canAssignOwner && <option value="owner">Ejer</option>}

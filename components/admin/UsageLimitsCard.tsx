@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useMemo, useState } from "react";
 import type { LimitUsageItem } from "@/lib/plan-limits";
@@ -44,10 +44,10 @@ export default function UsageLimitsCard({ plan, items, canManageBilling }: Usage
   };
 
   return (
-    <div className="bg-white border border-gray-100 rounded-[2rem] p-6 md:p-8 shadow-sm space-y-5">
+    <div className="np-card p-5 md:p-8 space-y-5">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h2 className="text-sm font-black text-gray-900 uppercase tracking-widest">Forbrug og plan-grænser</h2>
+          <h2 className="text-sm font-bold text-gray-900 uppercase tracking-widest">Forbrug og plan-grænser</h2>
           <p className="text-xs text-gray-500 mt-1">Aktuel plan: {toPlanName(plan)}</p>
         </div>
         {hasLimitedResourceAtLimit && canManageBilling && (
@@ -55,7 +55,7 @@ export default function UsageLimitsCard({ plan, items, canManageBilling }: Usage
             type="button"
             onClick={startUpgrade}
             disabled={upgrading}
-            className="px-4 py-3 rounded-xl bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 disabled:opacity-50 transition-all"
+            className="np-btn-primary px-4 py-3 disabled:opacity-50"
           >
             {upgrading ? "Åbner checkout..." : "Opgradér nu"}
           </button>
@@ -69,9 +69,10 @@ export default function UsageLimitsCard({ plan, items, canManageBilling }: Usage
           const limitText = item.limit === null ? "Ubegrænset" : `${item.used} / ${item.limit}`;
           const nearLimit = item.limit !== null && item.used >= Math.floor(item.limit * 0.8);
           const overLimit = item.limit !== null && item.used >= item.limit;
+
           return (
             <div key={item.resource} className="space-y-2">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <p className="text-xs font-black uppercase tracking-widest text-gray-700">{label}</p>
                 <p className={`text-xs font-semibold ${overLimit ? "text-red-600" : nearLimit ? "text-amber-600" : "text-gray-500"}`}>
                   {limitText}
@@ -97,10 +98,9 @@ export default function UsageLimitsCard({ plan, items, canManageBilling }: Usage
       </div>
 
       {!canManageBilling && hasLimitedResourceAtLimit && (
-        <p className="text-xs font-semibold text-amber-700">
-          Kontakt en administrator for at opgradere planen.
-        </p>
+        <p className="text-xs font-semibold text-amber-700">Kontakt en administrator for at opgradere planen.</p>
       )}
+
       {error && <p className="text-xs font-semibold text-red-600">{error}</p>}
     </div>
   );

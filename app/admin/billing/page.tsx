@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+﻿import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import BillingPlansCard from "@/components/admin/BillingPlansCard";
 import UsageLimitsCard from "@/components/admin/UsageLimitsCard";
@@ -27,11 +27,12 @@ export default async function BillingPage() {
   const canManageBilling = canManageBillingRole(orgCtx.role);
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-black text-gray-900 uppercase tracking-tight">Billing</h1>
-        <p className="text-sm text-gray-500 mt-1 font-medium">Administrer abonnement, plan og forbrug.</p>
-      </div>
+    <div className="space-y-6 md:space-y-7">
+      <section className="np-card np-card-pad bg-gradient-to-br from-white via-white to-blue-50/30">
+        <p className="np-kicker text-blue-600">Abonnement og betaling</p>
+        <h1 className="text-3xl font-bold text-gray-900 uppercase tracking-tight">Billing</h1>
+        <p className="text-sm text-gray-500 mt-1">Administrer abonnement, plan og forbrug.</p>
+      </section>
 
       <BillingPlansCard
         plans={plans}
@@ -40,11 +41,7 @@ export default async function BillingPage() {
         hasStripeCustomer={Boolean(activeSubscription?.stripeCustomerId)}
       />
 
-      <UsageLimitsCard
-        plan={usageSummary.plan}
-        items={usageSummary.items}
-        canManageBilling={canManageBilling}
-      />
+      <UsageLimitsCard plan={usageSummary.plan} items={usageSummary.items} canManageBilling={canManageBilling} />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -126,7 +126,7 @@ export default function OnboardingChecklistCard({
   }
 
   return (
-    <div className="bg-white border border-gray-100 rounded-[2rem] p-6 md:p-8 shadow-sm space-y-6">
+    <div className="bg-white border border-gray-100 rounded-[2rem] p-5 md:p-8 shadow-sm space-y-6">
       <div className="space-y-2">
         <div className="flex items-center justify-between gap-4">
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600">Kom i gang</p>
@@ -142,7 +142,7 @@ export default function OnboardingChecklistCard({
             </div>
           )}
         </div>
-        <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">Onboarding-guide</h2>
+        <h2 className="text-xl font-bold text-gray-900 uppercase tracking-tight">Onboarding-guide</h2>
         <p className="text-sm text-gray-500">Følg disse trin for at få dit første projekt helt i mål.</p>
       </div>
 
@@ -226,3 +226,4 @@ function Step({
     </div>
   );
 }
+

@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+﻿import { prisma } from "@/lib/prisma";
 import Image from "next/image";
 import DeleteUserButton from "@/app/admin/users/DeleteUserButton";
 import RoleSelector from "@/app/admin/users/RoleSelector";
@@ -11,7 +11,7 @@ export default async function TeamManagementPage() {
   if (!orgCtx) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="bg-red-50 text-red-600 px-6 py-4 rounded-2xl font-bold uppercase text-xs tracking-widest border border-red-100">
+        <div className="rounded-2xl border border-red-100 bg-red-50 px-6 py-4 text-xs font-bold uppercase tracking-widest text-red-600">
           Ingen adgang
         </div>
       </div>
@@ -25,6 +25,7 @@ export default async function TeamManagementPage() {
       user: true,
     },
   });
+
   const pendingInvites = await prisma.invite.findMany({
     where: {
       organizationId: orgCtx.orgId,
@@ -32,25 +33,25 @@ export default async function TeamManagementPage() {
     },
     orderBy: { createdAt: "desc" },
   });
+
   const currentUserEmail = memberships.find((m) => m.userId === orgCtx.userId)?.user.email;
   const canAssignOwner = orgCtx.role === "owner";
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-black text-gray-900 uppercase tracking-tight">Team</h1>
-          <p className="text-sm text-gray-500 font-medium">Administrer medlemmer, roller og invitationer.</p>
-        </div>
-      </div>
+    <div className="space-y-6 md:space-y-7">
+      <section className="np-card np-card-pad bg-gradient-to-br from-white via-white to-blue-50/30">
+        <p className="np-kicker text-blue-600">Team administration</p>
+        <h1 className="text-3xl font-bold text-gray-900 uppercase tracking-tight">Team</h1>
+        <p className="text-sm text-gray-500 mt-1">Administrer medlemmer, roller og invitationer.</p>
+      </section>
 
       <AddMemberForm canAssignOwner={canAssignOwner} />
 
-      <div className="bg-white rounded-[2rem] shadow-sm overflow-hidden border border-gray-100">
+      <section className="np-card overflow-hidden">
         <div className="px-6 py-5 border-b border-gray-100">
-          <h2 className="text-sm font-black text-gray-900 uppercase tracking-widest">Afventende invitationer</h2>
+          <h2 className="text-sm font-bold text-gray-900 uppercase tracking-widest">Afventende invitationer</h2>
           <p className="text-xs text-gray-500 mt-1">
-            Brug gensend hvis mailen ikke er modtaget, eller annuller hvis invitationen ikke skal bruges.
+            Brug Gensend hvis mailen ikke er modtaget, eller Annuller hvis invitationen ikke skal bruges.
           </p>
         </div>
 
@@ -98,16 +99,16 @@ export default async function TeamManagementPage() {
             </table>
           </div>
         )}
-      </div>
+      </section>
 
-      <div className="bg-white rounded-[2rem] shadow-sm overflow-hidden border border-gray-100">
+      <section className="np-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-100">
             <thead className="bg-gray-50/50">
               <tr>
                 <th className="px-6 py-4 text-left text-[10px] font-black uppercase text-gray-400 tracking-widest">Bruger</th>
                 <th className="px-6 py-4 text-left text-[10px] font-black uppercase text-gray-400 tracking-widest">Email</th>
-                <th className="px-6 py-4 text-left text-[10px] font-black uppercase text-gray-400 tracking-widest">Rolle & adgang</th>
+                <th className="px-6 py-4 text-left text-[10px] font-black uppercase text-gray-400 tracking-widest">Rolle og adgang</th>
                 <th className="px-6 py-4 text-right text-[10px] font-black uppercase text-gray-400 tracking-widest">Handling</th>
               </tr>
             </thead>
@@ -161,7 +162,7 @@ export default async function TeamManagementPage() {
             </tbody>
           </table>
         </div>
-      </div>
+      </section>
     </div>
   );
 }

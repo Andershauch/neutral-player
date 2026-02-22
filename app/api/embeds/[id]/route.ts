@@ -9,6 +9,97 @@ const mux = new Mux({
   tokenSecret: process.env.MUX_TOKEN_SECRET!,
 });
 
+function normalizeAllowedDomains(input: unknown): string {
+  const raw = typeof input === "string" ? input.trim() : "";
+  if (!raw || raw === "*") return "*";
+
+  const parts = raw
+    .split(/[\n,]/)
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+
+  if (parts.length === 0) return "*";
+
+  const cleaned = new Set<string>();
+  for (const part of parts) {
+    if (part === "*") return "*";
+    let host = part.toLowerCase();
+    host = host.replace(/^https?:\/\//, "");
+    host = host.replace(/\/.*$/, "");
+    host = host.replace(/[?#].*$/, "");
+
+    if (!host) continue;
+    const wildcardHostPattern = /^\*\.[a-z0-9.-]+(?::\d+)?$/;
+    const hostPattern = /^[a-z0-9.-]+(?::\d+)?$/;
+    const isWildcardHost = wildcardHostPattern.test(host);
+    const isPlainHost = hostPattern.test(host);
+
+    if (!isWildcardHost && !isPlainHost) {
+      throw new Error(`Ugyldigt domæne: ${part}`);
+    }
+
+    if (isWildcardHost && host.split(".").length < 3) {
+      throw new Error(`Ugyldigt wildcard-domæne: ${part}`);
+    }
+
+    cleaned.add(host);
+  }
+
+  return cleaned.size > 0 ? Array.from(cleaned).join(",") : "*";
+}
+
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const orgCtx = await getOrgContextForContentEdit();
+    if (!orgCtx) {
+      return NextResponse.json({ error: "Ingen adgang" }, { status: 403 });
+    }
+
+    const { id } = await params;
+    const body = await req.json();
+    const allowedDomains = normalizeAllowedDomains(body?.allowedDomains);
+
+    const project = await prisma.embed.findFirst({
+      where: { id, organizationId: orgCtx.orgId },
+      select: { id: true, name: true },
+    });
+
+    if (!project) {
+      return NextResponse.json({ error: "Projekt ikke fundet" }, { status: 404 });
+    }
+
+    const actor = await prisma.user.findUnique({
+      where: { id: orgCtx.userId },
+      select: { name: true, email: true },
+    });
+
+    const updated = await prisma.$transaction(async (tx) => {
+      const embed = await tx.embed.update({
+        where: { id: project.id },
+        data: { allowedDomains },
+        select: { id: true, allowedDomains: true },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          organizationId: orgCtx.orgId,
+          userId: orgCtx.userId,
+          userName: actor?.name || actor?.email || null,
+          action: "OPDATER_DOMAENER",
+          target: `${project.name} (ID: ${project.id}) -> ${allowedDomains}`,
+        },
+      });
+
+      return embed;
+    });
+
+    return NextResponse.json(updated);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Ukendt fejl";
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
+}
+
 export async function DELETE(
   req: Request,
   { params }: { params: Promise<{ id: string }> }

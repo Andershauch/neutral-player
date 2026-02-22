@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -77,7 +77,7 @@ export default function CreateProjectButton() {
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="w-full sm:w-auto bg-blue-600 text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition shadow-lg shadow-blue-100 flex items-center justify-center gap-2 active:scale-[0.98]"
+        className="w-full sm:w-auto bg-blue-600 text-white px-6 md:px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition shadow-lg shadow-blue-100 flex items-center justify-center gap-2 active:scale-[0.98]"
       >
         <span className="text-lg leading-none">+</span> Nyt projekt
       </button>
@@ -91,7 +91,7 @@ export default function CreateProjectButton() {
             className="relative bg-white w-full max-w-md rounded-[2.5rem] p-8 md:p-10 shadow-2xl animate-in fade-in slide-in-from-bottom-10 sm:slide-in-from-bottom-0 sm:zoom-in duration-300"
           >
             <div className="mb-8">
-              <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tight">Opret projekt</h2>
+              <h2 className="text-2xl font-bold text-gray-900 uppercase tracking-tight">Opret projekt</h2>
               <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest mt-2">
                 Giv dit nye videoprojekt et navn
               </p>
@@ -151,3 +151,4 @@ export default function CreateProjectButton() {
     </>
   );
 }
+

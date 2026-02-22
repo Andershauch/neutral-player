@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -81,8 +81,8 @@ export default function AddMemberForm({ canAssignOwner }: AddMemberFormProps) {
   };
 
   return (
-    <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 p-6">
-      <h2 className="text-sm font-black text-gray-900 uppercase tracking-widest">Tilføj medlem</h2>
+    <div className="np-card p-6">
+      <h2 className="text-sm font-bold text-gray-900 uppercase tracking-widest">Tilføj medlem</h2>
       <p className="text-xs text-gray-500 mt-1">Indtast email og vælg adgangsrolle.</p>
 
       <form className="mt-4 grid grid-cols-1 md:grid-cols-12 gap-3 items-end" onSubmit={handleSubmit}>
@@ -113,17 +113,14 @@ export default function AddMemberForm({ canAssignOwner }: AddMemberFormProps) {
         </div>
 
         <div className="md:col-span-3">
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full px-4 py-3 rounded-xl bg-blue-600 text-white text-[11px] font-black uppercase tracking-widest hover:bg-blue-700 disabled:opacity-50 transition"
-          >
+          <button type="submit" disabled={loading} className="np-btn-primary w-full px-4 py-3 disabled:opacity-50">
             {loading ? "Sender..." : "Send invitation"}
           </button>
         </div>
       </form>
 
       {message && <p className="mt-3 text-xs font-semibold text-emerald-700">{message}</p>}
+
       {error && (
         <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 space-y-2">
           <p className="text-xs font-semibold text-amber-800">{error}</p>
@@ -132,20 +129,21 @@ export default function AddMemberForm({ canAssignOwner }: AddMemberFormProps) {
               type="button"
               onClick={startUpgrade}
               disabled={upgrading}
-              className="px-3 py-2 rounded-lg bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 disabled:opacity-50 transition-all"
+              className="np-btn-primary px-3 py-2 disabled:opacity-50"
             >
               {upgrading ? "Åbner checkout..." : "Opgradér nu"}
             </button>
           )}
         </div>
       )}
+
       {inviteUrl && (
         <div className="mt-3 p-3 bg-blue-50 border border-blue-100 rounded-xl">
           <p className="text-[11px] text-blue-900 font-semibold break-all">{inviteUrl}</p>
           <button
             type="button"
             onClick={() => navigator.clipboard.writeText(inviteUrl)}
-            className="mt-2 px-3 py-2 rounded-lg bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest"
+            className="mt-2 np-btn-primary px-3 py-2"
           >
             Kopiér invitationslink
           </button>

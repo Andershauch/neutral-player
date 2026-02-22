@@ -1,6 +1,10 @@
-# Testing Strategy
+﻿# Testing Strategy
+## Document Version
+- Current release: v0.2.1
+- Last updated: 2026-02-22
 
-## Mål
+
+## MÃ¥l
 - Fange regressions tidligt i CI.
 - Sikre tenant-sikkerhed, RBAC og plan-limits via automatiske tests.
 - Have en stabil E2E smoke-suite til public flows.
@@ -9,21 +13,21 @@
 
 ### 1) Unit tests (Vitest)
 - Placering: `tests/unit/*.test.ts`
-- Dækker:
+- DÃ¦kker:
   - RBAC rolle-regler
   - Plan-limit mapping/fallback
   - Rate-limit logik
 
 ### 2) API contract tests (Vitest)
 - Placering: `tests/api/*.test.ts`
-- Dækker:
-  - Tenant-scope kontrakter på centrale write-ruter
+- DÃ¦kker:
+  - Tenant-scope kontrakter pÃ¥ centrale write-ruter
   - Brug af RBAC/org-context guards
-  - Plan-limit håndhævelse i create-heavy flows
+  - Plan-limit hÃ¥ndhÃ¦velse i create-heavy flows
 
 ### 3) E2E smoke tests (Playwright)
 - Placering: `tests/e2e/*.spec.ts`
-- Dækker baseline public flows:
+- DÃ¦kker baseline public flows:
   - Landing -> Pricing navigation
   - Register-side rendering
   - Login-side rendering (credentials + OAuth-knapper)
@@ -37,18 +41,20 @@
 
 ## CI
 - Workflow: `.github/workflows/ci.yml`
-- CI kører:
+- CI kÃ¸rer:
   1. Lint
   2. Typecheck
   3. Unit/API tests
   4. E2E smoke tests
   5. Build
 
-## Næste udvidelse (fuld E2E)
+## NÃ¦ste udvidelse (fuld E2E)
 - Fil: `tests/e2e/full-acquisition-and-content.spec.ts`
-- Er bevidst staged/skipped indtil dedikeret testmiljø og testkonto er klar.
-- Når miljøet er klar, udvides denne med:
+- Er bevidst staged/skipped indtil dedikeret testmiljÃ¸ og testkonto er klar.
+- NÃ¥r miljÃ¸et er klar, udvides denne med:
   - signup
   - checkout
   - upload
   - embed-verifikation
+
+

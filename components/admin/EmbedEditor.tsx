@@ -31,6 +31,7 @@ interface EmbedEditorProps {
   embed: {
     id: string;
     name: string;
+    allowedDomains: string | null;
     groups?: Array<{
       id: string;
       name: string;
@@ -53,6 +54,9 @@ export default function EmbedEditor({ embed }: EmbedEditorProps) {
   const [showPreview, setShowPreview] = useState(false);
   const [variantLimitError, setVariantLimitError] = useState<string | null>(null);
   const [upgrading, setUpgrading] = useState(false);
+  const [domainsInput, setDomainsInput] = useState(embed.allowedDomains || "*");
+  const [domainSaveError, setDomainSaveError] = useState<string | null>(null);
+  const [savingDomains, setSavingDomains] = useState(false);
 
   const updateVariantLang = async (id: string, lang: string) => {
     try {
@@ -140,6 +144,29 @@ export default function EmbedEditor({ embed }: EmbedEditorProps) {
     }
   };
 
+  const saveDomains = async () => {
+    setSavingDomains(true);
+    setDomainSaveError(null);
+    try {
+      const res = await fetch(`/api/embeds/${embed.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ allowedDomains: domainsInput }),
+      });
+      const data = (await res.json()) as { error?: string; allowedDomains?: string };
+      if (!res.ok) {
+        throw new Error(data.error || "Kunne ikke gemme domæner.");
+      }
+      setDomainsInput(data.allowedDomains || "*");
+      router.refresh();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Ukendt fejl";
+      setDomainSaveError(message);
+    } finally {
+      setSavingDomains(false);
+    }
+  };
+
   return (
     <div className="space-y-6 md:space-y-10 pb-20">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 md:gap-0">
@@ -159,6 +186,31 @@ export default function EmbedEditor({ embed }: EmbedEditorProps) {
       <div className="bg-white border border-gray-100 rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-8 shadow-sm">
         <h3 className="text-sm md:text-lg font-black text-gray-900 mb-6 uppercase tracking-tight">Del dette projekt</h3>
         <EmbedCodeGenerator projectId={embed.id} projectTitle={embed.name} />
+      </div>
+
+      <div className="bg-white border border-gray-100 rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-8 shadow-sm space-y-3">
+        <h3 className="text-sm md:text-lg font-black text-gray-900 uppercase tracking-tight">Tilladte domæner</h3>
+        <p className="text-xs text-gray-500">
+          Skriv domæner adskilt med komma eller linjeskift. Brug <span className="font-mono">*</span> for at tillade alle.
+        </p>
+        <textarea
+          value={domainsInput}
+          onChange={(e) => setDomainsInput(e.target.value)}
+          rows={3}
+          placeholder="example.com, shop.example.com"
+          className="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm font-medium outline-none focus:ring-2 focus:ring-blue-400"
+        />
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={saveDomains}
+            disabled={savingDomains}
+            className="np-btn-primary px-4 py-3 disabled:opacity-50"
+          >
+            {savingDomains ? "Gemmer..." : "Gem domæner"}
+          </button>
+          {domainSaveError ? <p className="text-xs font-semibold text-red-600">{domainSaveError}</p> : null}
+        </div>
       </div>
 
       <div className="bg-blue-50 border border-blue-100 rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-8 shadow-sm">

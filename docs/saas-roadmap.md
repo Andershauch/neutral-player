@@ -1,4 +1,8 @@
 ﻿# SaaS Roadmap (Source of Truth)
+## Document Version
+- Current release: v0.2.1
+- Last updated: 2026-02-22
+
 
 ## Status legend
 - `DONE` = implementeret og verificeret i kodebase.
@@ -281,6 +285,7 @@
 - `DONE`: Onboarding-guide i dashboard med progress (projekt -> upload -> embed-kopi -> gennemført), auto-opdatering af trin og menupunktet `Vis onboarding`.
 - `DONE`: Usage & upgrade UX med forbrugsbarer i dashboard og 1-klik `Opgradér nu` fra blokerede handlinger (projekter, varianter, seats/invites).
 - `DONE`: Tydelig sektionering i navigationen med dedikerede admin-sider: Dashboard, Projekter, Team, Domains, Billing, Audit.
+- `DONE`: Design-system pass med tokens (`np-card`, `np-kicker`, `np-btn-*`) rullet ud på Dashboard, Projekter, Team, Billing og Domains for ensartet visuel stil.
 - `DONE`: Signup/workspace-setup flow med verify-link (`/verify-email`), resend verify endpoint, ny side `/setup/workspace`, gem af workspace-navn (`/api/workspace`) og registrering der guider nye brugere via setup før dashboard/pricing.
 - `DONE`: Invitation-flow forbedret, så inviterede uden eksisterende konto guides til `Opret konto` som primær handling før accept.
 - `DONE`: Email setup dokumenteret i `docs/email-setup.md` (Resend + Vercel + DNS + test/fejlfinding).
@@ -297,6 +302,8 @@
 - `Implement TASK-1.2 from docs/saas-roadmap.md. Keep changes minimal and include tests.`
 - `Implement TASK-2.3 from docs/saas-roadmap.md and list required env vars.`
 - `Implement TASK-3.3 from docs/saas-roadmap.md with clear usage bars and one-click upgrade CTAs.`
+
+
 
 
 

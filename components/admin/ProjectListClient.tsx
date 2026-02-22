@@ -1,7 +1,8 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import EmbedCodeGenerator from "./EmbedCodeGenerator";
 
@@ -9,6 +10,12 @@ interface ProjectListClientProps {
   initialProjects: Array<{
     id: string;
     name: string;
+    groups?: Array<{
+      variants: Array<{
+        id: string;
+        muxPlaybackId: string | null;
+      }>;
+    }>;
   }>;
 }
 
@@ -45,20 +52,21 @@ export default function ProjectListClient({ initialProjects }: ProjectListClient
             className="bg-white border border-gray-100 p-6 md:p-8 rounded-[2rem] flex flex-col lg:flex-row lg:items-center justify-between shadow-sm hover:shadow-xl transition-all duration-300 gap-6"
           >
             <div className="space-y-1">
-              <h2 className="text-xl md:text-2xl font-black text-gray-900 uppercase tracking-tight leading-tight">
+              <h2 className="text-xl md:text-2xl font-bold text-gray-900 uppercase tracking-tight leading-tight">
                 {project.name}
               </h2>
               <div className="flex items-center gap-3">
                 <span className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] bg-blue-50 px-3 py-1 rounded-full border border-blue-100">
                   ID: {project.id.slice(0, 8)}...
                 </span>
+                <PosterFramePattern project={project} />
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <div className="flex w-full lg:w-auto flex-wrap items-center gap-2 sm:gap-3">
               <button
                 onClick={() => setShowEmbedId(project.id)}
-                className="flex-1 sm:flex-none bg-gray-50 text-gray-700 px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-100 transition flex items-center justify-center gap-2 active:scale-95"
+                className="flex-1 sm:flex-none min-w-[140px] bg-gray-50 text-gray-700 px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-100 transition flex items-center justify-center gap-2 active:scale-95"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 6.75 22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3-4.5 16.5" />
@@ -68,14 +76,14 @@ export default function ProjectListClient({ initialProjects }: ProjectListClient
 
               <Link
                 href={`/admin/embed/${project.id}`}
-                className="flex-1 sm:flex-none bg-blue-50 text-blue-600 px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-100 transition text-center active:scale-95"
+                className="flex-1 sm:flex-none min-w-[110px] bg-blue-50 text-blue-600 px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-100 transition text-center active:scale-95"
               >
                 Redigér
               </Link>
 
               <button
                 onClick={() => setPreviewId(project.id)}
-                className="flex-1 sm:flex-none bg-black text-white px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-800 transition text-center active:scale-95 shadow-lg shadow-black/10"
+                className="flex-1 sm:flex-none min-w-[90px] bg-black text-white px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-800 transition text-center active:scale-95 shadow-lg shadow-black/10"
               >
                 Vis
               </button>
@@ -102,7 +110,7 @@ export default function ProjectListClient({ initialProjects }: ProjectListClient
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
             <div className="mb-8">
-              <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tight">Embed-kode</h2>
+              <h2 className="text-2xl font-bold text-gray-900 uppercase tracking-tight">Embed-kode</h2>
               <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest mt-2">Integrér videoafspilleren på din platform</p>
             </div>
             <EmbedCodeGenerator
@@ -127,3 +135,41 @@ export default function ProjectListClient({ initialProjects }: ProjectListClient
     </div>
   );
 }
+
+function PosterFramePattern({
+  project,
+}: {
+  project: ProjectListClientProps["initialProjects"][number];
+}) {
+  const playbackIds = (project.groups || [])
+    .flatMap((group) => group.variants || [])
+    .map((variant) => variant.muxPlaybackId)
+    .filter((id): id is string => Boolean(id));
+
+  const unique = Array.from(new Set(playbackIds)).slice(0, 6);
+  if (unique.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="hidden sm:flex items-center -space-x-2">
+      {unique.map((playbackId, index) => (
+        <div
+          key={playbackId}
+          className="h-7 w-7 rounded-md overflow-hidden border border-white shadow-sm bg-gray-100"
+          style={{ zIndex: unique.length - index }}
+          title={`Poster ${index + 1}`}
+        >
+          <Image
+            src={`https://image.mux.com/${playbackId}/thumbnail.jpg?time=0&width=80&height=80&fit_mode=smartcrop`}
+            alt=""
+            width={28}
+            height={28}
+            className="h-full w-full object-cover"
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+

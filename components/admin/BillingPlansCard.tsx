@@ -63,9 +63,9 @@ export default function BillingPlansCard({
   };
 
   return (
-    <div className="bg-white border border-gray-100 rounded-[2rem] p-6 md:p-8 shadow-sm">
+    <div className="np-card p-6 md:p-8">
       <div className="mb-5">
-        <h2 className="text-sm font-black text-gray-900 uppercase tracking-widest">{t.billing.title}</h2>
+        <h2 className="text-sm font-bold text-gray-900 uppercase tracking-widest">{t.billing.title}</h2>
         <p className="text-xs text-gray-500 mt-1">{t.billing.subtitle}</p>
       </div>
 
@@ -98,7 +98,7 @@ export default function BillingPlansCard({
                     type="button"
                     disabled={!canManageBilling || isLoading}
                     onClick={() => startCheckout(plan.key)}
-                    className="px-4 py-3 rounded-xl bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 disabled:opacity-50 transition-all"
+                    className="np-btn-primary px-4 py-3 disabled:opacity-50"
                   >
                     {isLoading ? t.pricing.openCheckoutLoading : t.pricing.choosePlan}
                   </button>
@@ -118,7 +118,7 @@ export default function BillingPlansCard({
           type="button"
           disabled={!canManageBilling || !hasStripeCustomer || openingPortal}
           onClick={openPortal}
-          className="px-4 py-3 rounded-xl border border-gray-200 text-gray-700 text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 disabled:opacity-50 transition-all"
+          className="np-btn-ghost px-4 py-3 disabled:opacity-50"
         >
           {openingPortal ? t.billing.openingPortal : t.billing.openPortal}
         </button>
