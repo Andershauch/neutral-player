@@ -5,6 +5,7 @@ import { createEmailVerificationToken } from "@/lib/email-verification";
 import { getBaseUrl } from "@/lib/invites";
 import { sendVerificationEmail } from "@/lib/verification-email";
 import { getRequestIdFromRequest, logApiError, logApiInfo, logApiWarn } from "@/lib/observability";
+import { buildRateLimitKey, checkRateLimit, rateLimitExceededResponse } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   const requestId = getRequestIdFromRequest(request);
@@ -14,6 +15,16 @@ export async function POST(request: Request) {
 
     const body = await request.json();
     const { email, name, password } = body;
+
+    const registerLimit = checkRateLimit({
+      key: buildRateLimitKey("auth:register", request, typeof email === "string" ? email.toLowerCase() : "unknown"),
+      max: 8,
+      windowMs: 10 * 60 * 1000,
+    });
+    if (!registerLimit.ok) {
+      logApiWarn(request, "Register rate limited", { retryAfterSec: registerLimit.retryAfterSec });
+      return rateLimitExceededResponse(registerLimit);
+    }
 
     if (!email || !password) {
       logApiWarn(request, "Register validation failed: missing email or password");

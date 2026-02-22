@@ -4,12 +4,24 @@ import { getOrgContextForContentEdit } from "@/lib/authz";
 import { assertLimit } from "@/lib/plan-limits";
 import { markOnboardingStep } from "@/lib/onboarding";
 import { getRequestIdFromRequest, logApiError, logApiInfo, logApiWarn } from "@/lib/observability";
+import { buildRateLimitKey, checkRateLimit, rateLimitExceededResponse } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   const requestId = getRequestIdFromRequest(request);
 
   try {
     logApiInfo(request, "Create project started");
+    const createProjectRateLimit = checkRateLimit({
+      key: buildRateLimitKey("write:embed-create", request),
+      max: 20,
+      windowMs: 10 * 60 * 1000,
+    });
+    if (!createProjectRateLimit.ok) {
+      logApiWarn(request, "Create project rate limited", {
+        retryAfterSec: createProjectRateLimit.retryAfterSec,
+      });
+      return rateLimitExceededResponse(createProjectRateLimit);
+    }
 
     const orgCtx = await getOrgContextForContentEdit();
     if (!orgCtx) {

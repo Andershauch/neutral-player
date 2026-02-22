@@ -2,9 +2,19 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getOrgContextForContentEdit } from "@/lib/authz";
 import { assertLimit } from "@/lib/plan-limits";
+import { buildRateLimitKey, checkRateLimit, rateLimitExceededResponse } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
   try {
+    const variantCreateRateLimit = checkRateLimit({
+      key: buildRateLimitKey("write:variant-create", req),
+      max: 30,
+      windowMs: 10 * 60 * 1000,
+    });
+    if (!variantCreateRateLimit.ok) {
+      return rateLimitExceededResponse(variantCreateRateLimit);
+    }
+
     const orgCtx = await getOrgContextForContentEdit();
     if (!orgCtx) {
       return NextResponse.json({ error: "Ingen adgang" }, { status: 403 });

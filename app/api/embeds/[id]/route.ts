@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import Mux from "@mux/mux-node";
 import { getOrgContextForContentEdit } from "@/lib/authz";
+import { buildRateLimitKey, checkRateLimit, rateLimitExceededResponse } from "@/lib/rate-limit";
 
 const mux = new Mux({
   tokenId: process.env.MUX_TOKEN_ID!,
@@ -13,6 +14,15 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const projectDeleteRateLimit = checkRateLimit({
+      key: buildRateLimitKey("write:embed-delete", req),
+      max: 20,
+      windowMs: 10 * 60 * 1000,
+    });
+    if (!projectDeleteRateLimit.ok) {
+      return rateLimitExceededResponse(projectDeleteRateLimit);
+    }
+
     const orgCtx = await getOrgContextForContentEdit();
     if (!orgCtx) {
       return NextResponse.json({ error: "Ingen adgang" }, { status: 403 });

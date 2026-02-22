@@ -12,12 +12,22 @@ import {
 import { sendInviteEmail } from "@/lib/invite-email";
 import { assertLimit } from "@/lib/plan-limits";
 import { getRequestIdFromRequest, logApiError, logApiInfo, logApiWarn } from "@/lib/observability";
+import { buildRateLimitKey, checkRateLimit, rateLimitExceededResponse } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
   const requestId = getRequestIdFromRequest(req);
 
   try {
     logApiInfo(req, "Invite flow started");
+    const inviteRateLimit = checkRateLimit({
+      key: buildRateLimitKey("write:invite", req),
+      max: 25,
+      windowMs: 10 * 60 * 1000,
+    });
+    if (!inviteRateLimit.ok) {
+      logApiWarn(req, "Invite rate limited", { retryAfterSec: inviteRateLimit.retryAfterSec });
+      return rateLimitExceededResponse(inviteRateLimit);
+    }
 
     const orgCtx = await getOrgContextForMemberManagement();
     if (!orgCtx) {

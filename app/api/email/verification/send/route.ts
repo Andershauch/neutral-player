@@ -1,16 +1,26 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { createEmailVerificationToken } from "@/lib/email-verification";
 import { getBaseUrl } from "@/lib/invites";
 import { sendVerificationEmail } from "@/lib/verification-email";
+import { buildRateLimitKey, checkRateLimit, rateLimitExceededResponse } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
       return NextResponse.json({ error: "Du skal være logget ind." }, { status: 401 });
+    }
+
+    const verifyMailLimit = checkRateLimit({
+      key: buildRateLimitKey("auth:verify-email-send", req, session.user.email.toLowerCase()),
+      max: 5,
+      windowMs: 10 * 60 * 1000,
+    });
+    if (!verifyMailLimit.ok) {
+      return rateLimitExceededResponse(verifyMailLimit);
     }
 
     const user = await prisma.user.findUnique({

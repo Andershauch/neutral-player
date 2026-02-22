@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getOrgContextForMemberManagement } from "@/lib/authz";
+import { buildRateLimitKey, checkRateLimit, rateLimitExceededResponse } from "@/lib/rate-limit";
 
 const validRoles = ["owner", "admin", "editor", "viewer"] as const;
 
@@ -11,6 +12,15 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const memberUpdateRateLimit = checkRateLimit({
+      key: buildRateLimitKey("write:member-update", req),
+      max: 30,
+      windowMs: 10 * 60 * 1000,
+    });
+    if (!memberUpdateRateLimit.ok) {
+      return rateLimitExceededResponse(memberUpdateRateLimit);
+    }
+
     const orgCtx = await getOrgContextForMemberManagement();
     if (!orgCtx) {
       return NextResponse.json({ error: "Ingen adgang" }, { status: 403 });
@@ -85,6 +95,15 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const memberDeleteRateLimit = checkRateLimit({
+      key: buildRateLimitKey("write:member-delete", req),
+      max: 20,
+      windowMs: 10 * 60 * 1000,
+    });
+    if (!memberDeleteRateLimit.ok) {
+      return rateLimitExceededResponse(memberDeleteRateLimit);
+    }
+
     const orgCtx = await getOrgContextForMemberManagement();
     if (!orgCtx) {
       return NextResponse.json({ error: "Ingen adgang" }, { status: 403 });

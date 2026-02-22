@@ -12,6 +12,18 @@ export default function Home() {
           </h1>
           <div className="flex items-center gap-2">
             <Link
+              href="/faq"
+              className="px-4 py-2 rounded-xl border border-gray-200 text-[10px] font-black uppercase tracking-widest text-gray-700 hover:bg-white"
+            >
+              FAQ
+            </Link>
+            <Link
+              href="/contact"
+              className="px-4 py-2 rounded-xl border border-gray-200 text-[10px] font-black uppercase tracking-widest text-gray-700 hover:bg-white"
+            >
+              Kontakt
+            </Link>
+            <Link
               href="/login"
               className="px-4 py-2 rounded-xl border border-gray-200 text-[10px] font-black uppercase tracking-widest text-gray-700 hover:bg-white"
             >
@@ -47,6 +59,21 @@ export default function Home() {
               className="px-6 py-4 rounded-2xl border border-gray-200 text-gray-700 text-xs font-black uppercase tracking-widest text-center hover:bg-gray-50"
             >
               {t.home.ctaExisting}
+            </Link>
+          </div>
+
+          <div className="mt-6 flex flex-col sm:flex-row gap-2 text-center">
+            <Link
+              href="/faq"
+              className="px-4 py-3 rounded-xl border border-gray-200 text-[10px] font-black uppercase tracking-widest text-gray-600 hover:bg-gray-50"
+            >
+              Se FAQ
+            </Link>
+            <Link
+              href="/contact"
+              className="px-4 py-3 rounded-xl border border-gray-200 text-[10px] font-black uppercase tracking-widest text-gray-600 hover:bg-gray-50"
+            >
+              Kontakt os
             </Link>
           </div>
         </section>

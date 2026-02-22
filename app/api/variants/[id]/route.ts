@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import Mux from "@mux/mux-node";
 import { getOrgContextForContentEdit } from "@/lib/authz";
 import { markOnboardingStep } from "@/lib/onboarding";
+import { buildRateLimitKey, checkRateLimit, rateLimitExceededResponse } from "@/lib/rate-limit";
 
 const mux = new Mux({
   tokenId: process.env.MUX_TOKEN_ID!,
@@ -14,6 +15,15 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const variantDeleteRateLimit = checkRateLimit({
+      key: buildRateLimitKey("write:variant-delete", req),
+      max: 25,
+      windowMs: 10 * 60 * 1000,
+    });
+    if (!variantDeleteRateLimit.ok) {
+      return rateLimitExceededResponse(variantDeleteRateLimit);
+    }
+
     const orgCtx = await getOrgContextForContentEdit();
     if (!orgCtx) {
       return NextResponse.json({ error: "Ingen adgang" }, { status: 403 });
@@ -65,6 +75,15 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const variantUpdateRateLimit = checkRateLimit({
+      key: buildRateLimitKey("write:variant-update", req),
+      max: 60,
+      windowMs: 10 * 60 * 1000,
+    });
+    if (!variantUpdateRateLimit.ok) {
+      return rateLimitExceededResponse(variantUpdateRateLimit);
+    }
+
     const orgCtx = await getOrgContextForContentEdit();
     if (!orgCtx) {
       return NextResponse.json({ error: "Ingen adgang" }, { status: 403 });

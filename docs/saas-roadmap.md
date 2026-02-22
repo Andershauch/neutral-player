@@ -138,7 +138,7 @@
 **Goal:** Convert visitors to paying customers.
 
 ### TASK-4.1 Marketing pages
-**Status:** `IN PROGRESS`
+**Status:** `DONE`
 - Create: Landing, Pricing, FAQ, Contact.
 - **Acceptance criteria:**
   - Pricing page is connected to checkout.
@@ -162,7 +162,7 @@
   - Unsigned/invalid webhooks are rejected.
 
 ### TASK-5.2 Rate limiting and abuse protection
-**Status:** `TODO`
+**Status:** `DONE`
 - Add limits for auth, uploads, and write-heavy routes.
 - **Acceptance criteria:**
   - Excessive requests are throttled predictably.
@@ -175,11 +175,71 @@
   - Runtime errors are traceable with context.
 
 ### TASK-5.4 Test strategy
-**Status:** `TODO`
+**Status:** `IN PROGRESS`
 - Add E2E (signup/checkout/upload/embed).
 - Add API tests (tenant isolation + RBAC + limits).
 - **Acceptance criteria:**
   - CI enforces lint + typecheck + tests + build.
+
+---
+
+## EPIC-6 AI Support Chatbot (Future)
+**Goal:** Give customers instant self-service answers and collect qualified leads/support requests.
+**Priority:** `LATER` (ikke nu)
+
+### TASK-6.1 Chatbot scope and guardrails
+**Status:** `TODO`
+- Define allowed topics (product, pricing, setup, troubleshooting).
+- Define out-of-scope and escalation triggers to human support.
+- Define response style (friendly, concise, Danish-first).
+- **Acceptance criteria:**
+  - Documented policy for what bot may/may not answer.
+  - Clear handoff path when confidence is low.
+
+### TASK-6.2 Knowledge base pipeline (RAG)
+**Status:** `TODO`
+- Create source set from docs (`services`, `roadmap`, FAQ, pricing, setup guides).
+- Build ingestion/chunking/indexing pipeline.
+- Add refresh process when docs change.
+- **Acceptance criteria:**
+  - Bot answers are grounded in current docs.
+  - Source attribution available in logs/debug mode.
+
+### TASK-6.3 Chat API + session model
+**Status:** `TODO`
+- Add `/api/chat` endpoint with conversation/session handling.
+- Add rate limiting, abuse protection, and basic moderation.
+- Store conversation metadata for support follow-up.
+- **Acceptance criteria:**
+  - Stable API contract with authenticated and public modes.
+  - Request limits protect cost and abuse.
+
+### TASK-6.4 Frontend chat widget
+**Status:** `TODO`
+- Add on-site chat widget (public + admin where relevant).
+- Add quick actions (pricing, setup, billing, contact support).
+- Add fallback CTA to contact form when unresolved.
+- **Acceptance criteria:**
+  - Chat widget works on desktop/mobile.
+  - Users can escalate to human support in one click.
+
+### TASK-6.5 Human handoff and CRM/support integration
+**Status:** `TODO`
+- Convert unresolved chats into support leads/tickets.
+- Include conversation summary and user contact details.
+- Add internal view for open chatbot escalations.
+- **Acceptance criteria:**
+  - Failed chatbot interactions become actionable tickets/leads.
+  - Team can respond without losing context.
+
+### TASK-6.6 Analytics and quality loop
+**Status:** `TODO`
+- Track resolution rate, escalation rate, response latency, top intents.
+- Add review workflow for incorrect answers.
+- Improve prompts/knowledge base iteratively.
+- **Acceptance criteria:**
+  - Monthly quality dashboard available.
+  - Continuous improvement workflow defined.
 
 ---
 
@@ -208,10 +268,13 @@
 - `DONE`: Observability baseline med request-correlation ID (`x-request-id` i proxy) og strukturerede JSON-logs på kritiske API-ruter (checkout, register, stripe webhook, invites, embeds, workspace).
 - `DONE`: Sentry integration i Next.js (client, server, edge, global error capture) + guide i `docs/sentry-setup.md`.
 - `DONE`: Webhook hardening: Mux-signaturvalidering (raw body + `mux-signature`) samt idempotency/replay-beskyttelse via `MuxWebhookEvent`.
+- `DONE`: Baseline rate limiting på auth + uploads + write-heavy API-ruter med ensartet `429 RATE_LIMITED` svar og `Retry-After` headers.
+- `IN PROGRESS`: Test strategy baseline implementeret med Vitest (unit + API contracts), Playwright E2E smoke og CI-workflow i `.github/workflows/ci.yml`. Fuldt signup/checkout/upload/embed E2E er staged i `tests/e2e/full-acquisition-and-content.spec.ts`.
 - `DONE`: Team invite flow with real token links and accept page.
 - `DONE`: Pending invites list with `resend` and `cancel` actions in `app/admin/users/page.tsx`.
 - `DONE`: Public pricing page (`/pricing`) and pre-admin plan selection flow.
 - `DONE`: Frontpage (`/`) som entrypoint med tydelig split mellem eksisterende kunder og køb-flow.
+- `DONE`: Marketing pages udbygget med FAQ (`/faq`) og Kontakt (`/contact`) inkl. dedikeret kontaktformular og CTA-links fra forside/pricing.
 - `DONE`: Dansk som default i frontend + central tekststruktur (`lib/i18n/messages.ts`) klar til oversættelser.
 - `DONE`: Server-side plan-grænser (projekter, varianter, seats) med upgrade-required svar.
 - `DONE`: UX copy polish på tværs af public + admin (naturligt dansk, konsistent ordvalg, ryddet tegnkodning).
@@ -225,8 +288,8 @@
 ---
 
 ## Next Logical Step
-- `TASK-5.2 Rate limiting and abuse protection` (næste prioritet).
-- Hvorfor: Webhook-sikkerhed og observability er på plads. Næste driftssikring er at begrænse misbrug på auth, uploads og write-heavy endpoints.
+- `TASK-5.4 Test strategy` (færdiggør næste).
+- Hvorfor: CI + baseline tests er på plads. Næste skridt er at aktivere fuld E2E-flow (signup/checkout/upload/embed) i dedikeret testmiljø.
 
 ---
 
