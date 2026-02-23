@@ -1,7 +1,7 @@
 ﻿# SaaS Roadmap (Source of Truth)
 ## Document Version
 - Current release: v0.2.1
-- Last updated: 2026-02-22
+- Last updated: 2026-02-23
 
 
 ## Status legend
@@ -286,15 +286,21 @@
 - `DONE`: Usage & upgrade UX med forbrugsbarer i dashboard og 1-klik `Opgradér nu` fra blokerede handlinger (projekter, varianter, seats/invites).
 - `DONE`: Tydelig sektionering i navigationen med dedikerede admin-sider: Dashboard, Projekter, Team, Domains, Billing, Audit.
 - `DONE`: Design-system pass med tokens (`np-card`, `np-kicker`, `np-btn-*`) rullet ud på Dashboard, Projekter, Team, Billing og Domains for ensartet visuel stil.
+- `DONE`: Font-system opdateret til Apex New (`400` brødtekst, `700` overskrifter i caps) med lokal font-loading og guide i `docs/font-setup.md`.
+- `DONE`: Domains-flow genoprettet: domæner kan nu redigeres både i projekt-editor (`/admin/embed/[embedId]`) og direkte i domains-oversigten (`/admin/domains`).
+- `DONE`: Domain-validering udvidet til wildcard subdomæner (fx `*.naestved.dk`) samt normalisering af input fra komma/linjeskift.
+- `DONE`: Projektkort viser poster-frames som lille thumbnail-pattern baseret på Mux playback IDs.
 - `DONE`: Signup/workspace-setup flow med verify-link (`/verify-email`), resend verify endpoint, ny side `/setup/workspace`, gem af workspace-navn (`/api/workspace`) og registrering der guider nye brugere via setup før dashboard/pricing.
 - `DONE`: Invitation-flow forbedret, så inviterede uden eksisterende konto guides til `Opret konto` som primær handling før accept.
 - `DONE`: Email setup dokumenteret i `docs/email-setup.md` (Resend + Vercel + DNS + test/fejlfinding).
+- `DONE`: Frontend pass 2 (del 1): forbedret versionskort-design i projekt-editor (`/admin/embed/[embedId]`) med mere konsistent spacing/komponentstil efter design-tokens.
+- `DONE`: Signup verify-mail flow robustgjort: verificeringsmail sendes automatisk i setup-flow, og signup fejler ikke længere hvis email-provider fejler midlertidigt.
 
 ---
 
 ## Next Logical Step
-- `TASK-5.4 Test strategy` (færdiggør næste).
-- Hvorfor: CI + baseline tests er på plads. Næste skridt er at aktivere fuld E2E-flow (signup/checkout/upload/embed) i dedikeret testmiljø.
+- `Frontend pass 2`: finpudsning af layout, spacing og komponent-konsistens på admin-fladerne (`embed`, `audit`, `users`) med samme design-tokens.
+- Hvorfor: Kerneflow og stilgrundlag er nu på plads, så næste værdi er visuel sammenhæng og bedre UX-detaljer før næste større feature-arbejde.
 
 ---
 

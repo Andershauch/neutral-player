@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface WorkspaceSetupCardProps {
   initialName: string;
@@ -22,6 +22,7 @@ export default function WorkspaceSetupCard({
   const [error, setError] = useState<string | null>(null);
   const [verifyMessage, setVerifyMessage] = useState<string | null>(null);
   const [fallbackVerifyUrl, setFallbackVerifyUrl] = useState<string | null>(null);
+  const autoSentRef = useRef(false);
 
   const saveName = async () => {
     if (!name.trim()) {
@@ -51,7 +52,7 @@ export default function WorkspaceSetupCard({
     }
   };
 
-  const sendVerification = async () => {
+  const sendVerification = useCallback(async (options?: { automatic?: boolean }) => {
     setSendingVerification(true);
     setVerifyMessage(null);
     setFallbackVerifyUrl(null);
@@ -72,7 +73,11 @@ export default function WorkspaceSetupCard({
         return;
       }
       if (data.sent) {
-        setVerifyMessage("Verificeringsmail er sendt. Tjek din indbakke.");
+        setVerifyMessage(
+          options?.automatic
+            ? "Vi har sendt en verificeringsmail automatisk. Tjek din indbakke."
+            : "Verificeringsmail er sendt. Tjek din indbakke."
+        );
       } else {
         setVerifyMessage("Email-provider er ikke sat op. Brug linket herunder til at verificere manuelt.");
         setFallbackVerifyUrl(data.verifyUrl || null);
@@ -83,7 +88,13 @@ export default function WorkspaceSetupCard({
     } finally {
       setSendingVerification(false);
     }
-  };
+  }, [router]);
+
+  useEffect(() => {
+    if (emailVerified || autoSentRef.current) return;
+    autoSentRef.current = true;
+    void sendVerification({ automatic: true });
+  }, [emailVerified, sendVerification]);
 
   const saveAndGo = async (target: "/pricing" | "/admin/dashboard") => {
     if (!emailVerified) {
@@ -114,12 +125,14 @@ export default function WorkspaceSetupCard({
           <p className="text-xs font-semibold text-emerald-700">Din email er bekræftet.</p>
         ) : (
           <div className="space-y-2">
-            <button
-              type="button"
-              onClick={sendVerification}
-              disabled={sendingVerification}
-              className="px-4 py-2 rounded-xl bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 disabled:opacity-50"
-            >
+              <button
+                type="button"
+                onClick={() => {
+                  void sendVerification();
+                }}
+                disabled={sendingVerification}
+                className="px-4 py-2 rounded-xl bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 disabled:opacity-50"
+              >
               {sendingVerification ? "Sender..." : "Send verificeringsmail"}
             </button>
             <button

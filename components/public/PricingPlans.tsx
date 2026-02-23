@@ -118,21 +118,30 @@ export default function PricingPlans({ plans, billingState, stripeSessionId }: P
               </div>
 
               <div className="mt-6">
-                {status === "authenticated" ? (
-                  <button
-                    type="button"
-                    disabled={isLoading}
-                    onClick={() => startCheckout(plan.key)}
-                    className="px-5 py-3 rounded-xl bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 disabled:opacity-50 transition-all"
-                  >
-                    {isLoading ? t.pricing.openCheckoutLoading : t.pricing.choosePlan}
-                  </button>
+                {plan.checkoutEnabled ? (
+                  status === "authenticated" ? (
+                    <button
+                      type="button"
+                      disabled={isLoading}
+                      onClick={() => startCheckout(plan.key)}
+                      className="px-5 py-3 rounded-xl bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 disabled:opacity-50 transition-all"
+                    >
+                      {isLoading ? t.pricing.openCheckoutLoading : t.pricing.choosePlan}
+                    </button>
+                  ) : (
+                    <Link
+                      href="/register"
+                      className="inline-flex px-5 py-3 rounded-xl bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all"
+                    >
+                      {t.pricing.registerAndChoose}
+                    </Link>
+                  )
                 ) : (
                   <Link
-                    href="/register"
-                    className="inline-flex px-5 py-3 rounded-xl bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all"
+                    href="/contact"
+                    className="inline-flex px-5 py-3 rounded-xl border border-gray-200 text-gray-700 text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 transition-all"
                   >
-                    {t.pricing.registerAndChoose}
+                    Kontakt salg
                   </Link>
                 )}
               </div>

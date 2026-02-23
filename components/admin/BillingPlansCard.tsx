@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { getMessages } from "@/lib/i18n/messages";
 import type { BillingPlanDefinition, BillingPlanKey } from "@/lib/plans";
+import Link from "next/link";
 
 interface BillingPlansCardProps {
   plans: BillingPlanDefinition[];
@@ -93,6 +94,13 @@ export default function BillingPlansCard({
                   <span className="inline-flex px-3 py-2 rounded-xl bg-emerald-50 text-emerald-700 text-[10px] font-black uppercase tracking-widest border border-emerald-100">
                     {t.billing.currentPlan}
                   </span>
+                ) : !plan.checkoutEnabled ? (
+                  <Link
+                    href="/contact"
+                    className="inline-flex px-4 py-3 rounded-xl border border-gray-200 text-gray-700 text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 transition-all"
+                  >
+                    Kontakt salg
+                  </Link>
                 ) : (
                   <button
                     type="button"

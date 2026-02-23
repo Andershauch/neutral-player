@@ -57,7 +57,19 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
     const { id } = await params;
     const body = await req.json();
-    const allowedDomains = normalizeAllowedDomains(body?.allowedDomains);
+    const nextNameRaw = typeof body?.name === "string" ? body.name.trim() : "";
+    const hasNameUpdate = typeof body?.name === "string";
+    const hasAllowedDomainsUpdate = typeof body?.allowedDomains !== "undefined";
+
+    if (!hasNameUpdate && !hasAllowedDomainsUpdate) {
+      return NextResponse.json({ error: "Ingen felter at opdatere." }, { status: 400 });
+    }
+
+    if (hasNameUpdate && !nextNameRaw) {
+      return NextResponse.json({ error: "Projektnavn må ikke være tomt." }, { status: 400 });
+    }
+
+    const allowedDomains = hasAllowedDomainsUpdate ? normalizeAllowedDomains(body?.allowedDomains) : null;
 
     const project = await prisma.embed.findFirst({
       where: { id, organizationId: orgCtx.orgId },
@@ -76,19 +88,36 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     const updated = await prisma.$transaction(async (tx) => {
       const embed = await tx.embed.update({
         where: { id: project.id },
-        data: { allowedDomains },
-        select: { id: true, allowedDomains: true },
+        data: {
+          ...(hasNameUpdate ? { name: nextNameRaw } : {}),
+          ...(hasAllowedDomainsUpdate ? { allowedDomains: allowedDomains ?? "*" } : {}),
+        },
+        select: { id: true, name: true, allowedDomains: true },
       });
 
-      await tx.auditLog.create({
-        data: {
-          organizationId: orgCtx.orgId,
-          userId: orgCtx.userId,
-          userName: actor?.name || actor?.email || null,
-          action: "OPDATER_DOMAENER",
-          target: `${project.name} (ID: ${project.id}) -> ${allowedDomains}`,
-        },
-      });
+      if (hasNameUpdate) {
+        await tx.auditLog.create({
+          data: {
+            organizationId: orgCtx.orgId,
+            userId: orgCtx.userId,
+            userName: actor?.name || actor?.email || null,
+            action: "OPDATER_PROJEKTNAVN",
+            target: `${project.name} (ID: ${project.id}) -> ${nextNameRaw}`,
+          },
+        });
+      }
+
+      if (hasAllowedDomainsUpdate) {
+        await tx.auditLog.create({
+          data: {
+            organizationId: orgCtx.orgId,
+            userId: orgCtx.userId,
+            userName: actor?.name || actor?.email || null,
+            action: "OPDATER_DOMAENER",
+            target: `${project.name} (ID: ${project.id}) -> ${allowedDomains}`,
+          },
+        });
+      }
 
       return embed;
     });

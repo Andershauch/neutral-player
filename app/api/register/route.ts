@@ -14,10 +14,12 @@ export async function POST(request: Request) {
     logApiInfo(request, "Register request started");
 
     const body = await request.json();
-    const { email, name, password } = body;
+    const rawEmail = typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
+    const rawName = typeof body?.name === "string" ? body.name.trim() : "";
+    const password = typeof body?.password === "string" ? body.password : "";
 
     const registerLimit = checkRateLimit({
-      key: buildRateLimitKey("auth:register", request, typeof email === "string" ? email.toLowerCase() : "unknown"),
+      key: buildRateLimitKey("auth:register", request, rawEmail || "unknown"),
       max: 8,
       windowMs: 10 * 60 * 1000,
     });
@@ -26,17 +28,17 @@ export async function POST(request: Request) {
       return rateLimitExceededResponse(registerLimit);
     }
 
-    if (!email || !password) {
+    if (!rawEmail || !password) {
       logApiWarn(request, "Register validation failed: missing email or password");
       return NextResponse.json({ error: "Mangler email eller password" }, { status: 400 });
     }
 
     const existingUser = await prisma.user.findUnique({
-      where: { email },
+      where: { email: rawEmail },
     });
 
     if (existingUser) {
-      logApiWarn(request, "Register validation failed: email already exists", { email });
+      logApiWarn(request, "Register validation failed: email already exists", { email: rawEmail });
       return NextResponse.json({ error: "Email er allerede i brug" }, { status: 400 });
     }
 
@@ -44,8 +46,8 @@ export async function POST(request: Request) {
 
     const user = await prisma.user.create({
       data: {
-        email,
-        name,
+        email: rawEmail,
+        name: rawName,
         password: hashedPassword,
         role: "contributor",
       },
@@ -62,11 +64,22 @@ export async function POST(request: Request) {
     });
     const baseUrl = getBaseUrl(request.url);
     const verifyUrl = `${baseUrl}/verify-email?token=${encodeURIComponent(verifyToken)}`;
-    const emailResult = await sendVerificationEmail({
-      to: user.email,
-      verifyUrl,
-      name: user.name || null,
-    });
+    let emailResult: Awaited<ReturnType<typeof sendVerificationEmail>> = {
+      sent: false,
+      reason: "provider-error",
+    };
+    try {
+      emailResult = await sendVerificationEmail({
+        to: user.email,
+        verifyUrl,
+        name: user.name || null,
+      });
+    } catch (error) {
+      logApiWarn(request, "Verification email send failed after signup", {
+        userId: user.id,
+        reason: error instanceof Error ? error.message : "unknown-error",
+      });
+    }
 
     logApiInfo(request, "Register request completed", {
       userId: user.id,

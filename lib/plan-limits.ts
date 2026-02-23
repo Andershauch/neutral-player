@@ -18,6 +18,8 @@ const PLAN_LIMITS: Record<string, PlanLimits> = {
   free: { projects: 1, variants: 10, seats: 1 },
   starter_monthly: { projects: 3, variants: 50, seats: 5 },
   pro_monthly: { projects: null, variants: null, seats: 25 },
+  enterprise_monthly: { projects: null, variants: null, seats: null },
+  custom_monthly: { projects: null, variants: null, seats: null },
 };
 
 const ACTIVE_SUBSCRIPTION_STATUSES = new Set(["active", "trialing", "past_due"]);

@@ -115,5 +115,7 @@ function getResourceLabel(resource: LimitUsageItem["resource"]): string {
 function toPlanName(plan: string): string {
   if (plan === "starter_monthly") return "Starter";
   if (plan === "pro_monthly") return "Pro";
+  if (plan === "enterprise_monthly") return "Enterprise";
+  if (plan === "custom_monthly") return "Custom";
   return "Free";
 }

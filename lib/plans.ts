@@ -1,4 +1,4 @@
-export type BillingPlanKey = "starter_monthly" | "pro_monthly";
+﻿export type BillingPlanKey = "starter_monthly" | "pro_monthly" | "enterprise_monthly" | "custom_monthly";
 
 export interface BillingPlanDefinition {
   key: BillingPlanKey;
@@ -6,7 +6,8 @@ export interface BillingPlanDefinition {
   priceLabel: string;
   description: string;
   features: string[];
-  stripePriceEnv: string;
+  stripePriceEnv: string | null;
+  checkoutEnabled: boolean;
 }
 
 interface StripePriceResponse {
@@ -25,6 +26,7 @@ export const BILLING_PLANS: BillingPlanDefinition[] = [
     description: "Til mindre teams, der vil i gang med flersprogede videoer.",
     features: ["Grundlæggende upload og embed", "Adgang til team", "Standard support"],
     stripePriceEnv: "STRIPE_PRICE_STARTER_MONTHLY",
+    checkoutEnabled: true,
   },
   {
     key: "pro_monthly",
@@ -33,6 +35,25 @@ export const BILLING_PLANS: BillingPlanDefinition[] = [
     description: "Til teams med højere volumen og mere avancerede behov.",
     features: ["Flere projekter og varianter", "Prioriteret support", "Klar til skalering"],
     stripePriceEnv: "STRIPE_PRICE_PRO_MONTHLY",
+    checkoutEnabled: true,
+  },
+  {
+    key: "enterprise_monthly",
+    name: "Enterprise",
+    priceLabel: "Kontakt os",
+    description: "Til organisationer med avancerede krav til governance og kontrol.",
+    features: ["Sikkerheds- og compliance-flow", "Udvidet onboarding", "Enterprise support"],
+    stripePriceEnv: null,
+    checkoutEnabled: false,
+  },
+  {
+    key: "custom_monthly",
+    name: "Custom",
+    priceLabel: "Skræddersyet",
+    description: "Til specialbehov med tilpasset setup, integration og leverance.",
+    features: ["Tilpasset plan", "Teknisk sparring", "Løsning efter behov"],
+    stripePriceEnv: null,
+    checkoutEnabled: false,
   },
 ];
 
@@ -43,6 +64,7 @@ export function getBillingPlanByKey(key: string): BillingPlanDefinition | null {
 export function getBillingPlanByStripePriceId(priceId: string): BillingPlanDefinition | null {
   if (!priceId) return null;
   for (const plan of BILLING_PLANS) {
+    if (!plan.stripePriceEnv) continue;
     const configuredPriceId = process.env[plan.stripePriceEnv];
     if (configuredPriceId && configuredPriceId === priceId) {
       return plan;
@@ -57,6 +79,8 @@ export async function getBillingPlansForDisplay(): Promise<BillingPlanDefinition
 
   const plans = await Promise.all(
     BILLING_PLANS.map(async (plan) => {
+      if (!plan.checkoutEnabled || !plan.stripePriceEnv) return plan;
+
       const priceId = process.env[plan.stripePriceEnv];
       if (!priceId) return plan;
 
@@ -104,8 +128,7 @@ function formatStripePriceLabel(
   }).format(majorAmount);
 
   const currencyLabel = currency.toUpperCase();
-  const intervalLabel =
-    interval === "month" ? "måned" : interval === "year" ? "år" : interval || "måned";
+  const intervalLabel = interval === "month" ? "måned" : interval === "year" ? "år" : interval || "måned";
 
   return `${amountLabel} ${currencyLabel} / ${intervalLabel}`;
 }

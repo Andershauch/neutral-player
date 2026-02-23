@@ -28,6 +28,9 @@ export async function POST(req: Request) {
     if (!plan) {
       return NextResponse.json({ error: "Ugyldig plan." }, { status: 400 });
     }
+    if (!plan.checkoutEnabled || !plan.stripePriceEnv) {
+      return NextResponse.json({ error: "Valgt plan kan ikke købes via checkout endnu." }, { status: 400 });
+    }
 
     const returnTo =
       typeof body.returnTo === "string" && body.returnTo.startsWith("/")
