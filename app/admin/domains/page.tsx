@@ -1,4 +1,4 @@
-﻿import { redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getOrgContextForContentEdit } from "@/lib/authz";
 import DomainsTableClient from "@/components/admin/DomainsTableClient";

@@ -13,6 +13,8 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:ci": "npm run test && npm run test:e2e",
+    "encoding:check": "node scripts/check-encoding.mjs",
+    "perf:budget": "node scripts/check-client-bundle-budget.mjs",
     "postinstall": "prisma generate"
   },
   "dependencies": {

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { Providers } from "@/components/Providers";
 
 type InviteStatus = "loading" | "invalid" | "expired" | "accepted" | "pending";
 
@@ -17,6 +18,14 @@ interface InvitePayload {
 }
 
 export default function InvitePage() {
+  return (
+    <Providers>
+      <InvitePageContent />
+    </Providers>
+  );
+}
+
+function InvitePageContent() {
   const router = useRouter();
   const { status: authStatus, data: session } = useSession();
   const params = useParams<{ token: string }>();

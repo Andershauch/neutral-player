@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import { Providers } from "@/components/Providers"; 
 
 export const metadata: Metadata = {
   title: "Neutral Player Admin",
@@ -28,9 +27,7 @@ export default function RootLayout({
         {/* overflow-x-hidden på body er en 'life saver' på mobil. 
             Det forhindrer at siden kan "vippe" sidelæns.
         */}
-        <Providers>
-          {children}
-        </Providers>
+        {children}
       </body>
     </html>
   );

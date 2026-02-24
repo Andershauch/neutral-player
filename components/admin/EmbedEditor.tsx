@@ -1,10 +1,20 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import MuxVideoUploader from "./MuxUploader";
-import MuxPlayer from "@mux/mux-player-react";
-import EmbedCodeGenerator from "./EmbedCodeGenerator";
+import dynamic from "next/dynamic";
+
+const EmbedCodeGenerator = dynamic(() => import("./EmbedCodeGenerator"), {
+  loading: () => <p className="text-xs font-semibold text-gray-500">Indlaeser embed-kode...</p>,
+});
+const EmbedPreviewModal = dynamic(() => import("./EmbedPreviewModal"), { ssr: false });
+const EmbedVariantCard = dynamic(() => import("./EmbedVariantCard"), {
+  loading: () => (
+    <div className="np-card np-card-pad">
+      <p className="text-xs font-semibold text-gray-500">Indlaeser version...</p>
+    </div>
+  ),
+});
 
 const LANGUAGES = [
   { code: "da", label: "Dansk (DA)" },
@@ -23,8 +33,8 @@ const LANGUAGES = [
   { code: "pl", label: "Polsk (PL)" },
   { code: "pt", label: "Portugisisk (PT)" },
   { code: "is", label: "Islandsk (IS)" },
-  { code: "fo", label: "Færøsk (FO)" },
-  { code: "gl", label: "Grønlandsk (GL)" },
+  { code: "fo", label: "Faeroesk (FO)" },
+  { code: "gl", label: "Groenlandsk (GL)" },
 ];
 
 interface EmbedEditorProps {
@@ -70,19 +80,6 @@ export default function EmbedEditor({ embed }: EmbedEditorProps) {
     setNameDraft(embed.name);
   }, [embed.name]);
 
-  const updateVariantLang = async (id: string, lang: string) => {
-    try {
-      const res = await fetch(`/api/variants/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lang }),
-      });
-      if (res.ok) router.refresh();
-    } catch (error) {
-      console.error("Fejl ved opdatering af sprog:", error);
-    }
-  };
-
   const addVariant = async () => {
     if (!newTitle) return;
     setIsAdding(true);
@@ -100,7 +97,7 @@ export default function EmbedEditor({ embed }: EmbedEditorProps) {
       } else {
         const data = (await res.json()) as { error?: string; code?: string };
         if (data.code === "UPGRADE_REQUIRED") {
-          setVariantLimitError(data.error || "Plangrænse nået.");
+          setVariantLimitError(data.error || "Plan-graense naaet.");
         } else {
           alert(data.error || "Kunne ikke oprette sprogversionen.");
         }
@@ -134,28 +131,6 @@ export default function EmbedEditor({ embed }: EmbedEditorProps) {
     }
   };
 
-  const deleteVariant = async (id: string, title: string) => {
-    if (!confirm(`Er du sikker på, at du vil slette "${title}"?`)) return;
-    try {
-      const res = await fetch(`/api/variants/${id}`, { method: "DELETE" });
-      if (res.ok) router.refresh();
-    } catch (error) {
-      console.error("Fejl:", error);
-    }
-  };
-
-  const trackView = async (variantId: string) => {
-    try {
-      await fetch("/api/analytics/view", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ variantId }),
-      });
-    } catch (error) {
-      console.error("Fejl ved tracking:", error);
-    }
-  };
-
   const saveDomains = async () => {
     setSavingDomains(true);
     setDomainSaveError(null);
@@ -167,7 +142,7 @@ export default function EmbedEditor({ embed }: EmbedEditorProps) {
       });
       const data = (await res.json()) as { error?: string; allowedDomains?: string };
       if (!res.ok) {
-        throw new Error(data.error || "Kunne ikke gemme domæner.");
+        throw new Error(data.error || "Kunne ikke gemme domaener.");
       }
       setDomainsInput(data.allowedDomains || "*");
       router.refresh();
@@ -182,7 +157,7 @@ export default function EmbedEditor({ embed }: EmbedEditorProps) {
   const saveProjectName = async () => {
     const trimmed = nameDraft.trim();
     if (!trimmed) {
-      setNameError("Projektnavn må ikke være tomt.");
+      setNameError("Projektnavn maa ikke vaere tomt.");
       return;
     }
     setSavingName(true);
@@ -314,8 +289,11 @@ export default function EmbedEditor({ embed }: EmbedEditorProps) {
             onClick={() => setShowPreview(true)}
             className="w-full sm:w-auto bg-blue-600 text-white px-6 py-3.5 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-blue-700 transition shadow-lg flex items-center justify-center gap-2 active:scale-[0.98]"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.644C3.67 8.5 7.652 4.5 12 4.5c4.348 0 8.331 4 9.964 7.178.07.133.07.291 0 .424C20.33 15.5 16.348 19.5 12 19.5c-4.348 0-8.331-4-9.964-7.178Z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>
-            Forhåndsvisning
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.644C3.67 8.5 7.652 4.5 12 4.5c4.348 0 8.331 4 9.964 7.178.07.133.07.291 0 .424C20.33 15.5 16.348 19.5 12 19.5c-4.348 0-8.331-4-9.964-7.178Z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+            </svg>
+            Forhaandsvisning
           </button>
         </div>
       </section>
@@ -332,76 +310,8 @@ export default function EmbedEditor({ embed }: EmbedEditorProps) {
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 md:gap-8">
               {[...group.variants]
                 .sort((a, b) => (a.title ?? "").localeCompare(b.title ?? ""))
-                .map((v) => (
-                  <article key={v.id} className="group relative np-card np-card-pad flex flex-col gap-5 md:gap-6 transition-shadow hover:shadow-md">
-                    <button
-                      onClick={() => deleteVariant(v.id, v.title ?? "Uden titel")}
-                      className="absolute top-4 right-4 md:top-5 md:right-5 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-red-100 bg-white text-red-400 transition-colors hover:bg-red-50 hover:text-red-600 opacity-100 md:opacity-0 md:group-hover:opacity-100"
-                      aria-label="Slet version"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                    </button>
-
-                    <div className="flex flex-wrap items-center justify-between gap-3 pr-10">
-                      <select value={v.lang} onChange={(e) => updateVariantLang(v.id, e.target.value)} className="w-fit text-[10px] font-black uppercase text-blue-700 bg-blue-50 px-3 py-2 rounded-xl border border-blue-100 outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer appearance-none tracking-widest">
-                        {LANGUAGES.map((lang) => (
-                          <option key={lang.code} value={lang.code}>
-                            {lang.code.toUpperCase()} VERSION
-                          </option>
-                        ))}
-                      </select>
-                      <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 bg-gray-50 border border-gray-100 px-3 py-2 rounded-xl">
-                        {v.views?.toLocaleString() || 0} visninger
-                      </p>
-                    </div>
-                    <h4 className="font-black text-lg md:text-xl text-gray-900 tracking-tight uppercase">{v.title || "Uden titel"}</h4>
-
-                    <div className="aspect-video bg-gray-100 rounded-2xl overflow-hidden shadow-inner border border-gray-100 flex items-center justify-center relative">
-                      {v.muxPlaybackId ? (
-                        <MuxPlayer playbackId={v.muxPlaybackId} className="w-full h-full object-contain" onPlay={() => trackView(v.id)} />
-                      ) : (
-                        <MuxVideoUploader
-                          onUploadSuccess={async (uploadId: string) => {
-                            const patchRes = await fetch(`/api/variants/${v.id}`, {
-                              method: "PATCH",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({ uploadId }),
-                            });
-
-                            if (patchRes.ok) {
-                              router.refresh();
-                              return;
-                            }
-
-                            for (let i = 0; i < 10; i += 1) {
-                              await new Promise((resolve) => setTimeout(resolve, 3000));
-                              const refreshRes = await fetch(`/api/variants/${v.id}/refresh`, {
-                                method: "POST",
-                              });
-                              if (!refreshRes.ok) continue;
-                              const refreshData = (await refreshRes.json()) as {
-                                success?: boolean;
-                                playbackId?: string;
-                              };
-                              if (refreshData.success && refreshData.playbackId) {
-                                router.refresh();
-                                return;
-                              }
-                            }
-
-                            alert("Videoen er uploadet, men Mux er stadig ved at behandle den. Prøv igen om lidt.");
-                          }}
-                        />
-                      )}
-                    </div>
-
-                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-gray-100 bg-gray-50/70 px-3 py-2.5">
-                      <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">ID: <span className="font-mono text-gray-700">{v.id.slice(0, 8)}...</span></div>
-                      <div className="text-[10px] font-bold uppercase tracking-widest text-gray-600">
-                        {v.muxPlaybackId ? "Video klar" : "Mangler upload"}
-                      </div>
-                    </div>
-                  </article>
+                .map((variant) => (
+                  <EmbedVariantCard key={variant.id} variant={variant} languages={LANGUAGES} />
                 ))}
             </div>
           </div>
@@ -412,7 +322,7 @@ export default function EmbedEditor({ embed }: EmbedEditorProps) {
         <h3 className="text-[10px] font-black text-blue-500 uppercase mb-6 tracking-[0.2em]">Opret ny sprogversion</h3>
         <div className="flex flex-col md:flex-row md:flex-wrap gap-6">
           <div className="flex flex-col gap-2 w-full md:w-auto">
-            <label className="text-[10px] font-black uppercase text-gray-400 ml-1 tracking-widest">Vælg sprog</label>
+            <label className="text-[10px] font-black uppercase text-gray-400 ml-1 tracking-widest">Vaelg sprog</label>
             <select value={newLang} onChange={(e) => setNewLang(e.target.value)} className="w-full p-3.5 rounded-2xl border border-blue-100 bg-white text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-blue-400 md:min-w-[180px] appearance-none">
               {LANGUAGES.map((lang) => (
                 <option key={lang.code} value={lang.code}>
@@ -440,16 +350,16 @@ export default function EmbedEditor({ embed }: EmbedEditorProps) {
               disabled={upgrading}
               className="px-3 py-2 rounded-lg bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 disabled:opacity-50 transition-all"
             >
-              {upgrading ? "Åbner checkout..." : "Opgrader nu"}
+              {upgrading ? "Aabner checkout..." : "Opgrader nu"}
             </button>
           </div>
         )}
       </section>
 
       <section className="np-card np-card-pad space-y-3">
-        <h3 className="text-sm md:text-lg font-black text-gray-900 uppercase tracking-tight">Tilladte domæner</h3>
+        <h3 className="text-sm md:text-lg font-black text-gray-900 uppercase tracking-tight">Tilladte domaener</h3>
         <p className="text-xs text-gray-500">
-          Skriv domæner adskilt med komma eller linjeskift. Brug <span className="font-mono">*</span> for at tillade alle.
+          Skriv domaener adskilt med komma eller linjeskift. Brug <span className="font-mono">*</span> for at tillade alle.
         </p>
         <textarea
           value={domainsInput}
@@ -465,7 +375,7 @@ export default function EmbedEditor({ embed }: EmbedEditorProps) {
             disabled={savingDomains}
             className="np-btn-primary px-4 py-3 disabled:opacity-50"
           >
-            {savingDomains ? "Gemmer..." : "Gem domæner"}
+            {savingDomains ? "Gemmer..." : "Gem domaener"}
           </button>
           {domainSaveError ? <p className="text-xs font-semibold text-red-600">{domainSaveError}</p> : null}
         </div>
@@ -476,17 +386,7 @@ export default function EmbedEditor({ embed }: EmbedEditorProps) {
         <EmbedCodeGenerator projectId={embed.id} projectTitle={projectName} />
       </section>
 
-      {showPreview && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setShowPreview(false)} />
-          <div className="relative w-full max-w-5xl aspect-video bg-black shadow-2xl z-10 overflow-hidden rounded-[2rem] border border-white/10 animate-in fade-in zoom-in-95 duration-200">
-            <button onClick={() => setShowPreview(false)} className="absolute top-4 right-4 z-50 bg-black/40 hover:bg-black/80 text-white p-2.5 rounded-full transition-all border border-white/10 active:scale-90">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
-            </button>
-            <iframe src={`/embed/${embed.id}`} className="w-full h-full border-none" allow="autoplay; fullscreen" />
-          </div>
-        </div>
-      )}
+      {showPreview && <EmbedPreviewModal embedId={embed.id} onClose={() => setShowPreview(false)} />}
     </div>
   );
 }

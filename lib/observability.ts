@@ -1,4 +1,4 @@
-﻿import { randomUUID } from "crypto";
+import { randomUUID } from "crypto";
 
 export const REQUEST_ID_HEADER = "x-request-id";
 

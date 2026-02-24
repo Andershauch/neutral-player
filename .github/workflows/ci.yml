@@ -24,6 +24,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Encoding check
+        run: npm run encoding:check
+
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
 
@@ -41,3 +44,6 @@ jobs:
 
       - name: Build
         run: npx next build
+
+      - name: Performance budget check
+        run: npm run perf:budget

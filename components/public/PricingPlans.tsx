@@ -3,30 +3,34 @@
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { getMessages } from "@/lib/i18n/messages";
 import type { BillingPlanDefinition, BillingPlanKey } from "@/lib/plans";
 
 interface PricingPlansProps {
   plans: BillingPlanDefinition[];
-  billingState: string | null;
-  stripeSessionId: string | null;
+  billingState?: string | null;
+  stripeSessionId?: string | null;
 }
 
 export default function PricingPlans({ plans, billingState, stripeSessionId }: PricingPlansProps) {
   const { status } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const t = getMessages("da");
   const [loadingPlan, setLoadingPlan] = useState<BillingPlanKey | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [confirmingCheckout, setConfirmingCheckout] = useState(false);
   const confirmedSessionRef = useRef<string | null>(null);
 
-  useEffect(() => {
-    if (billingState !== "success" || !stripeSessionId) return;
-    if (confirmedSessionRef.current === stripeSessionId) return;
+  const resolvedBillingState = billingState ?? searchParams.get("billing");
+  const resolvedStripeSessionId = stripeSessionId ?? searchParams.get("session_id");
 
-    confirmedSessionRef.current = stripeSessionId;
+  useEffect(() => {
+    if (resolvedBillingState !== "success" || !resolvedStripeSessionId) return;
+    if (confirmedSessionRef.current === resolvedStripeSessionId) return;
+
+    confirmedSessionRef.current = resolvedStripeSessionId;
     setConfirmingCheckout(true);
     setError(null);
 
@@ -35,7 +39,7 @@ export default function PricingPlans({ plans, billingState, stripeSessionId }: P
         const res = await fetch("/api/billing/checkout/confirm", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sessionId: stripeSessionId }),
+          body: JSON.stringify({ sessionId: resolvedStripeSessionId }),
         });
         const data = (await res.json()) as { hasAccess?: boolean; error?: string };
         if (!res.ok) {
@@ -52,7 +56,7 @@ export default function PricingPlans({ plans, billingState, stripeSessionId }: P
         setConfirmingCheckout(false);
       }
     })();
-  }, [billingState, router, stripeSessionId, t.pricing.openCheckoutError]);
+  }, [resolvedBillingState, resolvedStripeSessionId, router, t.pricing.openCheckoutError]);
 
   const startCheckout = async (planKey: BillingPlanKey) => {
     setLoadingPlan(planKey);
@@ -82,7 +86,7 @@ export default function PricingPlans({ plans, billingState, stripeSessionId }: P
 
   return (
     <div className="space-y-6">
-      {billingState === "success" && (
+      {resolvedBillingState === "success" && (
         <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-5 py-4">
           <p className="text-xs font-black uppercase tracking-widest text-emerald-700">
             {t.pricing.success}
@@ -93,7 +97,7 @@ export default function PricingPlans({ plans, billingState, stripeSessionId }: P
         </div>
       )}
 
-      {billingState === "cancelled" && (
+      {resolvedBillingState === "cancelled" && (
         <div className="rounded-2xl border border-amber-100 bg-amber-50 px-5 py-4">
           <p className="text-xs font-black uppercase tracking-widest text-amber-700">
             {t.pricing.cancelled}

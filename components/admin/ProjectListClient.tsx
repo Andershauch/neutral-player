@@ -1,10 +1,14 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import EmbedCodeGenerator from "./EmbedCodeGenerator";
+
+const EmbedCodeGenerator = dynamic(() => import("./EmbedCodeGenerator"), {
+  loading: () => <p className="text-xs font-semibold text-gray-500">Indlaeser embed-kode...</p>,
+});
 
 interface ProjectListClientProps {
   initialProjects: Array<{
@@ -12,7 +16,6 @@ interface ProjectListClientProps {
     name: string;
     groups?: Array<{
       variants: Array<{
-        id: string;
         muxPlaybackId: string | null;
       }>;
     }>;

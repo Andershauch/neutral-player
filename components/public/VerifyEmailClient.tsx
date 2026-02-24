@@ -2,17 +2,20 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 interface VerifyEmailClientProps {
-  token: string;
+  token?: string;
 }
 
 export default function VerifyEmailClient({ token }: VerifyEmailClientProps) {
+  const searchParams = useSearchParams();
+  const resolvedToken = token ?? searchParams.get("token") ?? "";
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!token) {
+    if (!resolvedToken) {
       setStatus("error");
       setError("Verificeringslink mangler.");
       return;
@@ -23,7 +26,7 @@ export default function VerifyEmailClient({ token }: VerifyEmailClientProps) {
         const res = await fetch("/api/email/verification/confirm", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token }),
+          body: JSON.stringify({ token: resolvedToken }),
         });
         const data = (await res.json()) as { error?: string };
         if (!res.ok) {
@@ -36,7 +39,7 @@ export default function VerifyEmailClient({ token }: VerifyEmailClientProps) {
         setStatus("error");
       }
     })();
-  }, [token]);
+  }, [resolvedToken]);
 
   return (
     <div className="max-w-md w-full bg-white border border-gray-100 rounded-[2rem] p-8 shadow-xl shadow-blue-900/5 space-y-5">

@@ -1,6 +1,6 @@
-﻿# SaaS Roadmap (Source of Truth)
+# SaaS Roadmap (Source of Truth)
 ## Document Version
-- Current release: v0.2.1
+- Current release: v0.2.2
 - Last updated: 2026-02-23
 
 
@@ -295,12 +295,126 @@
 - `DONE`: Email setup dokumenteret i `docs/email-setup.md` (Resend + Vercel + DNS + test/fejlfinding).
 - `DONE`: Frontend pass 2 (del 1): forbedret versionskort-design i projekt-editor (`/admin/embed/[embedId]`) med mere konsistent spacing/komponentstil efter design-tokens.
 - `DONE`: Signup verify-mail flow robustgjort: verificeringsmail sendes automatisk i setup-flow, og signup fejler ikke længere hvis email-provider fejler midlertidigt.
+- `DONE`: Frontend pass 2 (del 2): admin-fladerne `embed`, `audit` og `users` er finpudset med ens layout, spacing og komponent-konsistens på tværs af design-tokens.
+- `DONE`: Embed-editor opgraderet med inline redigering af projektnavn, topbar `Kopier kode` handling, og ny sektion-rækkefølge med fokus på varianter først.
+- `DONE`: Embed-sikkerhed udvidet: domæne-håndhævelse + aktiv betalt abonnements-gate + audit logs ved blokering, inkl. tilladelse af afspilning fra eget domæne.
+- `DONE`: Marketing-forside opdateret med klassisk hero/CTA-opbygning, 4 plan-kort (`Starter`, `Pro`, `Enterprise`, `Custom`) og konsistent plan-data fra billing-laget.
+- `DONE`: Forside hero understøtter nu udskiftelig baggrund (video eller billede) via simpel konfiguration i `app/page.tsx`.
+- `DONE`: Performance/encoding hygiene-pass: BOM-fejl fjernet i hele kodebasen (inkl. app/api/components/docs), og parse-fejl fra skjulte tegn elimineret.
+- `DONE`: Frontend performance forbedret i plan/pris-flow: Stripe-prisopslag i `lib/plans.ts` er cachet (memoized + revalidate), så forside/pricing ikke laver unødige live-opslag på hvert request.
+- `DONE`: Hero media-load lettet på forsiden (`preload=\"none\"` på video) for hurtigere initial rendering.
 
 ---
 
 ## Next Logical Step
-- `Frontend pass 2`: finpudsning af layout, spacing og komponent-konsistens på admin-fladerne (`embed`, `audit`, `users`) med samme design-tokens.
-- Hvorfor: Kerneflow og stilgrundlag er nu på plads, så næste værdi er visuel sammenhæng og bedre UX-detaljer før næste større feature-arbejde.
+- `Stripe plan expansion`: opret og koble Stripe-produkter/price IDs for `Enterprise` og `Custom`, og aktivér checkout for disse planer.
+- Hvorfor: UI og planstruktur er nu klar med 4 planer, men kun `Starter`/`Pro` har aktiv checkout. Næste direkte forretningsværdi er at gøre alle plan-veje købsklare.
+
+---
+
+## Performance Plan (Når du er tilbage)
+- **Mål:** Gør frontend hurtigere, reducér server-load, og fjern teknisk støj (encoding/dynamisk rendering), uden at bryde flows.
+
+### Fase 1 - Baseline og måling
+- Etablér baseline-metrics pr. nøgleside (`/`, `/pricing`, `/admin/dashboard`, `/admin/embed/[id]`): TTFB, LCP, JS payload, hydration-tid.
+- Dokumentér hvilke sider der er `force-dynamic`, og hvorfor.
+- Output: kort rapport med før-tal + top 5 flaskehalse.
+
+#### Fase 1 status (2026-02-23): `DONE`
+- Build snapshot:
+  - `/` prerendered statisk med `Revalidate: 5m`.
+  - `admin/*` og flere setup/pricing-sider kører stadig `force-dynamic`.
+- Runtime baseline (lokal `next start`, headless browser):
+  - `/`: TTFB ~51ms, DOM interactive ~536ms, load ~692ms.
+  - `/pricing`: TTFB ~67ms, DOM interactive ~144ms, load ~287ms.
+  - `/admin/dashboard`: ender på login-redirect, TTFB ~95ms.
+  - `/admin/embed/[id]`: ender på login-redirect, TTFB ~66ms.
+- JS payload (resource timing, pr. side-load):
+  - `/`: ~975KB transfer, ~4968KB decoded JS.
+  - `/pricing`: ~954KB transfer, ~4864KB decoded JS.
+  - `admin`-målinger ovenfor er login-side payload pga. redirect.
+- Teknisk hygiene:
+  - BOM scan: `NO_BOM_FILES` efter cleanup.
+  - Typecheck/lint: grøn.
+
+### Fase 2 - Rendering-strategi
+- Fjern eller reducer `force-dynamic` på sider der ikke behøver fuld dynamik.
+- Indfør `revalidate`/cache-strategi på read-tunge visninger hvor data ikke kræver instant refresh.
+- Behold dynamik kun hvor auth/session/write-flow kræver det.
+- Output: målbar reduktion i TTFB på public + read-sider.
+
+#### Fase 2 status (2026-02-23): `DONE`
+- `DONE`: `/pricing` flyttet fra `force-dynamic` til statisk render med `revalidate=300`.
+- `DONE`: `/verify-email` flyttet fra `force-dynamic` til statisk render med `revalidate=300`.
+- `DONE`: Query-param håndtering (`billing`, `session_id`, `token`) flyttet til client-komponenter via `useSearchParams` med `Suspense`, så siderne kan prerenderes.
+- `DONE`: Build-verifikation viser nu:
+  - `○ /pricing  Revalidate 5m`
+  - `○ /verify-email  Revalidate 5m`
+- `DONE`: Admin server-fetch optimeret med parallelisering:
+  - `app/admin/dashboard/page.tsx`: planer, subscription, projekter, onboarding og usage hentes nu via samlet `Promise.all`.
+  - `components/admin/TeamManagementPage.tsx`: medlemsliste og pending invites hentes nu parallelt med `Promise.all`.
+- `DONE`: Reduceret over-fetch i admin DB-queries:
+  - `app/admin/dashboard/page.tsx`: projekter henter nu kun nødvendige felter (`id`, `name`, `groups.variants.{muxPlaybackId}`).
+  - `app/admin/projects/page.tsx`: projektliste henter nu kun nødvendige felter (`id`, `name`, `groups.variants.{muxPlaybackId}`).
+  - `components/admin/TeamManagementPage.tsx`: medlemsliste henter nu kun nødvendige user-felter (`id`, `name`, `email`, `image`).
+- `DONE`: Dashboard-statistik flyttet fra in-memory loops til DB-aggregat:
+  - `app/admin/dashboard/page.tsx`: `totalVariants` + `totalViews` beregnes nu via `prisma.variant.aggregate(...)`.
+  - Resultat: mindre payload i projekthentning og lavere serverarbejde pr. request.
+- `DONE`: Yderligere query-stramning i admin:
+  - `app/admin/audit/page.tsx`: audit-log query bruger nu `select` med kun viste felter.
+  - `components/admin/TeamManagementPage.tsx`: pending invites query bruger nu `select` med kun viste felter.
+  - `app/admin/dashboard/page.tsx`: subscription query henter ikke længere ubrugt `status`.
+- `DONE`: Projektliste-queries reduceret yderligere for thumbnail-visning:
+  - `app/admin/dashboard/page.tsx` og `app/admin/projects/page.tsx` henter nu kun varianter med `muxPlaybackId` sat.
+  - Varianter begrænses til `take: 6` pr. gruppe med `orderBy: sortOrder`.
+  - Resultat: mindre payload og lavere serialiseringsarbejde til projektkort.
+- `DONE`: Autentificeret admin-performance målt med aktiv test-subscription:
+  - `/admin/dashboard`: TTFB ~207ms, load ~318ms.
+  - `/admin/projects`: TTFB ~114ms, load ~196ms.
+  - `/admin/team`: TTFB ~150ms, load ~275ms.
+  - `/admin/billing`: TTFB ~160ms, load ~263ms.
+- `OBS`: Admin-ruter er fortsat dynamiske (`ƒ`) pga. auth/tenant-kontekst (forventet og korrekt).
+- `NEXT`: Gå videre til Fase 3 (bundle og client-island optimering) for at reducere JS payload på tværs af public/admin.
+
+### Fase 3 - Bundle og client island-optimering
+- Split store client-komponenter (især admin editor-flows) i mindre islands.
+- Lazy-load tunge dele (uploader/player/modals) med `dynamic()` hvor relevant.
+- Hold `SessionProvider` scoped til områder der faktisk kræver klient-session.
+- Output: lavere JS payload og hurtigere interaktivitet på admin-sider.
+
+#### Fase 3 status (2026-02-23): `DONE`
+- `DONE`: Global `SessionProvider` fjernet fra root-layout, så public-sider ikke automatisk hydrerer next-auth klientkode.
+- `DONE`: `SessionProvider` scoped til de områder der faktisk bruger klient-session:
+  - `app/admin/layout.tsx` (admin-flader)
+  - `app/invite/[token]/page.tsx` (invite accept-flow)
+  - `app/pricing/page.tsx` via lokal wrapper omkring `PricingPlans`.
+- `DONE`: `/pricing` regression rettet, så siden igen kan prerenderes med `revalidate=300` i stedet for at blive gjort dynamisk af server-session opslag.
+- `DONE`: Tung videokode i embed-editor er nu lazy-loadet:
+  - `components/admin/EmbedEditor.tsx` loader `@mux/mux-player-react` og `MuxUploader` via `dynamic()`, så payload reduceres ved initial rendering.
+- `DONE`: Dashboard og projektoversigt lazy-loader nu store client-islands:
+  - `app/admin/dashboard/page.tsx` lazy-loader `ProjectListClient`, `OnboardingChecklistCard` og `UsageLimitsCard`.
+  - `app/admin/projects/page.tsx` lazy-loader `ProjectListClient`.
+- `DONE`: `EmbedCodeGenerator` i `ProjectListClient` er lazy-loadet, så embed-modalens kode hentes først ved åbning.
+- `NEXT`: Kør ny build-bundle sammenligning og fortsæt med lazy-loading af resterende tunge admin-islands (fx modals og sekundære editor-sektioner).
+
+ - `DONE`: Yderligere lazy-loading af sekundÒ¦re admin-widgets:
+  - `app/admin/dashboard/page.tsx` lazy-loader nu ogsÒ¥ `BillingPlansCard`.
+  - `components/admin/EmbedEditor.tsx` lazy-loader `EmbedCodeGenerator`.
+
+### Fase 4 - Media og asset-optimering
+- Hero-video: lever flere kvaliteter/codecs + poster fallback, og verificér mobil-performance.
+- Gennemgå billeder/fonts for optimal format og loading-prioritet.
+- Output: bedre LCP og mindre dataforbrug på forsiden.
+
+### Fase 5 - Guardrails i drift
+- Tilføj performance-budget checks i CI (bundle-størrelse + Lighthouse/TTFB thresholds i preview).
+- Behold encoding-regel: UTF-8 uden BOM i repo (evt. `.gitattributes` + lint/check script).
+- Output: regressions bliver fanget tidligt før deploy.
+
+### Definition of Done for performance-sprint
+- Min. 20-30% forbedring i TTFB/LCP på de mest trafikerede sider.
+- Ingen BOM/encoding-fejl i repository.
+- Typecheck/lint/test/build grøn efter optimeringer.
 
 ---
 
@@ -309,6 +423,21 @@
 - `Implement TASK-2.3 from docs/saas-roadmap.md and list required env vars.`
 - `Implement TASK-3.3 from docs/saas-roadmap.md with clear usage bars and one-click upgrade CTAs.`
 
+## Fase 3 Log (2026-02-23)
+- `DONE`: `EmbedEditor` er splittet i islands:
+  - `components/admin/EmbedPreviewModal.tsx` (preview modal) lazy-loades.
+  - `components/admin/EmbedVariantCard.tsx` (variantkort med upload/player) lazy-loades.
+- `DONE`: Opret-projekt flow er splittet:
+  - `components/admin/CreateProjectButton.tsx` holder nu kun trigger-state.
+  - `components/admin/CreateProjectModal.tsx` (API/upgrade/modal logik) lazy-loades on demand.
+- `MEASURED`: Post-fase-3 runtime (lokal `next start`, headless, autentificeret admin):
+  - `/admin/dashboard`: TTFB ~127ms, load ~155ms, decoded JS ~741KB.
+  - `/admin/projects`: TTFB ~161ms, load ~179ms, decoded JS ~726KB.
+  - `/admin/embed/[id]`: TTFB ~95ms, load ~122ms, decoded JS ~716KB.
+- `DONE`: Performance guardrail i CI:
+  - Ny script: `scripts/check-client-bundle-budget.mjs`.
+  - Kører efter build via `npm run perf:budget` i `.github/workflows/ci.yml`.
+  - Budgetter: total client JS chunks (`2600 KB`) og største chunk (`1100 KB`).
 
 
 
@@ -318,3 +447,24 @@
 
 
 
+
+
+- `DONE`: Low-risk split af offentlig player-komponent:
+  - `components/player/MuxPlayerClient.tsx` lazy-loader nu `@mux/mux-player-react` via `dynamic()`.
+- `MEASURED`: Bundle-budget effekt efter split:
+  - Client chunk files: `36 -> 35`.
+  - Total JS chunks: `2246.6 KB -> 2245.9 KB`.
+  - Stoerste chunk: `1000.2 KB -> 997.3 KB`.
+- `DONE`: On-demand media-aktivering i `EmbedVariantCard`:
+  - Player/uploader mountes nu foerst ved viewport-hit (`IntersectionObserver`) eller manuel aktivering.
+- `MEASURED`: Bundle-budget efter dette step:
+  - Client chunk files: `35` (uendret).
+  - Total JS chunks: `2246.7 KB` (praktisk talt uendret).
+  - Stoerste chunk: `997.3 KB` (uendret).
+- `CLOSE`: Fase 3 er afsluttet med stabile guardrails og dokumenterede maalinger.
+- `DECISION`: Behold nuvaerende max-chunk budget (`1100 KB`) i CI indtil et dedikeret player/vendor-spor prioriteres.
+- `NEXT`: Start Fase 4 (media og asset-optimering) med fokus paa hero-video varianter, poster fallback og LCP-forbedringer.
+- `DONE` (Fase 4 - step 1): Hero media robustgjort:
+  - `components/public/HeroMedia.tsx` tilfoejet med video -> image fallback ved reduced-motion eller afspilningsfejl.
+  - `app/page.tsx` bruger nu flere video-sources (`webm` + `mp4`) samt dedikeret poster.
+  - Lokal placeholder poster tilfoejet: `public/images/hero-product-demo.svg`.

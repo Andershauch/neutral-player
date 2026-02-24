@@ -1,4 +1,6 @@
-﻿export type BillingPlanKey = "starter_monthly" | "pro_monthly" | "enterprise_monthly" | "custom_monthly";
+import { cache } from "react";
+
+export type BillingPlanKey = "starter_monthly" | "pro_monthly" | "enterprise_monthly" | "custom_monthly";
 
 export interface BillingPlanDefinition {
   key: BillingPlanKey;
@@ -17,6 +19,8 @@ interface StripePriceResponse {
     interval?: string | null;
   } | null;
 }
+
+const STRIPE_PRICE_CACHE_SECONDS = 300;
 
 export const BILLING_PLANS: BillingPlanDefinition[] = [
   {
@@ -73,7 +77,7 @@ export function getBillingPlanByStripePriceId(priceId: string): BillingPlanDefin
   return null;
 }
 
-export async function getBillingPlansForDisplay(): Promise<BillingPlanDefinition[]> {
+export const getBillingPlansForDisplay = cache(async (): Promise<BillingPlanDefinition[]> => {
   const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
   if (!stripeSecretKey) return BILLING_PLANS;
 
@@ -90,7 +94,7 @@ export async function getBillingPlansForDisplay(): Promise<BillingPlanDefinition
           headers: {
             Authorization: `Bearer ${stripeSecretKey}`,
           },
-          cache: "no-store",
+          next: { revalidate: STRIPE_PRICE_CACHE_SECONDS },
         });
 
         if (!res.ok) return plan;
@@ -112,7 +116,7 @@ export async function getBillingPlansForDisplay(): Promise<BillingPlanDefinition
   );
 
   return plans;
-}
+});
 
 function formatStripePriceLabel(
   unitAmountMinor: number | null,

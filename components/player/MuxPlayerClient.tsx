@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import MuxPlayer from "@mux/mux-player-react";
+import dynamic from "next/dynamic";
+
+const MuxPlayer = dynamic(() => import("@mux/mux-player-react"), { ssr: false });
 
 const LANGUAGE_NAMES: Record<string, string> = {
   da: "Dansk",

@@ -1,16 +1,45 @@
-﻿import { redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import Link from "next/link";
+import dynamicImport from "next/dynamic";
 import { prisma } from "@/lib/prisma";
 import CreateProjectButton from "@/components/admin/CreateProjectButton";
-import ProjectListClient from "@/components/admin/ProjectListClient";
-import BillingPlansCard from "@/components/admin/BillingPlansCard";
-import UsageLimitsCard from "@/components/admin/UsageLimitsCard";
-import OnboardingChecklistCard from "@/components/admin/OnboardingChecklistCard";
 import { canManageBillingRole, getOrgContextForContentEdit } from "@/lib/authz";
 import { getMessages } from "@/lib/i18n/messages";
 import { getBillingPlansForDisplay } from "@/lib/plans";
 import { getOnboardingStatus } from "@/lib/onboarding";
 import { getOrgUsageSummary } from "@/lib/plan-limits";
+
+const ProjectListClient = dynamicImport(() => import("@/components/admin/ProjectListClient"), {
+  loading: () => (
+    <div className="np-card p-8">
+      <p className="text-xs font-semibold text-gray-500">Indlaeser projekter...</p>
+    </div>
+  ),
+});
+
+const UsageLimitsCard = dynamicImport(() => import("@/components/admin/UsageLimitsCard"), {
+  loading: () => (
+    <div className="np-card p-5">
+      <p className="text-xs font-semibold text-gray-500">Indlaeser forbrug...</p>
+    </div>
+  ),
+});
+
+const OnboardingChecklistCard = dynamicImport(() => import("@/components/admin/OnboardingChecklistCard"), {
+  loading: () => (
+    <div className="np-card p-5 md:p-8">
+      <p className="text-xs font-semibold text-gray-500">Indlaeser onboarding...</p>
+    </div>
+  ),
+});
+
+const BillingPlansCard = dynamicImport(() => import("@/components/admin/BillingPlansCard"), {
+  loading: () => (
+    <div className="np-card p-6 md:p-8">
+      <p className="text-xs font-semibold text-gray-500">Indlaeser planer...</p>
+    </div>
+  ),
+});
 
 export const dynamic = "force-dynamic";
 
@@ -25,48 +54,49 @@ export default async function DashboardPage({
   if (!orgCtx) {
     redirect("/unauthorized");
   }
-  const plans = await getBillingPlansForDisplay();
-
-  const activeSubscription = await prisma.subscription.findFirst({
-    where: { organizationId: orgCtx.orgId },
-    orderBy: { updatedAt: "desc" },
-    select: {
-      plan: true,
-      status: true,
-      stripeCustomerId: true,
-    },
-  });
-
-  const projects = await prisma.embed.findMany({
-    where: { organizationId: orgCtx.orgId },
-    orderBy: { createdAt: "desc" },
-    include: {
-      groups: {
-        include: {
-          variants: true,
+  const [plans, activeSubscription, projects, onboarding, usageSummary, variantStats] = await Promise.all([
+    getBillingPlansForDisplay(),
+    prisma.subscription.findFirst({
+      where: { organizationId: orgCtx.orgId },
+      orderBy: { updatedAt: "desc" },
+      select: {
+        plan: true,
+        stripeCustomerId: true,
+      },
+    }),
+    prisma.embed.findMany({
+      where: { organizationId: orgCtx.orgId },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        name: true,
+        groups: {
+          select: {
+            variants: {
+              where: { muxPlaybackId: { not: null } },
+              orderBy: { sortOrder: "asc" },
+              take: 6,
+              select: {
+                muxPlaybackId: true,
+              },
+            },
+          },
         },
       },
-    },
-  });
-
-  const onboarding = await getOnboardingStatus(orgCtx.orgId);
-  const usageSummary = await getOrgUsageSummary(orgCtx.orgId);
+    }),
+    getOnboardingStatus(orgCtx.orgId),
+    getOrgUsageSummary(orgCtx.orgId),
+    prisma.variant.aggregate({
+      where: { organizationId: orgCtx.orgId },
+      _count: { _all: true },
+      _sum: { views: true },
+    }),
+  ]);
   const canManageBilling = canManageBillingRole(orgCtx.role);
 
   const totalProjects = projects.length;
-  const totalVariants = projects.reduce((sum, project) => {
-    return sum + project.groups.reduce((groupSum, group) => groupSum + group.variants.length, 0);
-  }, 0);
-  const totalViews = projects.reduce((sum, project) => {
-    return (
-      sum +
-      project.groups.reduce(
-        (groupSum, group) =>
-          groupSum + group.variants.reduce((variantSum, variant) => variantSum + (variant.views || 0), 0),
-        0
-      )
-    );
-  }, 0);
+  const totalVariants = variantStats._count._all || 0;
+  const totalViews = variantStats._sum.views || 0;
 
   const completedOnboardingSteps = [
     onboarding.hasProject,

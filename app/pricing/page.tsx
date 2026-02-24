@@ -2,17 +2,12 @@ import PricingPlans from "@/components/public/PricingPlans";
 import { getMessages } from "@/lib/i18n/messages";
 import { getBillingPlansForDisplay } from "@/lib/plans";
 import Link from "next/link";
+import { Suspense } from "react";
+import { Providers } from "@/components/Providers";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
-export default async function PricingPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ billing?: string; session_id?: string }>;
-}) {
-  const resolvedSearchParams = await searchParams;
-  const billingState = resolvedSearchParams.billing ?? null;
-  const stripeSessionId = resolvedSearchParams.session_id ?? null;
+export default async function PricingPage() {
   const t = getMessages("da");
   const plans = await getBillingPlansForDisplay();
 
@@ -28,7 +23,11 @@ export default async function PricingPage({
           </p>
         </div>
 
-        <PricingPlans plans={plans} billingState={billingState} stripeSessionId={stripeSessionId} />
+        <Suspense fallback={<div className="rounded-2xl border border-gray-100 bg-white p-6 text-sm text-gray-500">Indlaeser planer...</div>}>
+          <Providers>
+            <PricingPlans plans={plans} />
+          </Providers>
+        </Suspense>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
           <Link
@@ -48,3 +47,4 @@ export default async function PricingPage({
     </main>
   );
 }
+

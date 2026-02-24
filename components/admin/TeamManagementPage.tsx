@@ -1,4 +1,4 @@
-﻿import { prisma } from "@/lib/prisma";
+import { prisma } from "@/lib/prisma";
 import Image from "next/image";
 import DeleteUserButton from "@/app/admin/users/DeleteUserButton";
 import RoleSelector from "@/app/admin/users/RoleSelector";
@@ -18,21 +18,38 @@ export default async function TeamManagementPage() {
     );
   }
 
-  const memberships = await prisma.organizationUser.findMany({
-    where: { organizationId: orgCtx.orgId },
-    orderBy: { createdAt: "asc" },
-    include: {
-      user: true,
-    },
-  });
-
-  const pendingInvites = await prisma.invite.findMany({
-    where: {
-      organizationId: orgCtx.orgId,
-      acceptedAt: null,
-    },
-    orderBy: { createdAt: "desc" },
-  });
+  const [memberships, pendingInvites] = await Promise.all([
+    prisma.organizationUser.findMany({
+      where: { organizationId: orgCtx.orgId },
+      orderBy: { createdAt: "asc" },
+      select: {
+        id: true,
+        userId: true,
+        role: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            image: true,
+          },
+        },
+      },
+    }),
+    prisma.invite.findMany({
+      where: {
+        organizationId: orgCtx.orgId,
+        acceptedAt: null,
+      },
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        expiresAt: true,
+      },
+    }),
+  ]);
 
   const currentUserEmail = memberships.find((m) => m.userId === orgCtx.userId)?.user.email;
   const canAssignOwner = orgCtx.role === "owner";

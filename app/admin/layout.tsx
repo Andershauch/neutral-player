@@ -2,6 +2,7 @@ import Sidebar from "@/components/admin/Sidebar";
 import { redirect } from "next/navigation";
 import { getCurrentOrgContext } from "@/lib/org-context";
 import { prisma } from "@/lib/prisma";
+import { Providers } from "@/components/Providers";
 
 export default async function AdminLayout({
   children,
@@ -29,7 +30,8 @@ export default async function AdminLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
+    <Providers>
+      <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
       {/* Sidebaren er 'fixed'. 
         På mobil fylder den top-baren, på PC fylder den venstre side. 
       */}
@@ -40,11 +42,12 @@ export default async function AdminLayout({
         - md:pt-0 på PC: Fjerner top-paddingen, da sidebaren nu er i siden.
         - md:ml-64 på PC: Skubber indholdet til højre for sidebaren.
       */}
-      <main className="flex-1 transition-all duration-300 pt-20 md:pt-0 md:ml-64 p-4 md:p-10">
-        <div className="max-w-7xl mx-auto">
-          {children}
-        </div>
-      </main>
-    </div>
+        <main className="flex-1 transition-all duration-300 pt-20 md:pt-0 md:ml-64 p-4 md:p-10">
+          <div className="max-w-7xl mx-auto">
+            {children}
+          </div>
+        </main>
+      </div>
+    </Providers>
   );
 }

@@ -1,8 +1,16 @@
-﻿import { redirect } from "next/navigation";
+import { redirect } from "next/navigation";
+import dynamicImport from "next/dynamic";
 import { prisma } from "@/lib/prisma";
 import CreateProjectButton from "@/components/admin/CreateProjectButton";
-import ProjectListClient from "@/components/admin/ProjectListClient";
 import { getOrgContextForContentEdit } from "@/lib/authz";
+
+const ProjectListClient = dynamicImport(() => import("@/components/admin/ProjectListClient"), {
+  loading: () => (
+    <div className="np-card p-8">
+      <p className="text-xs font-semibold text-gray-500">Indlaeser projekter...</p>
+    </div>
+  ),
+});
 
 export const dynamic = "force-dynamic";
 
@@ -15,10 +23,19 @@ export default async function ProjectsPage() {
   const projects = await prisma.embed.findMany({
     where: { organizationId: orgCtx.orgId },
     orderBy: { createdAt: "desc" },
-    include: {
+    select: {
+      id: true,
+      name: true,
       groups: {
-        include: {
-          variants: true,
+        select: {
+          variants: {
+            where: { muxPlaybackId: { not: null } },
+            orderBy: { sortOrder: "asc" },
+            take: 6,
+            select: {
+              muxPlaybackId: true,
+            },
+          },
         },
       },
     },

@@ -1,4 +1,4 @@
-﻿import { headers } from "next/headers";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import MuxPlayerClient from "@/components/player/MuxPlayerClient";
 import { prisma } from "@/lib/prisma";

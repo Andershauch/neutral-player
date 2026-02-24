@@ -1,6 +1,8 @@
-﻿import Image from "next/image";
 import Link from "next/link";
 import { getBillingPlansForDisplay, type BillingPlanKey } from "@/lib/plans";
+import HeroMedia from "@/components/public/HeroMedia";
+import HomeHeaderActions from "@/components/public/HomeHeaderActions";
+import { Providers } from "@/components/Providers";
 
 type HomePlanMeta = {
   highlighted: boolean;
@@ -16,8 +18,9 @@ const PLAN_META: Record<BillingPlanKey, HomePlanMeta> = {
 
 const HERO_MEDIA = {
   type: "video" as "video" | "image",
-  videoSrc: "/media/hero-product-demo.mp4",
-  imageSrc: "/images/hero-product-demo.jpg",
+  videoSources: [{ src: "/images/hero_video_test.mp4", type: "video/mp4" }],
+  posterSrc: "/images/hero-product-demo.svg",
+  imageSrc: "/images/hero-product-demo.svg",
   imageAlt: "NeutralPlayer produktdemo med oprettelse af projekt og varianter",
 };
 
@@ -31,51 +34,20 @@ export default async function Home() {
           <h1 className="text-2xl md:text-3xl font-black tracking-tight uppercase text-gray-900 shrink-0">
             Neutral<span className="text-blue-600">.</span>
           </h1>
-          <div className="flex flex-wrap items-center gap-2">
-            <Link
-              href="/faq"
-              className="px-4 py-2 rounded-xl border border-gray-200 text-[10px] font-black uppercase tracking-widest text-gray-700 hover:bg-white"
-            >
-              FAQ
-            </Link>
-            <Link
-              href="/contact"
-              className="px-4 py-2 rounded-xl border border-gray-200 text-[10px] font-black uppercase tracking-widest text-gray-700 hover:bg-white"
-            >
-              Kontakt
-            </Link>
-            <Link
-              href="/login"
-              className="px-4 py-2 rounded-xl border border-gray-200 text-[10px] font-black uppercase tracking-widest text-gray-700 hover:bg-white"
-            >
-              Log ind
-            </Link>
-            <Link
-              href="/pricing"
-              className="px-4 py-2 rounded-xl bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-700"
-            >
-              Se planer
-            </Link>
-          </div>
+          <Providers>
+            <HomeHeaderActions />
+          </Providers>
         </header>
 
         <section className="np-card np-card-pad relative overflow-hidden">
           <div className="absolute inset-0">
-            {HERO_MEDIA.type === "video" ? (
-              <video
-                className="h-full w-full object-cover"
-                autoPlay
-                muted
-                loop
-                playsInline
-                preload="metadata"
-                poster={HERO_MEDIA.imageSrc}
-              >
-                <source src={HERO_MEDIA.videoSrc} type="video/mp4" />
-              </video>
-            ) : (
-              <Image src={HERO_MEDIA.imageSrc} alt={HERO_MEDIA.imageAlt} fill priority className="object-cover" />
-            )}
+            <HeroMedia
+              type={HERO_MEDIA.type}
+              videoSources={HERO_MEDIA.videoSources}
+              posterSrc={HERO_MEDIA.posterSrc}
+              imageSrc={HERO_MEDIA.imageSrc}
+              imageAlt={HERO_MEDIA.imageAlt}
+            />
             <div className="absolute inset-0 bg-white/82 backdrop-blur-[1px]" />
           </div>
 
@@ -83,7 +55,7 @@ export default async function Home() {
             <div>
               <p className="np-kicker text-blue-600">Video platform til flersprogede embeds</p>
               <h2 className="mt-4 text-3xl md:text-5xl font-black tracking-tight uppercase text-gray-900 leading-tight">
-                Lever videooplevelser, der passer til både sprog, brand og kanal
+                MANGE SPROG = MANGE VIDEOER. NEUTRALPLAYER = EN SAMLET VIDEOOPLEVELSE
               </h2>
               <p className="mt-4 text-sm md:text-base text-gray-600 max-w-2xl">
                 NeutralPlayer gør det enkelt at oprette flere videovarianter i ét projekt, styre domæner og dele en

@@ -20,6 +20,14 @@ export default async function AuditPage() {
     },
     orderBy: { createdAt: "desc" },
     take: 100,
+    select: {
+      id: true,
+      createdAt: true,
+      userId: true,
+      userName: true,
+      action: true,
+      target: true,
+    },
   });
 
   return (
