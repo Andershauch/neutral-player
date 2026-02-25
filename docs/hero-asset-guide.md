@@ -64,7 +64,7 @@ ffmpeg -i input.mov -vf "scale=1920:1080:force_original_aspect_ratio=decrease,pa
 ```
 
 ## Quick QA checklist
-- Video starter uden hak paa mobil og desktop
+- Video starter uden hak p? mobil og desktop
 - Poster vises korrekt hvis video fejler
 - Hero ser ok ud med `prefers-reduced-motion`
 - Ingen vigtig tekst skaeres ved small screens

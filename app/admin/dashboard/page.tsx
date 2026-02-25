@@ -3,24 +3,14 @@ import Link from "next/link";
 import dynamicImport from "next/dynamic";
 import { prisma } from "@/lib/prisma";
 import CreateProjectButton from "@/components/admin/CreateProjectButton";
-import { canManageBillingRole, getOrgContextForContentEdit } from "@/lib/authz";
+import { getOrgContextForContentEdit } from "@/lib/authz";
 import { getMessages } from "@/lib/i18n/messages";
-import { getBillingPlansForDisplay } from "@/lib/plans";
 import { getOnboardingStatus } from "@/lib/onboarding";
-import { getOrgUsageSummary } from "@/lib/plan-limits";
 
 const ProjectListClient = dynamicImport(() => import("@/components/admin/ProjectListClient"), {
   loading: () => (
     <div className="np-card p-8">
-      <p className="text-xs font-semibold text-gray-500">Indlaeser projekter...</p>
-    </div>
-  ),
-});
-
-const UsageLimitsCard = dynamicImport(() => import("@/components/admin/UsageLimitsCard"), {
-  loading: () => (
-    <div className="np-card p-5">
-      <p className="text-xs font-semibold text-gray-500">Indlaeser forbrug...</p>
+      <p className="text-xs font-semibold text-gray-500">Indlæser projekter...</p>
     </div>
   ),
 });
@@ -28,15 +18,7 @@ const UsageLimitsCard = dynamicImport(() => import("@/components/admin/UsageLimi
 const OnboardingChecklistCard = dynamicImport(() => import("@/components/admin/OnboardingChecklistCard"), {
   loading: () => (
     <div className="np-card p-5 md:p-8">
-      <p className="text-xs font-semibold text-gray-500">Indlaeser onboarding...</p>
-    </div>
-  ),
-});
-
-const BillingPlansCard = dynamicImport(() => import("@/components/admin/BillingPlansCard"), {
-  loading: () => (
-    <div className="np-card p-6 md:p-8">
-      <p className="text-xs font-semibold text-gray-500">Indlaeser planer...</p>
+      <p className="text-xs font-semibold text-gray-500">Indlæser onboarding...</p>
     </div>
   ),
 });
@@ -54,16 +36,8 @@ export default async function DashboardPage({
   if (!orgCtx) {
     redirect("/unauthorized");
   }
-  const [plans, activeSubscription, projects, onboarding, usageSummary, variantStats] = await Promise.all([
-    getBillingPlansForDisplay(),
-    prisma.subscription.findFirst({
-      where: { organizationId: orgCtx.orgId },
-      orderBy: { updatedAt: "desc" },
-      select: {
-        plan: true,
-        stripeCustomerId: true,
-      },
-    }),
+
+  const [projects, onboarding, variantStats] = await Promise.all([
     prisma.embed.findMany({
       where: { organizationId: orgCtx.orgId },
       orderBy: { createdAt: "desc" },
@@ -85,14 +59,12 @@ export default async function DashboardPage({
       },
     }),
     getOnboardingStatus(orgCtx.orgId),
-    getOrgUsageSummary(orgCtx.orgId),
     prisma.variant.aggregate({
       where: { organizationId: orgCtx.orgId },
       _count: { _all: true },
       _sum: { views: true },
     }),
   ]);
-  const canManageBilling = canManageBillingRole(orgCtx.role);
 
   const totalProjects = projects.length;
   const totalVariants = variantStats._count._all || 0;
@@ -105,7 +77,8 @@ export default async function DashboardPage({
     onboarding.isCompleted,
   ].filter(Boolean).length;
   const onboardingProgress = Math.round((completedOnboardingSteps / 4) * 100);
-  const activePlan = activeSubscription?.plan || "free";
+  const showOnboarding = resolvedSearchParams.onboarding === "1";
+  const shouldShowOnboardingOnDashboard = !onboarding.isCompleted;
 
   return (
     <div className="space-y-6 md:space-y-7">
@@ -116,7 +89,15 @@ export default async function DashboardPage({
             <h1 className="text-3xl md:text-4xl font-bold text-gray-900 uppercase tracking-tight">{t.dashboard.title}</h1>
             <p className="text-sm text-gray-500 font-light max-w-2xl">{t.dashboard.subtitle}</p>
           </div>
-          <div className="w-full sm:w-auto">
+          <div className="w-full sm:w-auto flex flex-col sm:flex-row gap-2">
+            {shouldShowOnboardingOnDashboard && (
+              <Link
+                href={showOnboarding ? "/admin/dashboard" : "/admin/dashboard?onboarding=1"}
+                className="np-btn-ghost inline-flex items-center justify-center px-4 py-3"
+              >
+                {showOnboarding ? "Skjul onboarding" : "Vis onboarding"}
+              </Link>
+            )}
             <CreateProjectButton />
           </div>
         </div>
@@ -125,7 +106,7 @@ export default async function DashboardPage({
           <StatCard label="Projekter" value={totalProjects.toString()} />
           <StatCard label="Varianter" value={totalVariants.toString()} />
           <StatCard label="Visninger" value={totalViews.toLocaleString("da-DK")} />
-          <StatCard label="Plan" value={toPlanLabel(activePlan)} />
+          <StatCard label="Onboarding" value={`${onboardingProgress}%`} />
         </div>
       </section>
 
@@ -141,43 +122,37 @@ export default async function DashboardPage({
         </div>
       )}
 
-      <section className="space-y-3">
-        <p className="np-kicker">Hurtig navigation</p>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <QuickNavLink href="/admin/projects" label="Projekter" />
-          <QuickNavLink href="/admin/team" label="Team" />
-          <QuickNavLink href="/admin/billing" label="Billing" />
-          <QuickNavLink href="/admin/audit" label="Audit" />
-        </div>
-      </section>
-
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
         <div className="xl:col-span-2 space-y-6">
-          <section className="np-card p-5 md:p-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div>
-                <h2 className="text-sm font-bold text-gray-900 uppercase tracking-widest">Næste skridt</h2>
-                <p className="text-xs text-gray-500 mt-1">
-                  Onboarding: {completedOnboardingSteps}/4 trin ({onboardingProgress}%)
-                </p>
+          {shouldShowOnboardingOnDashboard && (
+            <section className="np-card p-5 md:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <h2 className="text-sm font-bold text-gray-900 uppercase tracking-widest">Næste skridt</h2>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Onboarding: {completedOnboardingSteps}/4 trin ({onboardingProgress}%)
+                  </p>
+                </div>
+                <Link
+                  href={onboarding.hasProject && projects[0]?.id ? `/admin/embed/${projects[0].id}` : "/admin/projects"}
+                  className="np-btn-primary inline-flex px-4 py-3"
+                >
+                  {onboarding.hasProject ? "Fortsæt onboarding" : "Opret første projekt"}
+                </Link>
               </div>
-              <Link
-                href={onboarding.hasProject && projects[0]?.id ? `/admin/embed/${projects[0].id}` : "/admin/projects"}
-                className="np-btn-primary inline-flex px-4 py-3"
-              >
-                {onboarding.hasProject ? "Fortsæt onboarding" : "Opret første projekt"}
-              </Link>
-            </div>
-          </section>
+            </section>
+          )}
 
-          <OnboardingChecklistCard
-            hasProject={onboarding.hasProject}
-            hasUploadedVariant={onboarding.hasUploadedVariant}
-            hasCopiedEmbed={onboarding.hasCopiedEmbed}
-            isCompleted={onboarding.isCompleted}
-            firstProjectId={projects[0]?.id ?? null}
-            forceExpanded={resolvedSearchParams.onboarding === "1"}
-          />
+          {shouldShowOnboardingOnDashboard && (
+            <OnboardingChecklistCard
+              hasProject={onboarding.hasProject}
+              hasUploadedVariant={onboarding.hasUploadedVariant}
+              hasCopiedEmbed={onboarding.hasCopiedEmbed}
+              isCompleted={onboarding.isCompleted}
+              firstProjectId={projects[0]?.id ?? null}
+              forceExpanded={showOnboarding}
+            />
+          )}
 
           <div className="w-full">
             {projects.length > 0 ? (
@@ -192,30 +167,16 @@ export default async function DashboardPage({
         </div>
 
         <div className="space-y-6 xl:sticky xl:top-6">
-          <UsageLimitsCard plan={usageSummary.plan} items={usageSummary.items} canManageBilling={canManageBilling} />
-          <BillingPlansCard
-            plans={plans}
-            currentPlan={activePlan}
-            canManageBilling={canManageBilling}
-            hasStripeCustomer={Boolean(activeSubscription?.stripeCustomerId)}
-          />
-
           <div className="np-card p-5">
             <h3 className="text-xs font-bold uppercase tracking-widest text-gray-900">Hjælp</h3>
             <p className="mt-2 text-xs text-gray-500">
               Har du spørgsmål om setup, domæner eller billing? Brug FAQ eller kontaktformular.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
-              <Link
-                href="/faq"
-                className="np-btn-ghost px-3 py-2"
-              >
+              <Link href="/faq" className="np-btn-ghost px-3 py-2">
                 FAQ
               </Link>
-              <Link
-                href="/contact"
-                className="np-btn-ghost px-3 py-2"
-              >
+              <Link href="/contact" className="np-btn-ghost px-3 py-2">
                 Kontakt
               </Link>
             </div>
@@ -233,23 +194,4 @@ function StatCard({ label, value }: { label: string; value: string }) {
       <p className="mt-1 text-xl font-black text-gray-900 tracking-tight">{value}</p>
     </div>
   );
-}
-
-function QuickNavLink({ href, label }: { href: string; label: string }) {
-  return (
-    <Link
-      href={href}
-      className="np-card px-4 py-4 text-xs font-black uppercase tracking-widest text-gray-700 hover:bg-gray-50 hover:border-gray-200 transition"
-    >
-      {label}
-    </Link>
-  );
-}
-
-function toPlanLabel(plan: string): string {
-  if (plan === "starter_monthly") return "Starter";
-  if (plan === "pro_monthly") return "Pro";
-  if (plan === "enterprise_monthly") return "Enterprise";
-  if (plan === "custom_monthly") return "Custom";
-  return "Free";
 }

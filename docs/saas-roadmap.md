@@ -303,6 +303,7 @@
 - `DONE`: Performance/encoding hygiene-pass: BOM-fejl fjernet i hele kodebasen (inkl. app/api/components/docs), og parse-fejl fra skjulte tegn elimineret.
 - `DONE`: Frontend performance forbedret i plan/pris-flow: Stripe-prisopslag i `lib/plans.ts` er cachet (memoized + revalidate), så forside/pricing ikke laver unødige live-opslag på hvert request.
 - `DONE`: Hero media-load lettet på forsiden (`preload=\"none\"` på video) for hurtigere initial rendering.
+- `DONE`: Drift-dokumentation udvidet med backup/restore runbook i `docs/backup-restore.md`.
 
 ---
 
@@ -454,16 +455,16 @@
 - `MEASURED`: Bundle-budget effekt efter split:
   - Client chunk files: `36 -> 35`.
   - Total JS chunks: `2246.6 KB -> 2245.9 KB`.
-  - Stoerste chunk: `1000.2 KB -> 997.3 KB`.
+  - Største chunk: `1000.2 KB -> 997.3 KB`.
 - `DONE`: On-demand media-aktivering i `EmbedVariantCard`:
-  - Player/uploader mountes nu foerst ved viewport-hit (`IntersectionObserver`) eller manuel aktivering.
+  - Player/uploader mountes nu først ved viewport-hit (`IntersectionObserver`) eller manuel aktivering.
 - `MEASURED`: Bundle-budget efter dette step:
-  - Client chunk files: `35` (uendret).
-  - Total JS chunks: `2246.7 KB` (praktisk talt uendret).
-  - Stoerste chunk: `997.3 KB` (uendret).
-- `CLOSE`: Fase 3 er afsluttet med stabile guardrails og dokumenterede maalinger.
-- `DECISION`: Behold nuvaerende max-chunk budget (`1100 KB`) i CI indtil et dedikeret player/vendor-spor prioriteres.
-- `NEXT`: Start Fase 4 (media og asset-optimering) med fokus paa hero-video varianter, poster fallback og LCP-forbedringer.
+  - Client chunk files: `35` (uændret).
+  - Total JS chunks: `2246.7 KB` (praktisk talt uændret).
+  - Største chunk: `997.3 KB` (uændret).
+- `CLOSE`: Fase 3 er afsluttet med stabile guardrails og dokumenterede målinger.
+- `DECISION`: Behold nuværende max-chunk budget (`1100 KB`) i CI indtil et dedikeret player/vendor-spor prioriteres.
+- `NEXT`: Start Fase 4 (media og asset-optimering) med fokus p? hero-video varianter, poster fallback og LCP-forbedringer.
 - `DONE` (Fase 4 - step 1): Hero media robustgjort:
   - `components/public/HeroMedia.tsx` tilfoejet med video -> image fallback ved reduced-motion eller afspilningsfejl.
   - `app/page.tsx` bruger nu flere video-sources (`webm` + `mp4`) samt dedikeret poster.

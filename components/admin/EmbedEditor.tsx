@@ -5,13 +5,13 @@ import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 
 const EmbedCodeGenerator = dynamic(() => import("./EmbedCodeGenerator"), {
-  loading: () => <p className="text-xs font-semibold text-gray-500">Indlaeser embed-kode...</p>,
+  loading: () => <p className="text-xs font-semibold text-gray-500">Indlæser embed-kode...</p>,
 });
 const EmbedPreviewModal = dynamic(() => import("./EmbedPreviewModal"), { ssr: false });
 const EmbedVariantCard = dynamic(() => import("./EmbedVariantCard"), {
   loading: () => (
     <div className="np-card np-card-pad">
-      <p className="text-xs font-semibold text-gray-500">Indlaeser version...</p>
+      <p className="text-xs font-semibold text-gray-500">Indlæser version...</p>
     </div>
   ),
 });
@@ -33,8 +33,8 @@ const LANGUAGES = [
   { code: "pl", label: "Polsk (PL)" },
   { code: "pt", label: "Portugisisk (PT)" },
   { code: "is", label: "Islandsk (IS)" },
-  { code: "fo", label: "Faeroesk (FO)" },
-  { code: "gl", label: "Groenlandsk (GL)" },
+  { code: "fo", label: "Færøsk (FO)" },
+  { code: "gl", label: "Grønlandsk (GL)" },
 ];
 
 interface EmbedEditorProps {
@@ -97,7 +97,7 @@ export default function EmbedEditor({ embed }: EmbedEditorProps) {
       } else {
         const data = (await res.json()) as { error?: string; code?: string };
         if (data.code === "UPGRADE_REQUIRED") {
-          setVariantLimitError(data.error || "Plan-graense naaet.");
+          setVariantLimitError(data.error || "Plan-grænse nået.");
         } else {
           alert(data.error || "Kunne ikke oprette sprogversionen.");
         }
@@ -142,7 +142,7 @@ export default function EmbedEditor({ embed }: EmbedEditorProps) {
       });
       const data = (await res.json()) as { error?: string; allowedDomains?: string };
       if (!res.ok) {
-        throw new Error(data.error || "Kunne ikke gemme domaener.");
+        throw new Error(data.error || "Kunne ikke gemme domæner.");
       }
       setDomainsInput(data.allowedDomains || "*");
       router.refresh();
@@ -157,7 +157,7 @@ export default function EmbedEditor({ embed }: EmbedEditorProps) {
   const saveProjectName = async () => {
     const trimmed = nameDraft.trim();
     if (!trimmed) {
-      setNameError("Projektnavn maa ikke vaere tomt.");
+      setNameError("Projektnavn må ikke være tomt.");
       return;
     }
     setSavingName(true);
@@ -216,16 +216,17 @@ export default function EmbedEditor({ embed }: EmbedEditorProps) {
   };
 
   return (
-    <div className="space-y-6 md:space-y-10 pb-20">
-      <section className="np-card np-card-pad bg-gradient-to-br from-white via-white to-blue-50/30 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div className="space-y-2">
-          <div className="flex flex-wrap items-center gap-2">
+    <div className="space-y-6 md:space-y-8 pb-20">
+      <section className="np-card np-card-pad bg-gradient-to-br from-white via-white to-blue-50/30">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center gap-3">
             {isEditingName ? (
               <>
                 <input
                   value={nameDraft}
                   onChange={(e) => setNameDraft(e.target.value)}
-                  className="w-[340px] max-w-full rounded-xl border border-gray-200 px-3 py-2 text-2xl md:text-3xl font-black text-gray-900 tracking-tight outline-none focus:ring-2 focus:ring-blue-400"
+                  className="w-[420px] max-w-full rounded-xl border border-gray-200 px-4 py-2.5 text-2xl md:text-4xl font-black text-gray-900 tracking-tight outline-none focus:ring-2 focus:ring-blue-400"
                   placeholder="Projektnavn"
                   disabled={savingName}
                 />
@@ -252,7 +253,9 @@ export default function EmbedEditor({ embed }: EmbedEditorProps) {
               </>
             ) : (
               <>
-                <h1 className="text-3xl md:text-4xl font-black text-gray-900 tracking-tight">{projectName}</h1>
+                <h1 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tight leading-[0.95] uppercase">
+                  {projectName}
+                </h1>
                 <button
                   type="button"
                   onClick={() => {
@@ -260,7 +263,7 @@ export default function EmbedEditor({ embed }: EmbedEditorProps) {
                     setIsEditingName(true);
                     setNameError(null);
                   }}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors"
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors shrink-0"
                   aria-label="Rediger projektnavn"
                   title="Rediger projektnavn"
                 >
@@ -271,43 +274,48 @@ export default function EmbedEditor({ embed }: EmbedEditorProps) {
               </>
             )}
           </div>
-          <p className="text-gray-400 font-medium mt-1 italic text-xs md:text-sm">Projekt-ID: {embed.id}</p>
+          <p className="text-gray-400 font-medium italic text-xs md:text-sm">Projekt-ID: {embed.id}</p>
           {nameError ? <p className="text-xs font-semibold text-red-600">{nameError}</p> : null}
         </div>
 
-        <div className="flex w-full flex-col sm:flex-row sm:items-center gap-2">
-          <button
-            type="button"
-            onClick={copyEmbedCode}
-            className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition shadow-sm active:scale-[0.98] ${
-              copiedEmbedCode ? "bg-emerald-600 text-white" : "bg-white border border-gray-200 text-gray-700 hover:bg-gray-50"
-            }`}
-          >
-            {copiedEmbedCode ? "Kopieret!" : "Kopier kode"}
-          </button>
-          <button
-            onClick={() => setShowPreview(true)}
-            className="w-full sm:w-auto bg-blue-600 text-white px-6 py-3.5 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-blue-700 transition shadow-lg flex items-center justify-center gap-2 active:scale-[0.98]"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.644C3.67 8.5 7.652 4.5 12 4.5c4.348 0 8.331 4 9.964 7.178.07.133.07.291 0 .424C20.33 15.5 16.348 19.5 12 19.5c-4.348 0-8.331-4-9.964-7.178Z" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-            </svg>
-            Forhaandsvisning
-          </button>
+          <div className="w-full lg:w-auto flex flex-col sm:flex-row sm:items-center gap-2 lg:pt-1">
+            <button
+              type="button"
+              onClick={copyEmbedCode}
+              className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition shadow-sm active:scale-[0.98] ${
+                copiedEmbedCode ? "bg-emerald-600 text-white" : "bg-white border border-gray-300 text-gray-800 hover:bg-gray-50"
+              }`}
+            >
+              {copiedEmbedCode ? "Kopieret!" : "Kopier kode"}
+            </button>
+            <button
+              onClick={() => setShowPreview(true)}
+              className="w-full sm:w-auto bg-blue-600 text-white px-6 py-3.5 rounded-2xl text-xs font-black uppercase tracking-widest hover:bg-blue-700 transition shadow-lg flex items-center justify-center gap-2 active:scale-[0.98]"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.644C3.67 8.5 7.652 4.5 12 4.5c4.348 0 8.331 4 9.964 7.178.07.133.07.291 0 .424C20.33 15.5 16.348 19.5 12 19.5c-4.348 0-8.331-4-9.964-7.178Z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+              </svg>
+              Forhåndsvisning
+            </button>
+          </div>
         </div>
       </section>
 
-      <div className="space-y-12">
+      <div className="space-y-8">
         {embed.groups?.map((group) => (
-          <div key={group.id} className="space-y-6">
-            <div className="flex items-center gap-4">
-              <div className="h-px flex-1 bg-gray-100"></div>
-              <h2 className="font-black text-gray-300 uppercase text-[10px] tracking-[0.3em] whitespace-nowrap">Gruppe: {group.name}</h2>
-              <div className="h-px flex-1 bg-gray-100"></div>
-            </div>
+          <div key={group.id} className="space-y-5">
+            {((embed.groups?.length ?? 0) > 1 || group.name.toLowerCase() !== "standard") && (
+              <div className="flex items-center gap-4">
+                <div className="h-px flex-1 bg-gray-100"></div>
+                <h2 className="font-black text-gray-300 uppercase text-[10px] tracking-[0.3em] whitespace-nowrap">
+                  Gruppe: {group.name}
+                </h2>
+                <div className="h-px flex-1 bg-gray-100"></div>
+              </div>
+            )}
 
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 md:gap-8">
+            <div className={`grid grid-cols-1 gap-6 md:gap-8 ${group.variants.length > 1 ? "xl:grid-cols-2" : "max-w-2xl"}`}>
               {[...group.variants]
                 .sort((a, b) => (a.title ?? "").localeCompare(b.title ?? ""))
                 .map((variant) => (
@@ -320,9 +328,9 @@ export default function EmbedEditor({ embed }: EmbedEditorProps) {
 
       <section className="np-card np-card-pad bg-gradient-to-br from-blue-50 to-blue-100/40">
         <h3 className="text-[10px] font-black text-blue-500 uppercase mb-6 tracking-[0.2em]">Opret ny sprogversion</h3>
-        <div className="flex flex-col md:flex-row md:flex-wrap gap-6">
-          <div className="flex flex-col gap-2 w-full md:w-auto">
-            <label className="text-[10px] font-black uppercase text-gray-400 ml-1 tracking-widest">Vaelg sprog</label>
+        <div className="flex flex-col md:flex-row md:items-end gap-4 md:gap-5 md:max-w-5xl">
+          <div className="flex flex-col gap-2 w-full md:w-[220px]">
+            <label className="text-[10px] font-black uppercase text-gray-400 ml-1 tracking-widest">Vælg sprog</label>
             <select value={newLang} onChange={(e) => setNewLang(e.target.value)} className="w-full p-3.5 rounded-2xl border border-blue-100 bg-white text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-blue-400 md:min-w-[180px] appearance-none">
               {LANGUAGES.map((lang) => (
                 <option key={lang.code} value={lang.code}>
@@ -331,12 +339,12 @@ export default function EmbedEditor({ embed }: EmbedEditorProps) {
               ))}
             </select>
           </div>
-          <div className="flex-1 flex flex-col gap-2 w-full">
+          <div className="md:flex-1 flex flex-col gap-2 w-full">
             <label className="text-[10px] font-black uppercase text-gray-400 ml-1 tracking-widest">Titel</label>
             <input type="text" placeholder="F.eks. Dansk version" className="w-full p-3.5 rounded-2xl border border-blue-100 text-sm font-bold outline-none focus:ring-2 focus:ring-blue-400" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} />
           </div>
           <div className="flex items-end w-full md:w-auto">
-            <button onClick={addVariant} disabled={isAdding || !newTitle} className="w-full bg-blue-600 text-white px-10 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition shadow-lg disabled:opacity-40 active:scale-[0.98]">
+            <button onClick={addVariant} disabled={isAdding || !newTitle} className="w-full md:w-auto bg-blue-600 text-white px-10 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition shadow-lg disabled:opacity-40 active:scale-[0.98]">
               {isAdding ? "Opretter..." : "Opret version"}
             </button>
           </div>
@@ -350,16 +358,16 @@ export default function EmbedEditor({ embed }: EmbedEditorProps) {
               disabled={upgrading}
               className="px-3 py-2 rounded-lg bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 disabled:opacity-50 transition-all"
             >
-              {upgrading ? "Aabner checkout..." : "Opgrader nu"}
+              {upgrading ? "?bner checkout..." : "Opgrader nu"}
             </button>
           </div>
         )}
       </section>
 
       <section className="np-card np-card-pad space-y-3">
-        <h3 className="text-sm md:text-lg font-black text-gray-900 uppercase tracking-tight">Tilladte domaener</h3>
+        <h3 className="text-sm md:text-lg font-black text-gray-900 uppercase tracking-tight">Tilladte domæner</h3>
         <p className="text-xs text-gray-500">
-          Skriv domaener adskilt med komma eller linjeskift. Brug <span className="font-mono">*</span> for at tillade alle.
+          Skriv domæner adskilt med komma eller linjeskift. Brug <span className="font-mono">*</span> for at tillade alle.
         </p>
         <textarea
           value={domainsInput}
@@ -375,7 +383,7 @@ export default function EmbedEditor({ embed }: EmbedEditorProps) {
             disabled={savingDomains}
             className="np-btn-primary px-4 py-3 disabled:opacity-50"
           >
-            {savingDomains ? "Gemmer..." : "Gem domaener"}
+            {savingDomains ? "Gemmer..." : "Gem domæner"}
           </button>
           {domainSaveError ? <p className="text-xs font-semibold text-red-600">{domainSaveError}</p> : null}
         </div>

@@ -37,7 +37,7 @@ export default function CreateProjectModal({ onClose }: CreateProjectModalProps)
       } else {
         const data = (await res.json()) as { error?: string; code?: string };
         if (data.code === "UPGRADE_REQUIRED") {
-          setLimitError(data.error || "Plan-graense naaet.");
+          setLimitError(data.error || "Plan-grænse nået.");
         } else {
           alert(data.error || "Noget gik galt under oprettelsen.");
         }
@@ -117,7 +117,7 @@ export default function CreateProjectModal({ onClose }: CreateProjectModalProps)
               disabled={isCreating || !name.trim()}
               className="order-1 sm:order-2 flex-[2] bg-blue-600 text-white px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition shadow-lg shadow-blue-100 disabled:opacity-50 active:scale-[0.95]"
             >
-              {isCreating ? "Opretter..." : "Opret og fortsaet"}
+              {isCreating ? "Opretter..." : "Opret og fortsæt"}
             </button>
           </div>
 
@@ -130,7 +130,7 @@ export default function CreateProjectModal({ onClose }: CreateProjectModalProps)
                 disabled={upgrading}
                 className="px-3 py-2 rounded-lg bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 disabled:opacity-50 transition-all"
               >
-                {upgrading ? "Aabner checkout..." : "Opgrader nu"}
+                {upgrading ? "Åbner checkout..." : "Opgrader nu"}
               </button>
             </div>
           )}

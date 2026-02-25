@@ -14,7 +14,7 @@ export async function POST(req: Request) {
     const normalizedAction = typeof action === "string" ? action.trim() : "";
     const normalizedTarget = typeof target === "string" ? target.trim() : "";
     if (!normalizedAction || !normalizedTarget) {
-      return NextResponse.json({ error: "action og target er paakraevet" }, { status: 400 });
+      return NextResponse.json({ error: "action og target er påkrævet" }, { status: 400 });
     }
 
     const actor = await prisma.user.findUnique({

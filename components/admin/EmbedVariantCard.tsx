@@ -5,11 +5,11 @@ import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 
 const MuxVideoUploader = dynamic(() => import("./MuxUploader"), {
-  loading: () => <p className="text-xs font-semibold text-gray-500">Indlaeser uploader...</p>,
+  loading: () => <p className="text-xs font-semibold text-gray-500">Indlæser uploader...</p>,
 });
 const MuxPlayer = dynamic(() => import("@mux/mux-player-react"), {
   ssr: false,
-  loading: () => <p className="text-xs font-semibold text-gray-500">Indlaeser afspiller...</p>,
+  loading: () => <p className="text-xs font-semibold text-gray-500">Indlæser afspiller...</p>,
 });
 
 interface LanguageOption {
@@ -74,7 +74,7 @@ export default function EmbedVariantCard({ variant, languages }: EmbedVariantCar
 
   const deleteVariant = async () => {
     const title = variant.title ?? "Uden titel";
-    if (!confirm(`Er du sikker paa, at du vil slette "${title}"?`)) return;
+    if (!confirm(`Er du sikker på, at du vil slette "${title}"?`)) return;
     try {
       const res = await fetch(`/api/variants/${variant.id}`, { method: "DELETE" });
       if (res.ok) router.refresh();
@@ -123,7 +123,7 @@ export default function EmbedVariantCard({ variant, languages }: EmbedVariantCar
       }
     }
 
-    alert("Videoen er uploadet, men Mux er stadig ved at behandle den. Proev igen om lidt.");
+    alert("Videoen er uploadet, men Mux er stadig ved at behandle den. Prøv igen om lidt.");
   };
 
   return (

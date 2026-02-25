@@ -44,7 +44,7 @@ export async function POST(req: Request) {
     const priceId = process.env[plan.stripePriceEnv];
     if (!priceId) {
       return NextResponse.json(
-        { error: `Pris-ID mangler. Saet env var ${plan.stripePriceEnv}.` },
+        { error: `Pris-ID mangler. Sæt env var ${plan.stripePriceEnv}.` },
         { status: 500 }
       );
     }

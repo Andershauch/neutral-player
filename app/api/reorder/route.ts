@@ -29,6 +29,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Fejl ved sortering:", error);
-    return NextResponse.json({ error: "Kunne ikke gemme raekkefolgen" }, { status: 500 });
+    return NextResponse.json({ error: "Kunne ikke gemme rækkefølgen" }, { status: 500 });
   }
 }

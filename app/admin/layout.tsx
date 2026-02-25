@@ -38,12 +38,13 @@ export default async function AdminLayout({
       <Sidebar />
 
       {/* Main indholdet:
-        - pt-20 på mobil: Gør plads til top-baren (hamburger-menuen).
-        - md:pt-0 på PC: Fjerner top-paddingen, da sidebaren nu er i siden.
-        - md:ml-64 på PC: Skubber indholdet til højre for sidebaren.
+        - pt-20 på mobil: Gør plads til top-baren.
+        - md:ml-80: Gør plads til fixed sidebar.
+        - Responsiv padding sikrer luft mellem menu og indhold.
+        - Centreret container giver ens layout på alle admin-sider.
       */}
-        <main className="flex-1 transition-all duration-300 pt-20 md:pt-0 md:ml-64 p-4 md:p-10">
-          <div className="max-w-7xl mx-auto">
+        <main className="flex-1 transition-all duration-300 pt-20 md:pt-0 md:ml-80 px-4 md:px-8 lg:px-10 pb-10">
+          <div className="w-full max-w-7xl mx-auto">
             {children}
           </div>
         </main>

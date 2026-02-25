@@ -1,12 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
-import { getOrgContextForMemberManagement } from "@/lib/authz";
+import { getCurrentOrgContext } from "@/lib/org-context";
 
 export const dynamic = "force-dynamic";
 
 export default async function AuditPage() {
-  const orgCtx = await getOrgContextForMemberManagement();
-  if (!orgCtx) {
+  const orgCtx = await getCurrentOrgContext();
+  if (!orgCtx || orgCtx.role !== "admin") {
     redirect("/admin/dashboard");
   }
 

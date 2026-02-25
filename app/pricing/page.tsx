@@ -23,7 +23,7 @@ export default async function PricingPage() {
           </p>
         </div>
 
-        <Suspense fallback={<div className="rounded-2xl border border-gray-100 bg-white p-6 text-sm text-gray-500">Indlaeser planer...</div>}>
+        <Suspense fallback={<div className="rounded-2xl border border-gray-100 bg-white p-6 text-sm text-gray-500">Indlæser planer...</div>}>
           <Providers>
             <PricingPlans plans={plans} />
           </Providers>

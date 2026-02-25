@@ -7,7 +7,7 @@ import { getOrgContextForContentEdit } from "@/lib/authz";
 const ProjectListClient = dynamicImport(() => import("@/components/admin/ProjectListClient"), {
   loading: () => (
     <div className="np-card p-8">
-      <p className="text-xs font-semibold text-gray-500">Indlaeser projekter...</p>
+      <p className="text-xs font-semibold text-gray-500">Indlæser projekter...</p>
     </div>
   ),
 });

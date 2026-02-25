@@ -7,7 +7,7 @@ import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 
 const EmbedCodeGenerator = dynamic(() => import("./EmbedCodeGenerator"), {
-  loading: () => <p className="text-xs font-semibold text-gray-500">Indlaeser embed-kode...</p>,
+  loading: () => <p className="text-xs font-semibold text-gray-500">Indlæser embed-kode...</p>,
 });
 
 interface ProjectListClientProps {
@@ -50,10 +50,16 @@ export default function ProjectListClient({ initialProjects }: ProjectListClient
     <div className="space-y-4">
       <div className="grid grid-cols-1 gap-6">
         {initialProjects.map((project) => (
-          <div
+          <article
             key={project.id}
-            className="bg-white border border-gray-100 p-6 md:p-8 rounded-[2rem] flex flex-col lg:flex-row lg:items-center justify-between shadow-sm hover:shadow-xl transition-all duration-300 gap-6"
+            className="group relative bg-white border border-gray-100 p-6 md:p-8 rounded-[2rem] flex flex-col lg:flex-row lg:items-center justify-between shadow-sm hover:shadow-xl hover:border-blue-100 transition-all duration-300 gap-6"
           >
+            <Link
+              href={`/admin/embed/${project.id}`}
+              className="absolute inset-0 rounded-[2rem] z-0"
+              aria-label={`Rediger projekt ${project.name}`}
+            />
+
             <div className="space-y-1">
               <h2 className="text-xl md:text-2xl font-bold text-gray-900 uppercase tracking-tight leading-tight">
                 {project.name}
@@ -66,7 +72,7 @@ export default function ProjectListClient({ initialProjects }: ProjectListClient
               </div>
             </div>
 
-            <div className="flex w-full lg:w-auto flex-wrap items-center gap-2 sm:gap-3">
+            <div className="relative z-10 flex w-full lg:w-auto flex-wrap items-center gap-2 sm:gap-3">
               <button
                 onClick={() => setShowEmbedId(project.id)}
                 className="flex-1 sm:flex-none min-w-[140px] bg-gray-50 text-gray-700 px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-100 transition flex items-center justify-center gap-2 active:scale-95"
@@ -101,7 +107,7 @@ export default function ProjectListClient({ initialProjects }: ProjectListClient
                 </svg>
               </button>
             </div>
-          </div>
+          </article>
         ))}
       </div>
 

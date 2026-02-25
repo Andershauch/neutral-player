@@ -92,6 +92,20 @@ Denne fil er en samlet oversigt over de eksterne tjenester, som Neutral Player b
   - `redirect_uri_mismatch`
   - Login virker lokalt men ikke på custom domæne
 
+## 6b) Microsoft OAuth (Login med Microsoft/Entra ID)
+- Status: `Valgfri`, men nødvendig hvis Microsoft-login skal virke
+- Formål:
+  - Social login via NextAuth (`azure-ad`)
+- Kræver:
+  - `MICROSOFT_ENTRA_CLIENT_ID`
+  - `MICROSOFT_ENTRA_CLIENT_SECRET`
+  - `MICROSOFT_ENTRA_TENANT_ID`
+  - `NEXTAUTH_URL` sat korrekt per miljø
+  - Redirect URI i Entra app registration: `/api/auth/callback/azure-ad`
+- Typiske fejl:
+  - `AADSTS50011` (redirect URI mismatch)
+  - Login virker i test, men ikke i production pga. forkert tenant/app registration
+
 ## 7) NextAuth (Auth/session)
 - Status: `Nødvendig`
 - Formål:
@@ -139,5 +153,8 @@ Denne fil er en samlet oversigt over de eksterne tjenester, som Neutral Player b
 3. Kan du starte checkout
 4. Kommer invite-mails frem
 5. Bliver uploadede videoer playable
+
+## Relateret driftsdokumentation
+- Backup og restore guide: `docs/backup-restore.md`
 
 
