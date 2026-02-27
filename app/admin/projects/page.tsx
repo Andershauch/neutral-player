@@ -34,6 +34,7 @@ export default async function ProjectsPage() {
             take: 6,
             select: {
               muxPlaybackId: true,
+              posterFrameUrl: true,
             },
           },
         },

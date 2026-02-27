@@ -98,7 +98,12 @@ export async function PATCH(
       return NextResponse.json({ error: "Variant ikke fundet" }, { status: 404 });
     }
     const json = await req.json();
-    const { lang, uploadId } = json;
+    const { lang, uploadId } = json as {
+      lang?: string;
+      uploadId?: string;
+      posterFrameUrl?: string | null;
+      title?: string | null;
+    };
 
     if (uploadId) {
       const upload = await mux.video.uploads.retrieve(uploadId);
@@ -146,10 +151,56 @@ export async function PATCH(
       return NextResponse.json(updated);
     }
 
+    if ("posterFrameUrl" in json) {
+      const posterFrameUrl = (json as { posterFrameUrl?: unknown }).posterFrameUrl;
+
+      if (posterFrameUrl !== null && typeof posterFrameUrl !== "string") {
+        return NextResponse.json({ error: "Ugyldigt posterframe-format" }, { status: 400 });
+      }
+
+      let nextPoster: string | null = null;
+      if (typeof posterFrameUrl === "string") {
+        const trimmed = posterFrameUrl.trim();
+        if (trimmed.length > 0) {
+          const isDataImage = trimmed.startsWith("data:image/") && trimmed.includes(";base64,");
+          const isHttpImage = /^https?:\/\//i.test(trimmed);
+          if (!isDataImage && !isHttpImage) {
+            return NextResponse.json({ error: "Posterframe skal være billede-URL eller data:image." }, { status: 400 });
+          }
+          if (trimmed.length > 450_000) {
+            return NextResponse.json({ error: "Posterframe er for stort. Vælg et mindre billede." }, { status: 400 });
+          }
+          nextPoster = trimmed;
+        }
+      }
+
+      const updated = await prisma.variant.update({
+        where: { id },
+        data: { posterFrameUrl: nextPoster },
+      });
+      return NextResponse.json(updated);
+    }
+
     if (lang) {
       const updated = await prisma.variant.update({
         where: { id },
         data: { lang },
+      });
+      return NextResponse.json(updated);
+    }
+
+    if ("title" in json) {
+      const rawTitle = (json as { title?: unknown }).title;
+      if (rawTitle !== null && typeof rawTitle !== "string") {
+        return NextResponse.json({ error: "Ugyldig titel" }, { status: 400 });
+      }
+
+      const trimmedTitle = typeof rawTitle === "string" ? rawTitle.trim() : "";
+      const nextTitle = trimmedTitle.length > 0 ? trimmedTitle.slice(0, 120) : null;
+
+      const updated = await prisma.variant.update({
+        where: { id },
+        data: { title: nextTitle },
       });
       return NextResponse.json(updated);
     }

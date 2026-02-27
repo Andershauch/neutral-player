@@ -7,11 +7,12 @@ import BillingPlansCard from "@/components/admin/BillingPlansCard";
 import UsageLimitsCard from "@/components/admin/UsageLimitsCard";
 import OnboardingChecklistCard from "@/components/admin/OnboardingChecklistCard";
 import ProfileAvatarCard from "@/components/admin/ProfileAvatarCard";
-import { canManageBillingRole } from "@/lib/authz";
+import { canManageBillingRole, canManageBrandingRole } from "@/lib/authz";
 import { getCurrentOrgContext } from "@/lib/org-context";
 import { getBillingPlansForDisplay } from "@/lib/plans";
 import { getOrgUsageSummary } from "@/lib/plan-limits";
 import { getOnboardingStatus } from "@/lib/onboarding";
+import { getOrgPlanAndCapabilities } from "@/lib/plan-capabilities";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +22,7 @@ export default async function ProfilePage() {
     redirect("/login");
   }
 
-  const [plans, usageSummary, activeSubscription, onboarding, firstProject] = await Promise.all([
+  const [plans, usageSummary, activeSubscription, onboarding, firstProject, planCapabilities] = await Promise.all([
     getBillingPlansForDisplay(),
     getOrgUsageSummary(orgCtx.orgId),
     prisma.subscription.findFirst({
@@ -39,9 +40,11 @@ export default async function ProfilePage() {
       orderBy: { createdAt: "asc" },
       select: { id: true },
     }),
+    getOrgPlanAndCapabilities(orgCtx.orgId),
   ]);
 
   const canManageBilling = canManageBillingRole(orgCtx.role);
+  const canManageBranding = canManageBrandingRole(orgCtx.role);
   const isAuditAdmin = orgCtx.role === "admin";
   const currentPlan = activeSubscription?.plan || "free";
   const currentStatus = activeSubscription?.status || "inactive";
@@ -96,6 +99,29 @@ export default async function ProfilePage() {
           />
         </section>
       )}
+
+      <section className="np-card p-5 md:p-6">
+        <p className="np-kicker text-blue-600">Branding</p>
+        <h2 className="text-lg font-bold text-gray-900 uppercase tracking-tight">Tema og design</h2>
+        <p className="mt-1 text-sm text-gray-500">
+          Administrér farver, font og player-stil på en dedikeret side.
+        </p>
+        {!planCapabilities.capabilities.enterpriseBrandingEnabled ? (
+          <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700">
+            Custom branding kræver Enterprise-plan.
+          </p>
+        ) : null}
+        {!canManageBranding ? (
+          <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700">
+            Du har ikke rettigheder til at redigere branding.
+          </p>
+        ) : null}
+        <div className="mt-4">
+          <Link href="/admin/profile/branding" className="np-btn-ghost inline-flex px-4 py-3">
+            Åbn branding
+          </Link>
+        </div>
+      </section>
 
       <BillingPlansCard
         plans={plans}

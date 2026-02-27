@@ -38,6 +38,7 @@ model Organization {
   groups              Group[]
   variants            Variant[]
   auditLogs           AuditLog[]
+  themes              OrganizationTheme[]
 }
 
 model Invite {
@@ -155,6 +156,7 @@ model Variant {
   muxUploadId    String?
   muxPlaybackId  String?
   muxAssetId     String?
+  posterFrameUrl String?
   dreamBrokerUrl String?
   views          Int      @default(0)
   groupId        String
@@ -180,4 +182,23 @@ model AuditLog {
   organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
 
   @@index([organizationId])
+}
+
+model OrganizationTheme {
+  id             String   @id @default(cuid())
+  organizationId String?
+  scope          String   @default("organization")
+  status         String   @default("draft")
+  version        Int      @default(1)
+  name           String?
+  tokens         Json
+  publishedAt    DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([scope, status])
+  @@unique([organizationId, scope, version])
 }

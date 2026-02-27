@@ -5,6 +5,7 @@ import { signIn } from "next-auth/react";
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getMessages } from "@/lib/i18n/messages";
+import GoogleSignInButton from "@/components/auth/GoogleSignInButton";
 
 function LoginContent() {
   const t = getMessages("da");
@@ -116,14 +117,10 @@ function LoginContent() {
         </div>
 
         <div className="grid grid-cols-1 gap-3">
-          <button
-            onClick={() => handleOAuthLogin("google")}
-            disabled={!!loadingProvider || !googleEnabled}
-            className="w-full flex items-center justify-center gap-3 py-3 px-4 border border-gray-200 rounded-2xl text-xs font-bold text-gray-700 bg-white hover:bg-gray-50 transition-all active:scale-[0.98] disabled:opacity-50"
-          >
-            <GoogleIcon />
-            {loadingProvider === "google" ? "Forbinder..." : "Google"}
-          </button>
+          <div className="w-full flex items-center justify-center gap-3 py-3 px-4 border border-gray-200 rounded-2xl text-xs font-bold text-gray-700 bg-white">
+            <GoogleSignInButton onClick={() => handleOAuthLogin("google")} disabled={!!loadingProvider || !googleEnabled} />
+            <span>{loadingProvider === "google" ? "Forbinder..." : "Google"}</span>
+          </div>
 
           <button
             onClick={() => handleOAuthLogin("azure-ad")}
@@ -160,20 +157,6 @@ function LoginContent() {
         </div>
       </div>
     </div>
-  );
-}
-
-function GoogleIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">
-      <circle cx="11" cy="11" r="10.5" fill="#fff" stroke="#D1D5DB" />
-      <g transform="translate(5 5) scale(0.5)">
-        <path fill="#EA4335" d="M24 12.3c0-.8-.1-1.6-.3-2.3H12v4.4h6.7c-.3 1.5-1.2 2.8-2.5 3.7v3h4.1c2.4-2.2 3.7-5.4 3.7-8.8z" />
-        <path fill="#34A853" d="M12 24c3.2 0 5.8-1 7.7-2.9l-4.1-3c-1.1.8-2.5 1.2-3.9 1.2-3 0-5.6-2-6.5-4.8H1v3.1A12 12 0 0 0 12 24z" />
-        <path fill="#4A90E2" d="M5.1 14.5a7.2 7.2 0 0 1 0-5V6.4H1a12 12 0 0 0 0 10.7l4.1-3.1z" />
-        <path fill="#FBBC05" d="M12 4.8c1.7 0 3.3.6 4.5 1.8l3.4-3.4A12 12 0 0 0 1 6.4l4.1 3.1c.9-2.8 3.5-4.7 6.9-4.7z" />
-      </g>
-    </svg>
   );
 }
 

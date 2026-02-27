@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { buildRateLimitKey, checkRateLimit, rateLimitExceededResponse } from "@/lib/rate-limit";
 
-const MAX_DATA_URL_LENGTH = 1_500_000;
+const MAX_DATA_URL_LENGTH = 220_000;
 
 function isValidImageDataUrl(value: string): boolean {
   if (!value.startsWith("data:image/")) return false;

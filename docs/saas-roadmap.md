@@ -1,7 +1,7 @@
 # SaaS Roadmap (Source of Truth)
 ## Document Version
-- Current release: v0.2.2
-- Last updated: 2026-02-23
+- Current release: v0.3.0
+- Last updated: 2026-02-27
 
 
 ## Status legend
@@ -247,12 +247,127 @@
 
 ---
 
+## EPIC-7 Enterprise Branding and Internal Admin Console
+**Goal:** Give each customer their own workspace styling, while allowing Enterprise customers to get fully custom branded UI controlled by Neutralplayer internal admins.
+**Business rule:** Non-Enterprise customers use platform default styling. Enterprise customers can use customer-specific brand themes.
+**Scope decision (locked):**
+- Enterprise customers can self-manage branding (within allowed token limits).
+- Branding applies to all authenticated surfaces and the delivered embed player.
+
+### TASK-7.1 Theming domain model and plan gate
+**Status:** `DONE`
+- Add tenant-level theme model (e.g. `OrganizationTheme`) with versioning (`draft`/`published`).
+- Add feature flag/capability gate: `enterpriseBrandingEnabled`.
+- Map capability from active subscription plan (`enterprise` = true, all other plans = false).
+- **Acceptance criteria:**
+  - Theme can be stored per organization without affecting others.
+  - Non-Enterprise orgs are hard-blocked from custom theme usage server-side.
+
+### TASK-7.2 Design tokens and safe theme schema
+**Status:** `DONE`
+- Define strict schema for customizable tokens:
+  - Colors (primary, surface, text, muted, danger, success)
+  - Typography (allowed font families/weights/scales)
+  - Radius, shadows, button style variants
+  - Player controls (play button colors, hover, border)
+- Add validation and sanitization (zod + allowlist only; no raw CSS injection).
+- **Acceptance criteria:**
+  - Invalid token payloads are rejected.
+  - Theme config cannot inject arbitrary CSS/JS.
+
+### TASK-7.3 Runtime theme engine
+**Status:** `DONE`
+- Build server-driven theme resolver:
+  - `default theme` -> optional `org theme override` -> page/component mapping.
+- Emit CSS variables per request (or cached theme CSS artifact).
+- Ensure no flash-of-unstyled-content on auth/admin pages.
+- Apply theme consistently in post-login app routes and embed runtime.
+- **Acceptance criteria:**
+  - Theme loads consistently on dashboard, projects, embed editor, profile.
+  - Same org theme is applied in `/embed/[id]` player delivery.
+  - Switching org/theme reflects correctly after publish.
+
+### TASK-7.4 Enterprise player skinning
+**Status:** `TODO`
+- Extend player UI layer to consume theme tokens for:
+  - Play button style
+  - Controls color states
+  - Focus/hover treatments
+- Keep accessibility constraints (contrast and focus ring visibility).
+- **Acceptance criteria:**
+  - Enterprise orgs get branded player controls.
+  - Non-Enterprise orgs continue using standard Neutralplayer skin.
+
+### TASK-7.5 Internal Neutral admin role and permissions
+**Status:** `IN PROGRESS`
+- Add internal platform role(s): `np_super_admin`, `np_support_admin`.
+- Add protected admin area (e.g. `/internal`) only for Neutral staff.
+- Implement org selector + permission checks + audit logging.
+- **Acceptance criteria:**
+  - Internal area is inaccessible to customer users.
+  - All theme changes are traceable in audit log with actor + timestamp.
+- Progress note:
+  - `DONE`: Beskyttet `/internal` omrÃƒÂ¥de implementeret med server-side adgangstjek.
+  - `DONE`: Org selector + internal API-lag implementeret.
+  - `DONE`: Audit-log events ved internal publish/rollback pÃƒÂ¥ org-themes.
+  - `DONE`: Rolle-governance i internal branding-flows: `np_support_admin` er read-only, kun `np_super_admin` kan write/publish/rollback.
+  - `IN PROGRESS`: Endelig governance-policys for bootstrap via `INTERNAL_ADMIN_EMAILS` (driftsproces + dokumentation).
+
+### TASK-7.6 Internal theme management UI
+**Status:** `DONE`
+- Build internal tools to:
+  - Select organization
+  - Edit global default theme
+  - Edit org-specific draft theme
+  - Preview changes before publish
+  - Publish/rollback theme versions
+- **Acceptance criteria:**
+  - Internal admin can safely update one org without side effects.
+  - Rollback restores previous published version immediately.
+
+### TASK-7.7 Customer-facing brand controls (Enterprise-only)
+**Status:** `IN PROGRESS`
+- Implement Enterprise self-service branding controls:
+  - Enterprise customer admins can edit limited token subset in `/admin/profile/branding`.
+  - Neutral internal admins can still override/support via internal admin console.
+- Enforce capability checks + validation on all endpoints.
+- **Acceptance criteria:**
+  - Enterprise self-service is implemented consistently in UI + API + permissions.
+  - Unauthorized edits return clear `403` responses.
+
+### TASK-7.8 Migration, fallback, and rollout plan
+**Status:** `TODO`
+- Backfill all orgs with default theme reference.
+- Add safe fallback if org theme is missing/corrupt.
+- Rollout in phases:
+  - Phase A: internal tools + dark-launch
+  - Phase B: pilot with 1-2 Enterprise customers
+  - Phase C: general Enterprise availability
+- **Acceptance criteria:**
+  - Existing customers see zero visual regression during rollout.
+  - Fallback protects runtime if theme payload fails validation.
+
+### TASK-7.9 Monitoring, tests, and operational guardrails
+**Status:** `TODO`
+- Add tests:
+  - API tests for permission + validation + plan gate
+  - E2E tests for themed vs non-themed org behavior
+- Add observability:
+  - logs/events for publish/rollback/theme-apply failures
+  - alerting on repeated theme resolve errors
+- **Acceptance criteria:**
+  - CI covers critical theme flows.
+  - Theme incidents are diagnosable in logs/Sentry.
+
+---
+
 ## Suggested execution order
 1. `EPIC-1` (all tasks)
 2. `EPIC-2` (all tasks)
 3. `TASK-3.1`, `TASK-3.2`, `TASK-3.3`
 4. `EPIC-4`
 5. `EPIC-5` (continuous hardening)
+6. `EPIC-7` (start with `TASK-7.1` + `TASK-7.2`, then internal admin + rollout)
 
 ---
 
@@ -269,153 +384,187 @@
 ---
 
 ## Recently delivered outside roadmap IDs
-- `DONE`: Observability baseline med request-correlation ID (`x-request-id` i proxy) og strukturerede JSON-logs på kritiske API-ruter (checkout, register, stripe webhook, invites, embeds, workspace).
+- `DONE`: Observability baseline med request-correlation ID (`x-request-id` i proxy) og strukturerede JSON-logs pÃƒÆ’Ã‚Â¥ kritiske API-ruter (checkout, register, stripe webhook, invites, embeds, workspace).
 - `DONE`: Sentry integration i Next.js (client, server, edge, global error capture) + guide i `docs/sentry-setup.md`.
 - `DONE`: Webhook hardening: Mux-signaturvalidering (raw body + `mux-signature`) samt idempotency/replay-beskyttelse via `MuxWebhookEvent`.
-- `DONE`: Baseline rate limiting på auth + uploads + write-heavy API-ruter med ensartet `429 RATE_LIMITED` svar og `Retry-After` headers.
+- `DONE`: Baseline rate limiting pÃƒÆ’Ã‚Â¥ auth + uploads + write-heavy API-ruter med ensartet `429 RATE_LIMITED` svar og `Retry-After` headers.
 - `IN PROGRESS`: Test strategy baseline implementeret med Vitest (unit + API contracts), Playwright E2E smoke og CI-workflow i `.github/workflows/ci.yml`. Fuldt signup/checkout/upload/embed E2E er staged i `tests/e2e/full-acquisition-and-content.spec.ts`.
 - `DONE`: Team invite flow with real token links and accept page.
 - `DONE`: Pending invites list with `resend` and `cancel` actions in `app/admin/users/page.tsx`.
 - `DONE`: Public pricing page (`/pricing`) and pre-admin plan selection flow.
-- `DONE`: Frontpage (`/`) som entrypoint med tydelig split mellem eksisterende kunder og køb-flow.
+- `DONE`: Frontpage (`/`) som entrypoint med tydelig split mellem eksisterende kunder og kÃƒÆ’Ã‚Â¸b-flow.
 - `DONE`: Marketing pages udbygget med FAQ (`/faq`) og Kontakt (`/contact`) inkl. dedikeret kontaktformular og CTA-links fra forside/pricing.
-- `DONE`: Dansk som default i frontend + central tekststruktur (`lib/i18n/messages.ts`) klar til oversættelser.
-- `DONE`: Server-side plan-grænser (projekter, varianter, seats) med upgrade-required svar.
-- `DONE`: UX copy polish på tværs af public + admin (naturligt dansk, konsistent ordvalg, ryddet tegnkodning).
-- `DONE`: Onboarding-guide i dashboard med progress (projekt -> upload -> embed-kopi -> gennemført), auto-opdatering af trin og menupunktet `Vis onboarding`.
-- `DONE`: Usage & upgrade UX med forbrugsbarer i dashboard og 1-klik `Opgradér nu` fra blokerede handlinger (projekter, varianter, seats/invites).
+- `DONE`: Dansk som default i frontend + central tekststruktur (`lib/i18n/messages.ts`) klar til oversÃƒÆ’Ã‚Â¦ttelser.
+- `DONE`: Server-side plan-grÃƒÆ’Ã‚Â¦nser (projekter, varianter, seats) med upgrade-required svar.
+- `DONE`: UX copy polish pÃƒÆ’Ã‚Â¥ tvÃƒÆ’Ã‚Â¦rs af public + admin (naturligt dansk, konsistent ordvalg, ryddet tegnkodning).
+- `DONE`: Onboarding-guide i dashboard med progress (projekt -> upload -> embed-kopi -> gennemfÃƒÆ’Ã‚Â¸rt), auto-opdatering af trin og menupunktet `Vis onboarding`.
+- `DONE`: Usage & upgrade UX med forbrugsbarer i dashboard og 1-klik `OpgradÃƒÆ’Ã‚Â©r nu` fra blokerede handlinger (projekter, varianter, seats/invites).
 - `DONE`: Tydelig sektionering i navigationen med dedikerede admin-sider: Dashboard, Projekter, Team, Domains, Billing, Audit.
-- `DONE`: Design-system pass med tokens (`np-card`, `np-kicker`, `np-btn-*`) rullet ud på Dashboard, Projekter, Team, Billing og Domains for ensartet visuel stil.
-- `DONE`: Font-system opdateret til Apex New (`400` brødtekst, `700` overskrifter i caps) med lokal font-loading og guide i `docs/font-setup.md`.
-- `DONE`: Domains-flow genoprettet: domæner kan nu redigeres både i projekt-editor (`/admin/embed/[embedId]`) og direkte i domains-oversigten (`/admin/domains`).
-- `DONE`: Domain-validering udvidet til wildcard subdomæner (fx `*.naestved.dk`) samt normalisering af input fra komma/linjeskift.
-- `DONE`: Projektkort viser poster-frames som lille thumbnail-pattern baseret på Mux playback IDs.
-- `DONE`: Signup/workspace-setup flow med verify-link (`/verify-email`), resend verify endpoint, ny side `/setup/workspace`, gem af workspace-navn (`/api/workspace`) og registrering der guider nye brugere via setup før dashboard/pricing.
-- `DONE`: Invitation-flow forbedret, så inviterede uden eksisterende konto guides til `Opret konto` som primær handling før accept.
+- `DONE`: Design-system pass med tokens (`np-card`, `np-kicker`, `np-btn-*`) rullet ud pÃƒÆ’Ã‚Â¥ Dashboard, Projekter, Team, Billing og Domains for ensartet visuel stil.
+- `DONE`: Font-system opdateret til Apex New (`400` brÃƒÆ’Ã‚Â¸dtekst, `700` overskrifter i caps) med lokal font-loading og guide i `docs/font-setup.md`.
+- `DONE`: Domains-flow genoprettet: domÃƒÆ’Ã‚Â¦ner kan nu redigeres bÃƒÆ’Ã‚Â¥de i projekt-editor (`/admin/embed/[embedId]`) og direkte i domains-oversigten (`/admin/domains`).
+- `DONE`: Domain-validering udvidet til wildcard subdomÃƒÆ’Ã‚Â¦ner (fx `*.naestved.dk`) samt normalisering af input fra komma/linjeskift.
+- `DONE`: Projektkort viser poster-frames som lille thumbnail-pattern baseret pÃƒÆ’Ã‚Â¥ Mux playback IDs.
+- `DONE`: Signup/workspace-setup flow med verify-link (`/verify-email`), resend verify endpoint, ny side `/setup/workspace`, gem af workspace-navn (`/api/workspace`) og registrering der guider nye brugere via setup fÃƒÆ’Ã‚Â¸r dashboard/pricing.
+- `DONE`: Invitation-flow forbedret, sÃƒÆ’Ã‚Â¥ inviterede uden eksisterende konto guides til `Opret konto` som primÃƒÆ’Ã‚Â¦r handling fÃƒÆ’Ã‚Â¸r accept.
 - `DONE`: Email setup dokumenteret i `docs/email-setup.md` (Resend + Vercel + DNS + test/fejlfinding).
 - `DONE`: Frontend pass 2 (del 1): forbedret versionskort-design i projekt-editor (`/admin/embed/[embedId]`) med mere konsistent spacing/komponentstil efter design-tokens.
-- `DONE`: Signup verify-mail flow robustgjort: verificeringsmail sendes automatisk i setup-flow, og signup fejler ikke længere hvis email-provider fejler midlertidigt.
-- `DONE`: Frontend pass 2 (del 2): admin-fladerne `embed`, `audit` og `users` er finpudset med ens layout, spacing og komponent-konsistens på tværs af design-tokens.
-- `DONE`: Embed-editor opgraderet med inline redigering af projektnavn, topbar `Kopier kode` handling, og ny sektion-rækkefølge med fokus på varianter først.
-- `DONE`: Embed-sikkerhed udvidet: domæne-håndhævelse + aktiv betalt abonnements-gate + audit logs ved blokering, inkl. tilladelse af afspilning fra eget domæne.
+- `DONE`: Signup verify-mail flow robustgjort: verificeringsmail sendes automatisk i setup-flow, og signup fejler ikke lÃƒÆ’Ã‚Â¦ngere hvis email-provider fejler midlertidigt.
+- `DONE`: Frontend pass 2 (del 2): admin-fladerne `embed`, `audit` og `users` er finpudset med ens layout, spacing og komponent-konsistens pÃƒÆ’Ã‚Â¥ tvÃƒÆ’Ã‚Â¦rs af design-tokens.
+- `DONE`: Embed-editor opgraderet med inline redigering af projektnavn, topbar `Kopier kode` handling, og ny sektion-rÃƒÆ’Ã‚Â¦kkefÃƒÆ’Ã‚Â¸lge med fokus pÃƒÆ’Ã‚Â¥ varianter fÃƒÆ’Ã‚Â¸rst.
+- `DONE`: Embed-sikkerhed udvidet: domÃƒÆ’Ã‚Â¦ne-hÃƒÆ’Ã‚Â¥ndhÃƒÆ’Ã‚Â¦velse + aktiv betalt abonnements-gate + audit logs ved blokering, inkl. tilladelse af afspilning fra eget domÃƒÆ’Ã‚Â¦ne.
 - `DONE`: Marketing-forside opdateret med klassisk hero/CTA-opbygning, 4 plan-kort (`Starter`, `Pro`, `Enterprise`, `Custom`) og konsistent plan-data fra billing-laget.
-- `DONE`: Forside hero understøtter nu udskiftelig baggrund (video eller billede) via simpel konfiguration i `app/page.tsx`.
+- `DONE`: Forside hero understÃƒÆ’Ã‚Â¸tter nu udskiftelig baggrund (video eller billede) via simpel konfiguration i `app/page.tsx`.
 - `DONE`: Performance/encoding hygiene-pass: BOM-fejl fjernet i hele kodebasen (inkl. app/api/components/docs), og parse-fejl fra skjulte tegn elimineret.
-- `DONE`: Frontend performance forbedret i plan/pris-flow: Stripe-prisopslag i `lib/plans.ts` er cachet (memoized + revalidate), så forside/pricing ikke laver unødige live-opslag på hvert request.
-- `DONE`: Hero media-load lettet på forsiden (`preload=\"none\"` på video) for hurtigere initial rendering.
+- `DONE`: Frontend performance forbedret i plan/pris-flow: Stripe-prisopslag i `lib/plans.ts` er cachet (memoized + revalidate), sÃƒÆ’Ã‚Â¥ forside/pricing ikke laver unÃƒÆ’Ã‚Â¸dige live-opslag pÃƒÆ’Ã‚Â¥ hvert request.
+- `DONE`: Hero media-load lettet pÃƒÆ’Ã‚Â¥ forsiden (`preload=\"none\"` pÃƒÆ’Ã‚Â¥ video) for hurtigere initial rendering.
 - `DONE`: Drift-dokumentation udvidet med backup/restore runbook i `docs/backup-restore.md`.
+- `DONE`: Profilbillede-flow udvidet:
+  - Social login (Google/Microsoft) synkroniserer profilbillede ved login.
+  - Bruger kan uploade/fjerne profilbillede pÃƒÆ’Ã‚Â¥ `/admin/profile`.
+  - Avatar vises i venstremenuens brugersektion.
+- `DONE`: Avatar/cookie hardening:
+  - `HTTP 431` risiko fjernet ved at undgÃƒÆ’Ã‚Â¥ store billeddata i auth-cookie/session token.
+  - Avatar hentes i stedet via dedikeret profil-API og opdateres event-baseret i sidebar.
+- `DONE`: Frontend-oprydning:
+  - Synlige tekniske ID-felter fjernet fra admin-kort og lister.
+  - Variant-navn kan nu redigeres inline med blyantikon i embed-editor.
+- `DONE`: Posterframe-feature til varianter:
+  - Nyt felt `posterFrameUrl` pÃƒÆ’Ã‚Â¥ `Variant` + migration.
+  - Upload/fjern custom posterframe efter videoupload i variantkort.
+  - Custom posterframe bruges i admin-kort, embed-preview og player `poster`.
+- `DONE`: Dashboard/IA forbedringer:
+  - Projektkort-layout finpudset (titel, actions, responsive alignment).
+  - Posterframe-stack ved projekttitel justeret med bedre overlap/visuel vÃƒÆ’Ã‚Â¦gt.
+  - HjÃƒÆ’Ã‚Â¦lp-kort flyttet fra dashboard-indhold til fast placering i venstremenu (under brugernavn, over log ud).
+- `DONE`: EPIC-7 foundation (task 7.1 + 7.2):
+  - Ny Prisma model `OrganizationTheme` med scope/status/version (`draft`/`published`) og migration.
+  - Plan-capability gate implementeret (`enterpriseBrandingEnabled`) med server-side check.
+  - Sikkert theme-token schema + allowlist-validering implementeret i backend (`lib/theme-schema.ts`).
+- `DONE`: EPIC-7 runtime engine (task 7.3):
+  - Theme resolver implementeret (`default -> global published -> org published`) med enterprise-gate.
+  - API baseline oprettet pÃƒÆ’Ã‚Â¥ `/api/branding/theme` (GET draft/active, PUT draft save, POST publish).
+  - Theme CSS variables anvendes nu i admin-layout og embed-runtime (`/embed/[id]`), inkl. player-knap styles via tokens.
+- `IN PROGRESS`: EPIC-7 customer self-service (task 7.7):
+  - FÃƒÆ’Ã‚Â¸rste Enterprise branding-panel er tilfÃƒÆ’Ã‚Â¸jet pÃƒÆ’Ã‚Â¥ profilside med save draft + publish mod branding-API.
+  - Adgang styres af rolle (`owner/admin`) og plan-capability (`enterpriseBrandingEnabled`).
 
+- `DONE`: EPIC-7 internal tooling baseline (task 7.6):
+  - Internal kontrolcenter (`/internal`) med org-selector, global theme-editor og kunde-theme-editor.
+  - Version-historik + rollback i internal UI/API for global og org scopes.
+- `DONE`: Internal sidebar adgangslogik:
+  - `Internal` vises nu i venstremenu for brugere med internal rolle eller email i `INTERNAL_ADMIN_EMAILS`.
 ---
 
 ## Next Logical Step
-- `Stripe plan expansion`: opret og koble Stripe-produkter/price IDs for `Enterprise` og `Custom`, og aktivér checkout for disse planer.
-- Hvorfor: UI og planstruktur er nu klar med 4 planer, men kun `Starter`/`Pro` har aktiv checkout. Næste direkte forretningsværdi er at gøre alle plan-veje købsklare.
+- `EPIC-7 closeout`: afslut `TASK-7.5`, `TASK-7.8` og `TASK-7.9` med fuld role-governance, rollout-plan og test/monitorering.
+- Hvorfor: Core branding-engine og internal tooling er nu pÃƒÆ’Ã‚Â¥ plads. NÃƒÆ’Ã‚Â¦ste kritiske vÃƒÆ’Ã‚Â¦rdi er sikker drift, kontrolleret rollout og CI-dÃƒÆ’Ã‚Â¦kket kvalitet.
 
 ---
 
-## Performance Plan (Når du er tilbage)
-- **Mål:** Gør frontend hurtigere, reducér server-load, og fjern teknisk støj (encoding/dynamisk rendering), uden at bryde flows.
+## Performance Plan (NÃƒÆ’Ã‚Â¥r du er tilbage)
+- **MÃƒÆ’Ã‚Â¥l:** GÃƒÆ’Ã‚Â¸r frontend hurtigere, reducÃƒÆ’Ã‚Â©r server-load, og fjern teknisk stÃƒÆ’Ã‚Â¸j (encoding/dynamisk rendering), uden at bryde flows.
 
-### Fase 1 - Baseline og måling
-- Etablér baseline-metrics pr. nøgleside (`/`, `/pricing`, `/admin/dashboard`, `/admin/embed/[id]`): TTFB, LCP, JS payload, hydration-tid.
-- Dokumentér hvilke sider der er `force-dynamic`, og hvorfor.
-- Output: kort rapport med før-tal + top 5 flaskehalse.
+### Fase 1 - Baseline og mÃƒÆ’Ã‚Â¥ling
+- EtablÃƒÆ’Ã‚Â©r baseline-metrics pr. nÃƒÆ’Ã‚Â¸gleside (`/`, `/pricing`, `/admin/dashboard`, `/admin/embed/[id]`): TTFB, LCP, JS payload, hydration-tid.
+- DokumentÃƒÆ’Ã‚Â©r hvilke sider der er `force-dynamic`, og hvorfor.
+- Output: kort rapport med fÃƒÆ’Ã‚Â¸r-tal + top 5 flaskehalse.
 
 #### Fase 1 status (2026-02-23): `DONE`
 - Build snapshot:
   - `/` prerendered statisk med `Revalidate: 5m`.
-  - `admin/*` og flere setup/pricing-sider kører stadig `force-dynamic`.
+  - `admin/*` og flere setup/pricing-sider kÃƒÆ’Ã‚Â¸rer stadig `force-dynamic`.
 - Runtime baseline (lokal `next start`, headless browser):
   - `/`: TTFB ~51ms, DOM interactive ~536ms, load ~692ms.
   - `/pricing`: TTFB ~67ms, DOM interactive ~144ms, load ~287ms.
-  - `/admin/dashboard`: ender på login-redirect, TTFB ~95ms.
-  - `/admin/embed/[id]`: ender på login-redirect, TTFB ~66ms.
+  - `/admin/dashboard`: ender pÃƒÆ’Ã‚Â¥ login-redirect, TTFB ~95ms.
+  - `/admin/embed/[id]`: ender pÃƒÆ’Ã‚Â¥ login-redirect, TTFB ~66ms.
 - JS payload (resource timing, pr. side-load):
   - `/`: ~975KB transfer, ~4968KB decoded JS.
   - `/pricing`: ~954KB transfer, ~4864KB decoded JS.
-  - `admin`-målinger ovenfor er login-side payload pga. redirect.
+  - `admin`-mÃƒÆ’Ã‚Â¥linger ovenfor er login-side payload pga. redirect.
 - Teknisk hygiene:
   - BOM scan: `NO_BOM_FILES` efter cleanup.
-  - Typecheck/lint: grøn.
+  - Typecheck/lint: grÃƒÆ’Ã‚Â¸n.
 
 ### Fase 2 - Rendering-strategi
-- Fjern eller reducer `force-dynamic` på sider der ikke behøver fuld dynamik.
-- Indfør `revalidate`/cache-strategi på read-tunge visninger hvor data ikke kræver instant refresh.
-- Behold dynamik kun hvor auth/session/write-flow kræver det.
-- Output: målbar reduktion i TTFB på public + read-sider.
+- Fjern eller reducer `force-dynamic` pÃƒÆ’Ã‚Â¥ sider der ikke behÃƒÆ’Ã‚Â¸ver fuld dynamik.
+- IndfÃƒÆ’Ã‚Â¸r `revalidate`/cache-strategi pÃƒÆ’Ã‚Â¥ read-tunge visninger hvor data ikke krÃƒÆ’Ã‚Â¦ver instant refresh.
+- Behold dynamik kun hvor auth/session/write-flow krÃƒÆ’Ã‚Â¦ver det.
+- Output: mÃƒÆ’Ã‚Â¥lbar reduktion i TTFB pÃƒÆ’Ã‚Â¥ public + read-sider.
 
 #### Fase 2 status (2026-02-23): `DONE`
 - `DONE`: `/pricing` flyttet fra `force-dynamic` til statisk render med `revalidate=300`.
 - `DONE`: `/verify-email` flyttet fra `force-dynamic` til statisk render med `revalidate=300`.
-- `DONE`: Query-param håndtering (`billing`, `session_id`, `token`) flyttet til client-komponenter via `useSearchParams` med `Suspense`, så siderne kan prerenderes.
+- `DONE`: Query-param hÃƒÆ’Ã‚Â¥ndtering (`billing`, `session_id`, `token`) flyttet til client-komponenter via `useSearchParams` med `Suspense`, sÃƒÆ’Ã‚Â¥ siderne kan prerenderes.
 - `DONE`: Build-verifikation viser nu:
-  - `○ /pricing  Revalidate 5m`
-  - `○ /verify-email  Revalidate 5m`
+  - `ÃƒÂ¢Ã¢â‚¬â€Ã¢â‚¬Â¹ /pricing  Revalidate 5m`
+  - `ÃƒÂ¢Ã¢â‚¬â€Ã¢â‚¬Â¹ /verify-email  Revalidate 5m`
 - `DONE`: Admin server-fetch optimeret med parallelisering:
   - `app/admin/dashboard/page.tsx`: planer, subscription, projekter, onboarding og usage hentes nu via samlet `Promise.all`.
   - `components/admin/TeamManagementPage.tsx`: medlemsliste og pending invites hentes nu parallelt med `Promise.all`.
 - `DONE`: Reduceret over-fetch i admin DB-queries:
-  - `app/admin/dashboard/page.tsx`: projekter henter nu kun nødvendige felter (`id`, `name`, `groups.variants.{muxPlaybackId}`).
-  - `app/admin/projects/page.tsx`: projektliste henter nu kun nødvendige felter (`id`, `name`, `groups.variants.{muxPlaybackId}`).
-  - `components/admin/TeamManagementPage.tsx`: medlemsliste henter nu kun nødvendige user-felter (`id`, `name`, `email`, `image`).
+  - `app/admin/dashboard/page.tsx`: projekter henter nu kun nÃƒÆ’Ã‚Â¸dvendige felter (`id`, `name`, `groups.variants.{muxPlaybackId}`).
+  - `app/admin/projects/page.tsx`: projektliste henter nu kun nÃƒÆ’Ã‚Â¸dvendige felter (`id`, `name`, `groups.variants.{muxPlaybackId}`).
+  - `components/admin/TeamManagementPage.tsx`: medlemsliste henter nu kun nÃƒÆ’Ã‚Â¸dvendige user-felter (`id`, `name`, `email`, `image`).
 - `DONE`: Dashboard-statistik flyttet fra in-memory loops til DB-aggregat:
   - `app/admin/dashboard/page.tsx`: `totalVariants` + `totalViews` beregnes nu via `prisma.variant.aggregate(...)`.
   - Resultat: mindre payload i projekthentning og lavere serverarbejde pr. request.
 - `DONE`: Yderligere query-stramning i admin:
   - `app/admin/audit/page.tsx`: audit-log query bruger nu `select` med kun viste felter.
   - `components/admin/TeamManagementPage.tsx`: pending invites query bruger nu `select` med kun viste felter.
-  - `app/admin/dashboard/page.tsx`: subscription query henter ikke længere ubrugt `status`.
+  - `app/admin/dashboard/page.tsx`: subscription query henter ikke lÃƒÆ’Ã‚Â¦ngere ubrugt `status`.
 - `DONE`: Projektliste-queries reduceret yderligere for thumbnail-visning:
   - `app/admin/dashboard/page.tsx` og `app/admin/projects/page.tsx` henter nu kun varianter med `muxPlaybackId` sat.
-  - Varianter begrænses til `take: 6` pr. gruppe med `orderBy: sortOrder`.
+  - Varianter begrÃƒÆ’Ã‚Â¦nses til `take: 6` pr. gruppe med `orderBy: sortOrder`.
   - Resultat: mindre payload og lavere serialiseringsarbejde til projektkort.
-- `DONE`: Autentificeret admin-performance målt med aktiv test-subscription:
+- `DONE`: Autentificeret admin-performance mÃƒÆ’Ã‚Â¥lt med aktiv test-subscription:
   - `/admin/dashboard`: TTFB ~207ms, load ~318ms.
   - `/admin/projects`: TTFB ~114ms, load ~196ms.
   - `/admin/team`: TTFB ~150ms, load ~275ms.
   - `/admin/billing`: TTFB ~160ms, load ~263ms.
-- `OBS`: Admin-ruter er fortsat dynamiske (`ƒ`) pga. auth/tenant-kontekst (forventet og korrekt).
-- `NEXT`: Gå videre til Fase 3 (bundle og client-island optimering) for at reducere JS payload på tværs af public/admin.
+- `OBS`: Admin-ruter er fortsat dynamiske (`Ãƒâ€ Ã¢â‚¬â„¢`) pga. auth/tenant-kontekst (forventet og korrekt).
+- `NEXT`: GÃƒÆ’Ã‚Â¥ videre til Fase 3 (bundle og client-island optimering) for at reducere JS payload pÃƒÆ’Ã‚Â¥ tvÃƒÆ’Ã‚Â¦rs af public/admin.
 
 ### Fase 3 - Bundle og client island-optimering
-- Split store client-komponenter (især admin editor-flows) i mindre islands.
+- Split store client-komponenter (isÃƒÆ’Ã‚Â¦r admin editor-flows) i mindre islands.
 - Lazy-load tunge dele (uploader/player/modals) med `dynamic()` hvor relevant.
-- Hold `SessionProvider` scoped til områder der faktisk kræver klient-session.
-- Output: lavere JS payload og hurtigere interaktivitet på admin-sider.
+- Hold `SessionProvider` scoped til omrÃƒÆ’Ã‚Â¥der der faktisk krÃƒÆ’Ã‚Â¦ver klient-session.
+- Output: lavere JS payload og hurtigere interaktivitet pÃƒÆ’Ã‚Â¥ admin-sider.
 
 #### Fase 3 status (2026-02-23): `DONE`
-- `DONE`: Global `SessionProvider` fjernet fra root-layout, så public-sider ikke automatisk hydrerer next-auth klientkode.
-- `DONE`: `SessionProvider` scoped til de områder der faktisk bruger klient-session:
+- `DONE`: Global `SessionProvider` fjernet fra root-layout, sÃƒÆ’Ã‚Â¥ public-sider ikke automatisk hydrerer next-auth klientkode.
+- `DONE`: `SessionProvider` scoped til de omrÃƒÆ’Ã‚Â¥der der faktisk bruger klient-session:
   - `app/admin/layout.tsx` (admin-flader)
   - `app/invite/[token]/page.tsx` (invite accept-flow)
   - `app/pricing/page.tsx` via lokal wrapper omkring `PricingPlans`.
-- `DONE`: `/pricing` regression rettet, så siden igen kan prerenderes med `revalidate=300` i stedet for at blive gjort dynamisk af server-session opslag.
+- `DONE`: `/pricing` regression rettet, sÃƒÆ’Ã‚Â¥ siden igen kan prerenderes med `revalidate=300` i stedet for at blive gjort dynamisk af server-session opslag.
 - `DONE`: Tung videokode i embed-editor er nu lazy-loadet:
-  - `components/admin/EmbedEditor.tsx` loader `@mux/mux-player-react` og `MuxUploader` via `dynamic()`, så payload reduceres ved initial rendering.
+  - `components/admin/EmbedEditor.tsx` loader `@mux/mux-player-react` og `MuxUploader` via `dynamic()`, sÃƒÆ’Ã‚Â¥ payload reduceres ved initial rendering.
 - `DONE`: Dashboard og projektoversigt lazy-loader nu store client-islands:
   - `app/admin/dashboard/page.tsx` lazy-loader `ProjectListClient`, `OnboardingChecklistCard` og `UsageLimitsCard`.
   - `app/admin/projects/page.tsx` lazy-loader `ProjectListClient`.
-- `DONE`: `EmbedCodeGenerator` i `ProjectListClient` er lazy-loadet, så embed-modalens kode hentes først ved åbning.
-- `NEXT`: Kør ny build-bundle sammenligning og fortsæt med lazy-loading af resterende tunge admin-islands (fx modals og sekundære editor-sektioner).
+- `DONE`: `EmbedCodeGenerator` i `ProjectListClient` er lazy-loadet, sÃƒÆ’Ã‚Â¥ embed-modalens kode hentes fÃƒÆ’Ã‚Â¸rst ved ÃƒÆ’Ã‚Â¥bning.
+- `NEXT`: KÃƒÆ’Ã‚Â¸r ny build-bundle sammenligning og fortsÃƒÆ’Ã‚Â¦t med lazy-loading af resterende tunge admin-islands (fx modals og sekundÃƒÆ’Ã‚Â¦re editor-sektioner).
 
- - `DONE`: Yderligere lazy-loading af sekundÒ¦re admin-widgets:
-  - `app/admin/dashboard/page.tsx` lazy-loader nu ogsÒ¥ `BillingPlansCard`.
+ - `DONE`: Yderligere lazy-loading af sekundÃƒÆ’Ã¢â‚¬â„¢Ãƒâ€šÃ‚Â¦re admin-widgets:
+  - `app/admin/dashboard/page.tsx` lazy-loader nu ogsÃƒÆ’Ã¢â‚¬â„¢Ãƒâ€šÃ‚Â¥ `BillingPlansCard`.
   - `components/admin/EmbedEditor.tsx` lazy-loader `EmbedCodeGenerator`.
 
 ### Fase 4 - Media og asset-optimering
-- Hero-video: lever flere kvaliteter/codecs + poster fallback, og verificér mobil-performance.
-- Gennemgå billeder/fonts for optimal format og loading-prioritet.
-- Output: bedre LCP og mindre dataforbrug på forsiden.
+- Hero-video: lever flere kvaliteter/codecs + poster fallback, og verificÃƒÆ’Ã‚Â©r mobil-performance.
+- GennemgÃƒÆ’Ã‚Â¥ billeder/fonts for optimal format og loading-prioritet.
+- Output: bedre LCP og mindre dataforbrug pÃƒÆ’Ã‚Â¥ forsiden.
 
 ### Fase 5 - Guardrails i drift
-- Tilføj performance-budget checks i CI (bundle-størrelse + Lighthouse/TTFB thresholds i preview).
+- TilfÃƒÆ’Ã‚Â¸j performance-budget checks i CI (bundle-stÃƒÆ’Ã‚Â¸rrelse + Lighthouse/TTFB thresholds i preview).
 - Behold encoding-regel: UTF-8 uden BOM i repo (evt. `.gitattributes` + lint/check script).
-- Output: regressions bliver fanget tidligt før deploy.
+- Output: regressions bliver fanget tidligt fÃƒÆ’Ã‚Â¸r deploy.
 
 ### Definition of Done for performance-sprint
-- Min. 20-30% forbedring i TTFB/LCP på de mest trafikerede sider.
+- Min. 20-30% forbedring i TTFB/LCP pÃƒÆ’Ã‚Â¥ de mest trafikerede sider.
 - Ingen BOM/encoding-fejl i repository.
-- Typecheck/lint/test/build grøn efter optimeringer.
+- Typecheck/lint/test/build grÃƒÆ’Ã‚Â¸n efter optimeringer.
 
 ---
 
@@ -437,8 +586,8 @@
   - `/admin/embed/[id]`: TTFB ~95ms, load ~122ms, decoded JS ~716KB.
 - `DONE`: Performance guardrail i CI:
   - Ny script: `scripts/check-client-bundle-budget.mjs`.
-  - Kører efter build via `npm run perf:budget` i `.github/workflows/ci.yml`.
-  - Budgetter: total client JS chunks (`2600 KB`) og største chunk (`1100 KB`).
+  - KÃƒÆ’Ã‚Â¸rer efter build via `npm run perf:budget` i `.github/workflows/ci.yml`.
+  - Budgetter: total client JS chunks (`2600 KB`) og stÃƒÆ’Ã‚Â¸rste chunk (`1100 KB`).
 
 
 
@@ -455,15 +604,15 @@
 - `MEASURED`: Bundle-budget effekt efter split:
   - Client chunk files: `36 -> 35`.
   - Total JS chunks: `2246.6 KB -> 2245.9 KB`.
-  - Største chunk: `1000.2 KB -> 997.3 KB`.
+  - StÃƒÆ’Ã‚Â¸rste chunk: `1000.2 KB -> 997.3 KB`.
 - `DONE`: On-demand media-aktivering i `EmbedVariantCard`:
-  - Player/uploader mountes nu først ved viewport-hit (`IntersectionObserver`) eller manuel aktivering.
+  - Player/uploader mountes nu fÃƒÆ’Ã‚Â¸rst ved viewport-hit (`IntersectionObserver`) eller manuel aktivering.
 - `MEASURED`: Bundle-budget efter dette step:
-  - Client chunk files: `35` (uændret).
-  - Total JS chunks: `2246.7 KB` (praktisk talt uændret).
-  - Største chunk: `997.3 KB` (uændret).
-- `CLOSE`: Fase 3 er afsluttet med stabile guardrails og dokumenterede målinger.
-- `DECISION`: Behold nuværende max-chunk budget (`1100 KB`) i CI indtil et dedikeret player/vendor-spor prioriteres.
+  - Client chunk files: `35` (uÃƒÆ’Ã‚Â¦ndret).
+  - Total JS chunks: `2246.7 KB` (praktisk talt uÃƒÆ’Ã‚Â¦ndret).
+  - StÃƒÆ’Ã‚Â¸rste chunk: `997.3 KB` (uÃƒÆ’Ã‚Â¦ndret).
+- `CLOSE`: Fase 3 er afsluttet med stabile guardrails og dokumenterede mÃƒÆ’Ã‚Â¥linger.
+- `DECISION`: Behold nuvÃƒÆ’Ã‚Â¦rende max-chunk budget (`1100 KB`) i CI indtil et dedikeret player/vendor-spor prioriteres.
 - `NEXT`: Start Fase 4 (media og asset-optimering) med fokus p? hero-video varianter, poster fallback og LCP-forbedringer.
 - `DONE` (Fase 4 - step 1): Hero media robustgjort:
   - `components/public/HeroMedia.tsx` tilfoejet med video -> image fallback ved reduced-motion eller afspilningsfejl.

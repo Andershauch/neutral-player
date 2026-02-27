@@ -50,6 +50,7 @@ interface EmbedEditorProps {
         title: string | null;
         lang: string;
         muxPlaybackId: string | null;
+        posterFrameUrl: string | null;
         views: number;
       }>;
     }>;
@@ -274,7 +275,6 @@ export default function EmbedEditor({ embed }: EmbedEditorProps) {
               </>
             )}
           </div>
-          <p className="text-gray-400 font-medium italic text-xs md:text-sm">Projekt-ID: {embed.id}</p>
           {nameError ? <p className="text-xs font-semibold text-red-600">{nameError}</p> : null}
         </div>
 

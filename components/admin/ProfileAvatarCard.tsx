@@ -7,7 +7,57 @@ type Props = {
   initialImage: string | null;
 };
 
-const MAX_UPLOAD_BYTES = 1024 * 1024;
+const MAX_INPUT_UPLOAD_BYTES = 5 * 1024 * 1024;
+const MAX_OUTPUT_DATA_URL_LENGTH = 220_000;
+const AVATAR_SIZE = 256;
+
+async function compressToAvatarDataUrl(file: File): Promise<string> {
+  const objectUrl = URL.createObjectURL(file);
+
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = () => reject(new Error("Could not decode image"));
+      image.src = objectUrl;
+    });
+
+    const canvas = document.createElement("canvas");
+    canvas.width = AVATAR_SIZE;
+    canvas.height = AVATAR_SIZE;
+    const context = canvas.getContext("2d");
+    if (!context) {
+      throw new Error("Canvas unavailable");
+    }
+
+    const sourceWidth = img.naturalWidth || img.width;
+    const sourceHeight = img.naturalHeight || img.height;
+    const side = Math.min(sourceWidth, sourceHeight);
+    const sourceX = Math.floor((sourceWidth - side) / 2);
+    const sourceY = Math.floor((sourceHeight - side) / 2);
+
+    context.drawImage(img, sourceX, sourceY, side, side, 0, 0, AVATAR_SIZE, AVATAR_SIZE);
+
+    let quality = 0.86;
+    let output = canvas.toDataURL("image/webp", quality);
+    while (output.length > MAX_OUTPUT_DATA_URL_LENGTH && quality > 0.46) {
+      quality -= 0.08;
+      output = canvas.toDataURL("image/webp", quality);
+    }
+
+    if (output.length > MAX_OUTPUT_DATA_URL_LENGTH) {
+      output = canvas.toDataURL("image/jpeg", 0.72);
+    }
+
+    if (output.length > MAX_OUTPUT_DATA_URL_LENGTH) {
+      throw new Error("Compressed image too large");
+    }
+
+    return output;
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
 
 export default function ProfileAvatarCard({ initialName, initialImage }: Props) {
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -61,22 +111,19 @@ export default function ProfileAvatarCard({ initialName, initialImage }: Props) 
       return;
     }
 
-    if (file.size > MAX_UPLOAD_BYTES) {
-      setError("Billedet er for stort. Maks 1 MB.");
+    if (file.size > MAX_INPUT_UPLOAD_BYTES) {
+      setError("Billedet er for stort. Maks 5 MB.");
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = typeof reader.result === "string" ? reader.result : null;
-      if (!result) {
-        setError("Kunne ikke læse billedet.");
-        return;
+    startTransition(async () => {
+      try {
+        const compressedDataUrl = await compressToAvatarDataUrl(file);
+        saveImage(compressedDataUrl);
+      } catch {
+        setError("Kunne ikke komprimere billedet. Prøv et andet.");
       }
-      saveImage(result);
-    };
-    reader.onerror = () => setError("Kunne ikke læse billedet.");
-    reader.readAsDataURL(file);
+    });
   };
 
   return (
@@ -85,11 +132,7 @@ export default function ProfileAvatarCard({ initialName, initialImage }: Props) 
       <div className="mt-3 flex flex-col sm:flex-row sm:items-center gap-4">
         <div className="h-16 w-16 rounded-full border border-gray-200 bg-gray-100 flex items-center justify-center overflow-hidden">
           {image ? (
-            <span
-              className="block h-full w-full bg-cover bg-center"
-              style={{ backgroundImage: `url("${image}")` }}
-              aria-label="Profilbillede"
-            />
+            <span className="block h-full w-full bg-cover bg-center" style={{ backgroundImage: `url("${image}")` }} aria-label="Profilbillede" />
           ) : (
             <span className="text-lg font-black text-gray-600">{firstLetter}</span>
           )}
@@ -97,12 +140,7 @@ export default function ProfileAvatarCard({ initialName, initialImage }: Props) 
 
         <div className="flex flex-wrap gap-2">
           <input ref={inputRef} type="file" accept="image/*" onChange={onFileChange} className="hidden" />
-          <button
-            type="button"
-            onClick={onChooseFile}
-            disabled={isPending}
-            className="np-btn-primary px-4 py-3 disabled:opacity-50"
-          >
+          <button type="button" onClick={onChooseFile} disabled={isPending} className="np-btn-primary px-4 py-3 disabled:opacity-50">
             Vælg billede
           </button>
           <button
@@ -115,7 +153,7 @@ export default function ProfileAvatarCard({ initialName, initialImage }: Props) 
           </button>
         </div>
       </div>
-      <p className="mt-3 text-xs text-gray-500">Google og Microsoft billede synkroniseres automatisk ved social login.</p>
+      <p className="mt-3 text-xs text-gray-500">Google- og Microsoft-billede synkroniseres automatisk ved social login.</p>
       {error ? <p className="mt-2 text-xs font-bold text-red-600">{error}</p> : null}
       {message ? <p className="mt-2 text-xs font-bold text-green-600">{message}</p> : null}
     </section>

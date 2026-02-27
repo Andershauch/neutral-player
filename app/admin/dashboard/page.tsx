@@ -52,6 +52,7 @@ export default async function DashboardPage({
               take: 6,
               select: {
                 muxPlaybackId: true,
+                posterFrameUrl: true,
               },
             },
           },
@@ -76,19 +77,21 @@ export default async function DashboardPage({
     onboarding.hasCopiedEmbed,
     onboarding.isCompleted,
   ].filter(Boolean).length;
+
   const onboardingProgress = Math.round((completedOnboardingSteps / 4) * 100);
   const showOnboarding = resolvedSearchParams.onboarding === "1";
   const shouldShowOnboardingOnDashboard = !onboarding.isCompleted;
 
   return (
     <div className="space-y-6 md:space-y-7">
-      <section className="np-card np-card-pad bg-gradient-to-br from-white via-white to-blue-50/40">
+      <section className="np-card np-card-pad rounded-2xl border-gray-200/90 shadow-[0_8px_24px_rgba(15,23,42,0.08)] bg-gradient-to-br from-white via-white to-blue-50/40">
         <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
           <div className="space-y-2">
             <p className="np-kicker text-blue-600">Dashboard</p>
             <h1 className="text-3xl md:text-4xl font-bold text-gray-900 uppercase tracking-tight">{t.dashboard.title}</h1>
             <p className="text-sm text-gray-500 font-light max-w-2xl">{t.dashboard.subtitle}</p>
           </div>
+
           <div className="w-full sm:w-auto flex flex-col sm:flex-row gap-2">
             {shouldShowOnboardingOnDashboard && (
               <Link
@@ -111,76 +114,67 @@ export default async function DashboardPage({
       </section>
 
       {resolvedSearchParams.billing === "success" && (
-        <div className="rounded-2xl border px-5 py-4" style={{ borderColor: "var(--success-bg)", background: "var(--success-bg)" }}>
-          <p className="text-xs font-black uppercase tracking-widest" style={{ color: "var(--success-fg)" }}>{t.dashboard.billingSuccess}</p>
+        <div
+          className="rounded-xl border px-5 py-4 shadow-[0_6px_18px_rgba(15,23,42,0.06)]"
+          style={{ borderColor: "var(--success-bg)", background: "var(--success-bg)" }}
+        >
+          <p className="text-xs font-black uppercase tracking-widest" style={{ color: "var(--success-fg)" }}>
+            {t.dashboard.billingSuccess}
+          </p>
         </div>
       )}
 
       {resolvedSearchParams.billing === "cancelled" && (
-        <div className="rounded-2xl border px-5 py-4" style={{ borderColor: "var(--warning-bg)", background: "var(--warning-bg)" }}>
-          <p className="text-xs font-black uppercase tracking-widest" style={{ color: "var(--warning-fg)" }}>{t.dashboard.billingCancelled}</p>
+        <div
+          className="rounded-xl border px-5 py-4 shadow-[0_6px_18px_rgba(15,23,42,0.06)]"
+          style={{ borderColor: "var(--warning-bg)", background: "var(--warning-bg)" }}
+        >
+          <p className="text-xs font-black uppercase tracking-widest" style={{ color: "var(--warning-fg)" }}>
+            {t.dashboard.billingCancelled}
+          </p>
         </div>
       )}
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
-        <div className="xl:col-span-2 space-y-6">
-          {shouldShowOnboardingOnDashboard && (
-            <section className="np-card p-5 md:p-6">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div>
-                  <h2 className="text-sm font-bold text-gray-900 uppercase tracking-widest">Næste skridt</h2>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Onboarding: {completedOnboardingSteps}/4 trin ({onboardingProgress}%)
-                  </p>
-                </div>
-                <Link
-                  href={onboarding.hasProject && projects[0]?.id ? `/admin/embed/${projects[0].id}` : "/admin/projects"}
-                  className="np-btn-primary inline-flex px-4 py-3"
-                >
-                  {onboarding.hasProject ? "Fortsæt onboarding" : "Opret første projekt"}
-                </Link>
+      <div className="space-y-6">
+        {shouldShowOnboardingOnDashboard && (
+          <section className="np-card rounded-2xl border-gray-200/90 shadow-[0_8px_24px_rgba(15,23,42,0.08)] p-5 md:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <h2 className="text-sm font-bold text-gray-900 uppercase tracking-widest">Næste skridt</h2>
+                <p className="text-xs text-gray-500 mt-1">
+                  Onboarding: {completedOnboardingSteps}/4 trin ({onboardingProgress}%)
+                </p>
               </div>
-            </section>
-          )}
-
-          {shouldShowOnboardingOnDashboard && (
-            <OnboardingChecklistCard
-              hasProject={onboarding.hasProject}
-              hasUploadedVariant={onboarding.hasUploadedVariant}
-              hasCopiedEmbed={onboarding.hasCopiedEmbed}
-              isCompleted={onboarding.isCompleted}
-              firstProjectId={projects[0]?.id ?? null}
-              forceExpanded={showOnboarding}
-            />
-          )}
-
-          <div className="w-full">
-            {projects.length > 0 ? (
-              <ProjectListClient initialProjects={projects} />
-            ) : (
-              <div className="text-center py-20 bg-white border-2 border-dashed border-gray-100 rounded-[2rem]">
-                <p className="text-gray-400 font-bold uppercase text-xs tracking-widest">{t.dashboard.noProjects}</p>
-                <p className="text-gray-400 text-sm mt-1">{t.dashboard.noProjectsSubtitle}</p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="space-y-6 xl:sticky xl:top-6">
-          <div className="np-card p-5">
-            <h3 className="text-xs font-bold uppercase tracking-widest text-gray-900">Hjælp</h3>
-            <p className="mt-2 text-xs text-gray-500">
-              Har du spørgsmål om setup, domæner eller billing? Brug FAQ eller kontaktformular.
-            </p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Link href="/faq" className="np-btn-ghost px-3 py-2">
-                FAQ
-              </Link>
-              <Link href="/contact" className="np-btn-ghost px-3 py-2">
-                Kontakt
+              <Link
+                href={onboarding.hasProject && projects[0]?.id ? `/admin/embed/${projects[0].id}` : "/admin/projects"}
+                className="np-btn-primary inline-flex px-4 py-3"
+              >
+                {onboarding.hasProject ? "Fortsæt onboarding" : "Opret første projekt"}
               </Link>
             </div>
-          </div>
+          </section>
+        )}
+
+        {shouldShowOnboardingOnDashboard && (
+          <OnboardingChecklistCard
+            hasProject={onboarding.hasProject}
+            hasUploadedVariant={onboarding.hasUploadedVariant}
+            hasCopiedEmbed={onboarding.hasCopiedEmbed}
+            isCompleted={onboarding.isCompleted}
+            firstProjectId={projects[0]?.id ?? null}
+            forceExpanded={showOnboarding}
+          />
+        )}
+
+        <div className="w-full">
+          {projects.length > 0 ? (
+            <ProjectListClient initialProjects={projects} />
+          ) : (
+            <div className="text-center py-20 bg-white border-2 border-dashed border-gray-200 rounded-2xl shadow-[0_8px_24px_rgba(15,23,42,0.08)]">
+              <p className="text-gray-400 font-bold uppercase text-xs tracking-widest">{t.dashboard.noProjects}</p>
+              <p className="text-gray-400 text-sm mt-1">{t.dashboard.noProjectsSubtitle}</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -189,7 +183,7 @@ export default async function DashboardPage({
 
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-gray-100 bg-gray-50/80 px-4 py-4">
+    <div className="rounded-xl border border-gray-200 bg-gray-50/85 px-4 py-4 shadow-[0_4px_14px_rgba(15,23,42,0.05)]">
       <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">{label}</p>
       <p className="mt-1 text-xl font-black text-gray-900 tracking-tight">{value}</p>
     </div>

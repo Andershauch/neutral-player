@@ -2,6 +2,9 @@ import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import MuxPlayerClient from "@/components/player/MuxPlayerClient";
 import { prisma } from "@/lib/prisma";
+import { resolveThemeForOrganization } from "@/lib/theme";
+import { buildThemeCssVars } from "@/lib/theme-css";
+import { DEFAULT_THEME_TOKENS } from "@/lib/theme-schema";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -74,8 +77,17 @@ export default async function EmbedPage({ params }: PageProps) {
     );
   }
 
+  const resolvedTheme = embed.organizationId
+    ? await resolveThemeForOrganization(embed.organizationId)
+    : {
+        tokens: DEFAULT_THEME_TOKENS,
+        source: "default" as const,
+        plan: "free",
+        enterpriseBrandingEnabled: false,
+      };
+
   return (
-    <main className="w-screen h-screen bg-black overflow-hidden m-0 p-0">
+    <main className="np-themed w-screen h-screen bg-black overflow-hidden m-0 p-0" style={buildThemeCssVars(resolvedTheme.tokens)}>
       <MuxPlayerClient initialVariant={readyVariants[0]} allVariants={readyVariants} embedName={embed.name} />
     </main>
   );

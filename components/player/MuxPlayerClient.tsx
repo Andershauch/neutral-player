@@ -31,6 +31,7 @@ interface Variant {
   lang: string;
   title: string | null;
   muxPlaybackId: string | null;
+  posterFrameUrl?: string | null;
 }
 
 interface MuxPlayerClientProps {
@@ -43,6 +44,8 @@ export default function MuxPlayerClient({ initialVariant, allVariants, embedName
   const [activeVariant, setActiveVariant] = useState(initialVariant);
   const [showControls, setShowControls] = useState(true);
   const [playerError, setPlayerError] = useState<string | null>(null);
+  const [showCenterPlay, setShowCenterPlay] = useState(true);
+  const [playerRef, setPlayerRef] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -56,10 +59,22 @@ export default function MuxPlayerClient({ initialVariant, allVariants, embedName
 
   const handlePlay = () => {
     setShowControls(false);
+    setShowCenterPlay(false);
     fetch(`/api/variants/${activeVariant.id}/views`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
     }).catch((err) => console.error("Analytics-fejl:", err));
+  };
+
+  const handleCenterPlay = async (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    try {
+      const maybePlayer = playerRef as (HTMLElement & { play?: () => Promise<void> | void }) | null;
+      await maybePlayer?.play?.();
+      setShowCenterPlay(false);
+    } catch {
+      // Keep visible so user can retry
+    }
   };
 
   return (
@@ -68,23 +83,42 @@ export default function MuxPlayerClient({ initialVariant, allVariants, embedName
         <div className="text-white/80 text-sm px-6 text-center">Videoen kunne ikke afspilles lige nu. Prøv igen om et øjeblik.</div>
       ) : (
         <MuxPlayer
+          ref={(node) => setPlayerRef(node as HTMLElement | null)}
           playbackId={activeVariant.muxPlaybackId || ""}
+          poster={activeVariant.posterFrameUrl || undefined}
           metadataVideoTitle={`${embedName} - ${activeVariant.title || activeVariant.lang}`}
           streamType="on-demand"
           onPlay={handlePlay}
-          onPause={() => setShowControls(true)}
+          onPause={() => {
+            setShowControls(true);
+            setShowCenterPlay(true);
+          }}
           onSeeking={() => setShowControls(true)}
           onError={() => setPlayerError("mux-error")}
-          primaryColor="#ffffff"
-          secondaryColor="#000000"
+          primaryColor="var(--primary)"
+          secondaryColor="var(--foreground)"
+          className="np-mux-play-skin np-mux-custom-play w-full h-full object-contain"
           style={{ height: "100%", width: "100%" }}
         />
+      )}
+
+      {!playerError && showCenterPlay && (
+        <button
+          type="button"
+          onClick={handleCenterPlay}
+          className="np-center-play-btn absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 flex items-center justify-center"
+          aria-label="Afspil video"
+        >
+          <svg viewBox="0 0 24 24" className="h-9 w-9 text-white ml-1" fill="currentColor" aria-hidden="true">
+            <path d="M8 5v14l11-7z" />
+          </svg>
+        </button>
       )}
 
       {allVariants.length > 1 && (
         <div
           className={`
-          absolute z-10 transition-all duration-500 ease-in-out
+          absolute z-10 transition-all duration-500 ease-in-out pointer-events-none
           md:right-4 md:top-1/2 md:-translate-y-1/2 md:flex-col md:gap-3 md:bottom-auto
           top-4 left-0 right-0 flex justify-center gap-2 px-4 overflow-x-auto no-scrollbar
           ${showControls ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4 pointer-events-none"}
@@ -96,7 +130,7 @@ export default function MuxPlayerClient({ initialVariant, allVariants, embedName
           </p>
 
           {allVariants.map((v) => (
-            <div key={v.id} className="relative flex items-center justify-end group/btn shrink-0">
+            <div key={v.id} className="relative flex items-center justify-end group/btn shrink-0 pointer-events-auto">
               <span className="hidden md:block absolute right-12 px-3 py-1 bg-white text-black text-[10px] font-bold rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-xl">
                 {LANGUAGE_NAMES[v.lang] || v.title || v.lang.toUpperCase()}
               </span>
@@ -120,6 +154,24 @@ export default function MuxPlayerClient({ initialVariant, allVariants, embedName
       )}
 
       <style jsx>{`
+        :global(.np-mux-custom-play::part(center play button)) {
+          display: none;
+          opacity: 0;
+          pointer-events: none;
+        }
+
+        :global(.np-mux-custom-play::part(center play button icon)) {
+          display: none;
+          opacity: 0;
+          pointer-events: none;
+        }
+
+        :global(.np-mux-custom-play::part(center play button container)) {
+          display: none;
+          opacity: 0;
+          pointer-events: none;
+        }
+
         .vertical-text {
           writing-mode: vertical-rl;
           text-orientation: mixed;

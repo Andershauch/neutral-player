@@ -153,7 +153,6 @@ export default async function TeamManagementPage() {
                       )}
                       <div>
                         <div className="text-sm font-bold text-gray-900">{membership.user.name || "Navn mangler"}</div>
-                        <div className="text-[10px] font-mono text-gray-400 uppercase tracking-tighter">ID: {membership.user.id.slice(0, 8)}</div>
                       </div>
                     </div>
                   </td>

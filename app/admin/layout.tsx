@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { getCurrentOrgContext } from "@/lib/org-context";
 import { prisma } from "@/lib/prisma";
 import { Providers } from "@/components/Providers";
+import { resolveThemeForOrganization } from "@/lib/theme";
+import { buildThemeCssVars } from "@/lib/theme-css";
 
 export default async function AdminLayout({
   children,
@@ -14,11 +16,14 @@ export default async function AdminLayout({
     redirect("/login");
   }
 
-  const subscription = await prisma.subscription.findFirst({
-    where: { organizationId: orgCtx.orgId },
-    orderBy: { updatedAt: "desc" },
-    select: { status: true },
-  });
+  const [subscription, resolvedTheme] = await Promise.all([
+    prisma.subscription.findFirst({
+      where: { organizationId: orgCtx.orgId },
+      orderBy: { updatedAt: "desc" },
+      select: { status: true },
+    }),
+    resolveThemeForOrganization(orgCtx.orgId),
+  ]);
 
   const hasAdminAccess =
     subscription?.status === "active" ||
@@ -31,7 +36,7 @@ export default async function AdminLayout({
 
   return (
     <Providers>
-      <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
+      <div className="np-themed min-h-screen bg-gray-50 flex flex-col md:flex-row" style={buildThemeCssVars(resolvedTheme.tokens)}>
       {/* Sidebaren er 'fixed'. 
         På mobil fylder den top-baren, på PC fylder den venstre side. 
       */}

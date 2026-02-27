@@ -10,6 +10,7 @@ export default function Sidebar() {
   const { data: session } = useSession();
   const [isOpen, setIsOpen] = useState(false);
   const [avatarImage, setAvatarImage] = useState<string | null>(null);
+  const [canAccessInternal, setCanAccessInternal] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -37,32 +38,45 @@ export default function Sidebar() {
     };
   }, []);
 
+  useEffect(() => {
+    let active = true;
+    const loadInternalAccess = async () => {
+      try {
+        const res = await fetch("/api/internal/access", { cache: "no-store" });
+        if (!res.ok) return;
+        const data = (await res.json()) as { canAccessInternal?: boolean };
+        if (!active) return;
+        setCanAccessInternal(Boolean(data.canAccessInternal));
+      } catch {
+        // ignore
+      }
+    };
+    void loadInternalAccess();
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const sections = [
     {
       label: "Oversigt",
-      items: [
-        {
-          name: "Dashboard",
-          href: "/admin/dashboard",
-          isActive: pathname === "/admin/dashboard",
-        },
-      ],
+      items: [{ name: "Dashboard", href: "/admin/dashboard", isActive: pathname === "/admin/dashboard" }],
     },
     {
       label: "Indhold",
-      items: [
-        { name: "Projekter", href: "/admin/projects", isActive: pathname === "/admin/projects" || pathname.startsWith("/admin/embed/") },
-      ],
+      items: [{ name: "Projekter", href: "/admin/projects", isActive: pathname === "/admin/projects" || pathname.startsWith("/admin/embed/") }],
     },
     {
       label: "Organisation",
       items: [
         { name: "Team", href: "/admin/team", isActive: pathname === "/admin/team" || pathname === "/admin/users" },
-        { name: "Profil", href: "/admin/profile", isActive: pathname === "/admin/profile" || pathname === "/admin/billing" },
+        { name: "Profil", href: "/admin/profile", isActive: pathname.startsWith("/admin/profile") || pathname === "/admin/billing" },
       ],
     },
   ];
   const navItems = sections.flatMap((section) => section.items);
+  const userRole = session?.user?.role || "";
+  const canViewInternal = canAccessInternal || userRole === "np_super_admin" || userRole === "np_support_admin";
 
   return (
     <>
@@ -75,9 +89,13 @@ export default function Sidebar() {
           className="p-2.5 text-gray-900 bg-gray-50 hover:bg-gray-100 rounded-xl transition-all active:scale-90"
         >
           {isOpen ? (
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
           ) : (
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16m-7 6h7" /></svg>
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16m-7 6h7" />
+            </svg>
           )}
         </button>
       </div>
@@ -108,11 +126,24 @@ export default function Sidebar() {
                   : "text-gray-500 border-transparent hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 hover:shadow-md hover:shadow-blue-100 hover:-translate-y-0.5"
               }`}
             >
-              <span className={`${item.isActive ? "" : "group-hover:translate-x-0.5"} transition-transform duration-200`}>
-                {item.name}
-              </span>
+              <span className={`${item.isActive ? "" : "group-hover:translate-x-0.5"} transition-transform duration-200`}>{item.name}</span>
             </Link>
           ))}
+          {canViewInternal && (
+            <Link
+              href="/internal"
+              onClick={() => setIsOpen(false)}
+              className={`group flex items-center px-5 py-4 text-sm font-black uppercase tracking-[0.08em] rounded-2xl border transition-all duration-200 ${
+                pathname.startsWith("/internal")
+                  ? "bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-200"
+                  : "text-gray-500 border-transparent hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 hover:shadow-md hover:shadow-blue-100 hover:-translate-y-0.5"
+              }`}
+            >
+              <span className={`${pathname.startsWith("/internal") ? "" : "group-hover:translate-x-0.5"} transition-transform duration-200`}>
+                Internal
+              </span>
+            </Link>
+          )}
         </nav>
 
         <div className="mt-auto px-4 pb-5 pt-4 border-t border-gray-100 space-y-2">
@@ -123,24 +154,37 @@ export default function Sidebar() {
           >
             <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-black text-sm shadow-inner overflow-hidden">
               {avatarImage ? (
-                <span
-                  className="block h-full w-full bg-cover bg-center"
-                  style={{ backgroundImage: `url("${avatarImage}")` }}
-                  aria-label="Profilbillede"
-                />
+                <span className="block h-full w-full bg-cover bg-center" style={{ backgroundImage: `url("${avatarImage}")` }} aria-label="Profilbillede" />
               ) : (
                 <span>{session?.user?.name?.[0] || "U"}</span>
               )}
             </div>
             <div className="flex flex-col min-w-0">
-              <span className="text-[11px] font-black text-gray-900 uppercase tracking-tight truncate">
-                {session?.user?.name || "Bruger"}
-              </span>
-              <span className="text-[9px] font-bold uppercase text-blue-600 tracking-widest">
-                {session?.user?.role || "bruger"}
-              </span>
+              <span className="text-[11px] font-black text-gray-900 uppercase tracking-tight truncate">{session?.user?.name || "Bruger"}</span>
+              <span className="text-[9px] font-bold uppercase text-blue-600 tracking-widest">{session?.user?.role || "bruger"}</span>
             </div>
           </Link>
+
+          <div className="rounded-2xl border border-gray-100 bg-gray-50/70 p-4 space-y-3">
+            <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-500">Hjælp</h3>
+            <p className="text-[11px] leading-relaxed text-gray-500">Spørgsmål om setup, domæner eller billing?</p>
+            <div className="flex gap-2">
+              <Link
+                href="/faq"
+                onClick={() => setIsOpen(false)}
+                className="flex-1 px-3 py-2 rounded-xl border border-gray-200 bg-white text-[10px] font-black uppercase tracking-widest text-gray-600 hover:bg-gray-50 text-center"
+              >
+                FAQ
+              </Link>
+              <Link
+                href="/contact"
+                onClick={() => setIsOpen(false)}
+                className="flex-1 px-3 py-2 rounded-xl border border-gray-200 bg-white text-[10px] font-black uppercase tracking-widest text-gray-600 hover:bg-gray-50 text-center"
+              >
+                Kontakt
+              </Link>
+            </div>
+          </div>
 
           <button
             onClick={() => signOut({ callbackUrl: "/login" })}
@@ -152,10 +196,7 @@ export default function Sidebar() {
       </aside>
 
       {isOpen && (
-        <div
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[55] md:hidden animate-in fade-in duration-300"
-          onClick={() => setIsOpen(false)}
-        />
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[55] md:hidden animate-in fade-in duration-300" onClick={() => setIsOpen(false)} />
       )}
     </>
   );

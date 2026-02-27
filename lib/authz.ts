@@ -16,6 +16,10 @@ export function canManageBillingRole(role: OrgRole): boolean {
   return role === "owner" || role === "admin";
 }
 
+export function canManageBrandingRole(role: OrgRole): boolean {
+  return role === "owner" || role === "admin";
+}
+
 export async function getOrgRole(): Promise<OrgRole | null> {
   const ctx = await getCurrentOrgContext();
   return ctx?.role ?? null;
@@ -41,6 +45,11 @@ export async function canManageBilling(): Promise<boolean> {
   return role ? canManageBillingRole(role) : false;
 }
 
+export async function canManageBranding(): Promise<boolean> {
+  const role = await getOrgRole();
+  return role ? canManageBrandingRole(role) : false;
+}
+
 export async function getOrgContextForContentEdit(): Promise<OrgContext | null> {
   const ctx = await getCurrentOrgContext();
   if (!ctx || !canEditContentRole(ctx.role)) return null;
@@ -56,5 +65,11 @@ export async function getOrgContextForMemberManagement(): Promise<OrgContext | n
 export async function getOrgContextForBilling(): Promise<OrgContext | null> {
   const ctx = await getCurrentOrgContext();
   if (!ctx || !canManageBillingRole(ctx.role)) return null;
+  return ctx;
+}
+
+export async function getOrgContextForBranding(): Promise<OrgContext | null> {
+  const ctx = await getCurrentOrgContext();
+  if (!ctx || !canManageBrandingRole(ctx.role)) return null;
   return ctx;
 }
