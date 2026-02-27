@@ -1,16 +1,10 @@
 import { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
-import AzureADProvider from "next-auth/providers/azure-ad";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { compare } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 
 const googleEnabled = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
-const microsoftEnabled = Boolean(
-  process.env.MICROSOFT_ENTRA_CLIENT_ID &&
-    process.env.MICROSOFT_ENTRA_CLIENT_SECRET &&
-    process.env.MICROSOFT_ENTRA_TENANT_ID
-);
 
 const oauthProviders: NextAuthOptions["providers"] = [];
 if (googleEnabled) {
@@ -18,15 +12,6 @@ if (googleEnabled) {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    })
-  );
-}
-if (microsoftEnabled) {
-  oauthProviders.push(
-    AzureADProvider({
-      clientId: process.env.MICROSOFT_ENTRA_CLIENT_ID!,
-      clientSecret: process.env.MICROSOFT_ENTRA_CLIENT_SECRET!,
-      tenantId: process.env.MICROSOFT_ENTRA_TENANT_ID!,
     })
   );
 }
@@ -66,7 +51,7 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async signIn({ user, account }) {
-      if (account?.provider === "google" || account?.provider === "azure-ad") {
+      if (account?.provider === "google") {
         if (!user.email) return false;
 
         const existingUser = await prisma.user.findUnique({
@@ -77,7 +62,7 @@ export const authOptions: NextAuthOptions = {
           await prisma.user.create({
             data: {
               email: user.email,
-              name: user.name || (account?.provider === "azure-ad" ? "Microsoft Bruger" : "Google Bruger"),
+              name: user.name || "Google Bruger",
               image: user.image || null,
               role: "contributor",
             },

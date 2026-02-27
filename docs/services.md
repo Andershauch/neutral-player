@@ -7,54 +7,54 @@
 Denne fil er en samlet oversigt over de eksterne tjenester, som Neutral Player bruger.
 
 ## 1) Vercel (Hosting + Deploy)
-- Status: `Nødvendig`
-- Formål:
+- Status: `NÃ¸dvendig`
+- FormÃ¥l:
   - Hoste appen (Next.js)
-  - Køre builds og deployments
-  - Miljøvariabler (Environment Variables)
-- Kræver:
+  - KÃ¸re builds og deployments
+  - MiljÃ¸variabler (Environment Variables)
+- KrÃ¦ver:
   - Kode deployet til korrekt Vercel-projekt
-  - Alle nødvendige env vars sat i korrekt miljø (`Preview` og/eller `Production`)
+  - Alle nÃ¸dvendige env vars sat i korrekt miljÃ¸ (`Preview` og/eller `Production`)
 - Typiske fejl:
   - "env var mangler" i API-ruter
-  - Forskellig opførsel mellem localhost og Vercel pga. manglende env-scope
+  - Forskellig opfÃ¸rsel mellem localhost og Vercel pga. manglende env-scope
 
 ## 2) Database (PostgreSQL, fx Neon/Supabase)
-- Status: `Nødvendig`
-- Formål:
+- Status: `NÃ¸dvendig`
+- FormÃ¥l:
   - Gemme brugere, organisationer, projekter, varianter, billing, audit logs osv.
-- Kræver:
+- KrÃ¦ver:
   - `DATABASE_URL`
-  - Prisma migrationer kørt (`prisma migrate deploy`)
+  - Prisma migrationer kÃ¸rt (`prisma migrate deploy`)
 - Typiske fejl:
   - Prisma runtime-fejl
-  - Manglende tabeller/kolonner hvis migration ikke er kørt
+  - Manglende tabeller/kolonner hvis migration ikke er kÃ¸rt
 
 ## 3) Stripe (Betaling + abonnement)
-- Status: `Nødvendig` for betalt SaaS-flow
-- Formål:
+- Status: `NÃ¸dvendig` for betalt SaaS-flow
+- FormÃ¥l:
   - Checkout
   - Kundeportal
   - Webhooks til synk af subscription-status
-- Kræver:
+- KrÃ¦ver:
   - `STRIPE_SECRET_KEY`
   - `STRIPE_PRICE_STARTER_MONTHLY`
   - `STRIPE_PRICE_PRO_MONTHLY`
   - `STRIPE_WEBHOOK_SECRET`
 - Vigtigt:
-  - Stripe key og price IDs skal være fra samme mode (test/live)
+  - Stripe key og price IDs skal vÃ¦re fra samme mode (test/live)
 - Typiske fejl:
   - Checkout starter ikke
   - Forkerte priser i UI (fallback-labels)
   - Webhook-events synker ikke abonnement korrekt
 
 ## 4) Mux (Video upload + playback + webhook)
-- Status: `Nødvendig` for videofunktionalitet
-- Formål:
+- Status: `NÃ¸dvendig` for videofunktionalitet
+- FormÃ¥l:
   - Oprette uploads
   - Modtage playback IDs
   - Afspille video via embed
-- Kræver:
+- KrÃ¦ver:
   - `MUX_TOKEN_ID`
   - `MUX_TOKEN_SECRET`
   - `MUX_WEBHOOK_SECRET`
@@ -64,12 +64,12 @@ Denne fil er en samlet oversigt over de eksterne tjenester, som Neutral Player b
   - Webhook-signatur fejler
 
 ## 5) Resend (Transaktionelle emails)
-- Status: `Nødvendig` for invite- og verify-email flow
-- Formål:
+- Status: `NÃ¸dvendig` for invite- og verify-email flow
+- FormÃ¥l:
   - Sende invitationsmails
   - Sende email-verificering
   - Sende beskeder fra kontaktformular
-- Kræver:
+- KrÃ¦ver:
   - `RESEND_API_KEY`
   - `INVITE_FROM_EMAIL`
   - `VERIFY_FROM_EMAIL`
@@ -77,64 +77,50 @@ Denne fil er en samlet oversigt over de eksterne tjenester, som Neutral Player b
   - (valgfrit) `CONTACT_FROM_EMAIL`
 - Typiske fejl:
   - Invitation oprettes men mail sendes ikke
-  - Verify-flow kræver manuel fallback-link
+  - Verify-flow krÃ¦ver manuel fallback-link
 
 ## 6) Google OAuth (Login med Google)
-- Status: `Valgfri`, men nødvendig hvis Google-login skal virke
-- Formål:
+- Status: `Valgfri`, men nÃ¸dvendig hvis Google-login skal virke
+- FormÃ¥l:
   - Social login via NextAuth
-- Kræver:
+- KrÃ¦ver:
   - `GOOGLE_CLIENT_ID`
   - `GOOGLE_CLIENT_SECRET`
-  - `NEXTAUTH_URL` sat korrekt per miljø
+  - `NEXTAUTH_URL` sat korrekt per miljÃ¸
   - Korrekte OAuth redirect URIs i Google Cloud Console
 - Typiske fejl:
   - `redirect_uri_mismatch`
-  - Login virker lokalt men ikke på custom domæne
-
-## 6b) Microsoft OAuth (Login med Microsoft/Entra ID)
-- Status: `Valgfri`, men nødvendig hvis Microsoft-login skal virke
-- Formål:
-  - Social login via NextAuth (`azure-ad`)
-- Kræver:
-  - `MICROSOFT_ENTRA_CLIENT_ID`
-  - `MICROSOFT_ENTRA_CLIENT_SECRET`
-  - `MICROSOFT_ENTRA_TENANT_ID`
-  - `NEXTAUTH_URL` sat korrekt per miljø
-  - Redirect URI i Entra app registration: `/api/auth/callback/azure-ad`
-- Typiske fejl:
-  - `AADSTS50011` (redirect URI mismatch)
-  - Login virker i test, men ikke i production pga. forkert tenant/app registration
+  - Login virker lokalt men ikke pÃ¥ custom domÃ¦ne
 
 ## 7) NextAuth (Auth/session)
-- Status: `Nødvendig`
-- Formål:
-  - Login/session-håndtering (credentials + Google)
-- Kræver:
+- Status: `NÃ¸dvendig`
+- FormÃ¥l:
+  - Login/session-hÃ¥ndtering (credentials + Google)
+- KrÃ¦ver:
   - `NEXTAUTH_SECRET`
-  - `NEXTAUTH_URL` (lokalt: `http://localhost:3000`, prod: dit domæne)
+  - `NEXTAUTH_URL` (lokalt: `http://localhost:3000`, prod: dit domÃ¦ne)
 - Typiske fejl:
   - Login/session fejler eller loops
 
 ## 8) Sentry (Observability)
 - Status: `Anbefalet` (nu implementeret)
-- Formål:
+- FormÃ¥l:
   - Fejlsporing i frontend/backend
   - Hurtigere debugging i produktion
-- Kræver:
+- KrÃ¦ver:
   - `NEXT_PUBLIC_SENTRY_DSN`
   - `SENTRY_DSN`
   - (valgfrit) `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT` til source maps
 - Typiske fejl:
-  - Fejl optræder i produktion uden sporbarhed
+  - Fejl optrÃ¦der i produktion uden sporbarhed
 
 ## 9) DNS/Domain provider (fx one.com)
-- Status: `Nødvendig` for custom domæne
-- Formål:
-  - Pege domænet korrekt på Vercel
+- Status: `NÃ¸dvendig` for custom domÃ¦ne
+- FormÃ¥l:
+  - Pege domÃ¦net korrekt pÃ¥ Vercel
   - DNS records til email (SPF/DKIM/DMARC via Resend)
 - Typiske fejl:
-  - Domænet viser "Invalid configuration"
+  - DomÃ¦net viser "Invalid configuration"
   - Email deliverability-problemer
 
 ---
@@ -145,7 +131,7 @@ Denne fil er en samlet oversigt over de eksterne tjenester, som Neutral Player b
 3. Stripe (inkl. webhook secret + price IDs)
 4. Mux (inkl. webhook secret)
 5. Resend + verified sender domain
-6. NextAuth korrekt sat op (og Google OAuth hvis Google-login ønskes)
+6. NextAuth korrekt sat op (og Google OAuth hvis Google-login Ã¸nskes)
 
 ## Hurtig driftstjek ved nye deploys
 1. Kan du logge ind

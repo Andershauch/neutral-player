@@ -20,7 +20,6 @@ function LoginContent() {
   const invite = searchParams.get("invite");
   const callbackUrl = invite ? `/invite/${encodeURIComponent(invite)}` : "/admin/dashboard";
   const googleEnabled = process.env.NEXT_PUBLIC_GOOGLE_AUTH_ENABLED !== "false";
-  const microsoftEnabled = process.env.NEXT_PUBLIC_MICROSOFT_AUTH_ENABLED !== "false";
 
   const handleOAuthLogin = async (provider: string) => {
     setLoadingProvider(provider);
@@ -122,19 +121,11 @@ function LoginContent() {
             <span>{loadingProvider === "google" ? "Forbinder..." : "Google"}</span>
           </div>
 
-          <button
-            onClick={() => handleOAuthLogin("azure-ad")}
-            disabled={!!loadingProvider || !microsoftEnabled}
-            className="w-full flex items-center justify-center gap-3 py-3 px-4 border border-gray-200 rounded-2xl text-xs font-bold text-gray-700 bg-white hover:bg-gray-50 transition-all active:scale-[0.98] disabled:opacity-50"
-          >
-            <MicrosoftIcon />
-            {loadingProvider === "azure-ad" ? "Forbinder..." : "Microsoft"}
-          </button>
         </div>
 
-        {(!googleEnabled || !microsoftEnabled) && (
+        {!googleEnabled && (
           <p className="text-[10px] font-bold uppercase tracking-widest text-amber-600 text-center">
-            Nogle social login providers er midlertidigt deaktiveret i denne miljøopsætning.
+            Google login er midlertidigt deaktiveret i denne miljøopsætning.
           </p>
         )}
 
@@ -160,16 +151,6 @@ function LoginContent() {
   );
 }
 
-function MicrosoftIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
-      <rect x="2" y="2" width="9" height="9" fill="#F25022" />
-      <rect x="13" y="2" width="9" height="9" fill="#7FBA00" />
-      <rect x="2" y="13" width="9" height="9" fill="#00A4EF" />
-      <rect x="13" y="13" width="9" height="9" fill="#FFB900" />
-    </svg>
-  );
-}
 
 export default function LoginPage() {
   const t = getMessages("da");
