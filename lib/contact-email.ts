@@ -13,10 +13,14 @@ interface SendContactEmailResult {
 export async function sendContactEmail(input: SendContactEmailInput): Promise<SendContactEmailResult> {
   const apiKey = process.env.RESEND_API_KEY;
   const from = process.env.CONTACT_FROM_EMAIL || process.env.INVITE_FROM_EMAIL || process.env.VERIFY_FROM_EMAIL;
-  const to = process.env.CONTACT_TO_EMAIL;
+  const to = process.env.CONTACT_TO_EMAIL || process.env.CONTACT_FROM_EMAIL || process.env.INVITE_FROM_EMAIL || process.env.VERIFY_FROM_EMAIL;
 
   if (!apiKey || !from || !to) {
-    return { sent: false, reason: "email-provider-not-configured" };
+    const missing: string[] = [];
+    if (!apiKey) missing.push("RESEND_API_KEY");
+    if (!from) missing.push("CONTACT_FROM_EMAIL|INVITE_FROM_EMAIL|VERIFY_FROM_EMAIL");
+    if (!to) missing.push("CONTACT_TO_EMAIL|CONTACT_FROM_EMAIL|INVITE_FROM_EMAIL|VERIFY_FROM_EMAIL");
+    return { sent: false, reason: `email-provider-not-configured:${missing.join(",")}` };
   }
 
   const subject = `Ny kontaktforespørgsel fra ${input.name}`;
@@ -71,4 +75,3 @@ function escapeHtml(value: string): string {
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
 }
-

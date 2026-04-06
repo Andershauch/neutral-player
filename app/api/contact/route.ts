@@ -54,8 +54,14 @@ export async function POST(req: Request) {
     });
 
     if (!result.sent) {
+      const isConfigError = (result.reason || "").startsWith("email-provider-not-configured");
       return NextResponse.json(
-        { error: "Kontaktformular er ikke konfigureret korrekt endnu.", reason: result.reason ?? null },
+        {
+          error: isConfigError
+            ? "Kontaktformularen mangler email-konfiguration i miljøvariabler."
+            : "Kontaktformularen kunne ikke sende beskeden lige nu.",
+          reason: result.reason ?? null,
+        },
         { status: 503 }
       );
     }
@@ -70,4 +76,3 @@ export async function POST(req: Request) {
 function isValidEmail(value: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
-

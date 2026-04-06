@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 
 const MuxPlayer = dynamic(() => import("@mux/mux-player-react"), { ssr: false });
@@ -44,8 +44,53 @@ export default function MuxPlayerClient({ initialVariant, allVariants, embedName
   const [activeVariant, setActiveVariant] = useState(initialVariant);
   const [showControls, setShowControls] = useState(true);
   const [playerError, setPlayerError] = useState<string | null>(null);
-  const [showCenterPlay, setShowCenterPlay] = useState(true);
-  const [playerRef, setPlayerRef] = useState<HTMLElement | null>(null);
+  const [isVariantLoading, setIsVariantLoading] = useState(false);
+  const [playedVariantMap, setPlayedVariantMap] = useState<Record<string, boolean>>({});
+  const [variantResumeMap, setVariantResumeMap] = useState<Record<string, boolean>>({});
+  const variantProgressRef = useRef<Record<string, number>>({});
+  const playerElementRef = useRef<(HTMLElement & { play?: () => Promise<void> | void; currentTime?: number; duration?: number }) | null>(
+    null
+  );
+  const resumeAppliedForVariantRef = useRef<Record<string, boolean>>({});
+  const hasPlayedActiveVariant = Boolean(playedVariantMap[activeVariant.id]);
+  const shouldHidePoster = hasPlayedActiveVariant || Boolean(variantResumeMap[activeVariant.id]);
+
+  const applyResumePosition = () => {
+    if (resumeAppliedForVariantRef.current[activeVariant.id]) {
+      return;
+    }
+    const resumeAt = variantProgressRef.current[activeVariant.id];
+    if (typeof resumeAt !== "number" || !Number.isFinite(resumeAt) || resumeAt <= 0) {
+      resumeAppliedForVariantRef.current[activeVariant.id] = true;
+      return;
+    }
+    const maybePlayer = playerElementRef.current;
+    if (!maybePlayer || typeof maybePlayer.currentTime !== "number") {
+      return;
+    }
+    const duration = maybePlayer.duration;
+    if (typeof duration === "number" && Number.isFinite(duration) && duration > 0) {
+      maybePlayer.currentTime = Math.min(resumeAt, Math.max(0, duration - 0.5));
+    } else {
+      maybePlayer.currentTime = resumeAt;
+    }
+    resumeAppliedForVariantRef.current[activeVariant.id] = true;
+  };
+
+  const saveCurrentProgress = (variantId: string) => {
+    const maybePlayer = playerElementRef.current;
+    const currentTime = maybePlayer?.currentTime;
+    if (typeof currentTime !== "number" || !Number.isFinite(currentTime) || currentTime < 0) {
+      return;
+    }
+    variantProgressRef.current[variantId] = currentTime;
+    if (currentTime > 0.01) {
+      setVariantResumeMap((prev) => {
+        if (prev[variantId]) return prev;
+        return { ...prev, [variantId]: true };
+      });
+    }
+  };
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -59,22 +104,27 @@ export default function MuxPlayerClient({ initialVariant, allVariants, embedName
 
   const handlePlay = () => {
     setShowControls(false);
-    setShowCenterPlay(false);
+    setPlayedVariantMap((prev) => {
+      if (prev[activeVariant.id]) return prev;
+      return { ...prev, [activeVariant.id]: true };
+    });
     fetch(`/api/variants/${activeVariant.id}/views`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
     }).catch((err) => console.error("Analytics-fejl:", err));
   };
 
-  const handleCenterPlay = async (event: React.MouseEvent<HTMLButtonElement>) => {
-    event.stopPropagation();
-    try {
-      const maybePlayer = playerRef as (HTMLElement & { play?: () => Promise<void> | void }) | null;
-      await maybePlayer?.play?.();
-      setShowCenterPlay(false);
-    } catch {
-      // Keep visible so user can retry
+  const handleVariantSelect = (variant: Variant) => {
+    if (variant.id === activeVariant.id) {
+      return;
     }
+
+    saveCurrentProgress(activeVariant.id);
+    setShowControls(true);
+    setPlayerError(null);
+    setIsVariantLoading(true);
+    resumeAppliedForVariantRef.current[variant.id] = false;
+    setActiveVariant(variant);
   };
 
   return (
@@ -83,36 +133,55 @@ export default function MuxPlayerClient({ initialVariant, allVariants, embedName
         <div className="text-white/80 text-sm px-6 text-center">Videoen kunne ikke afspilles lige nu. Prøv igen om et øjeblik.</div>
       ) : (
         <MuxPlayer
-          ref={(node) => setPlayerRef(node as HTMLElement | null)}
+          key={activeVariant.id}
+          ref={(node) => {
+            playerElementRef.current = node as typeof playerElementRef.current;
+          }}
           playbackId={activeVariant.muxPlaybackId || ""}
-          poster={activeVariant.posterFrameUrl || undefined}
+          poster={shouldHidePoster ? undefined : activeVariant.posterFrameUrl || undefined}
           metadataVideoTitle={`${embedName} - ${activeVariant.title || activeVariant.lang}`}
           streamType="on-demand"
           onPlay={handlePlay}
+          onTimeUpdate={() => {
+            saveCurrentProgress(activeVariant.id);
+          }}
           onPause={() => {
+            saveCurrentProgress(activeVariant.id);
             setShowControls(true);
-            setShowCenterPlay(true);
+          }}
+          onEnded={() => {
+            saveCurrentProgress(activeVariant.id);
+            setShowControls(true);
           }}
           onSeeking={() => setShowControls(true)}
-          onError={() => setPlayerError("mux-error")}
+          onLoadedMetadata={() => {
+            applyResumePosition();
+          }}
+          onCanPlay={() => {
+            applyResumePosition();
+            setIsVariantLoading(false);
+          }}
+          onLoadedData={() => {
+            applyResumePosition();
+            setIsVariantLoading(false);
+          }}
+          onError={() => {
+            setPlayerError("mux-error");
+            setIsVariantLoading(false);
+          }}
           primaryColor="var(--primary)"
           secondaryColor="var(--foreground)"
-          className="np-mux-play-skin np-mux-custom-play w-full h-full object-contain"
+          className="np-mux-play-skin w-full h-full object-contain"
           style={{ height: "100%", width: "100%" }}
         />
       )}
 
-      {!playerError && showCenterPlay && (
-        <button
-          type="button"
-          onClick={handleCenterPlay}
-          className="np-center-play-btn absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-20 flex items-center justify-center"
-          aria-label="Afspil video"
-        >
-          <svg viewBox="0 0 24 24" className="h-9 w-9 text-white ml-1" fill="currentColor" aria-hidden="true">
-            <path d="M8 5v14l11-7z" />
-          </svg>
-        </button>
+      {!playerError && isVariantLoading && (
+        <div className="absolute inset-0 z-20 flex items-start justify-center pt-10 md:pt-14 bg-black/25 pointer-events-none">
+          <div className="rounded-full bg-black/70 text-white text-[11px] font-bold uppercase tracking-widest px-4 py-2">
+            Skifter variant...
+          </div>
+        </div>
       )}
 
       {allVariants.length > 1 && (
@@ -138,8 +207,7 @@ export default function MuxPlayerClient({ initialVariant, allVariants, embedName
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  setActiveVariant(v);
-                  setPlayerError(null);
+                  handleVariantSelect(v);
                 }}
                 className={`
                   w-10 h-10 md:w-11 md:h-11 rounded-full flex items-center justify-center text-[10px] font-black transition-all duration-300 backdrop-blur-md border
@@ -154,24 +222,6 @@ export default function MuxPlayerClient({ initialVariant, allVariants, embedName
       )}
 
       <style jsx>{`
-        :global(.np-mux-custom-play::part(center play button)) {
-          display: none;
-          opacity: 0;
-          pointer-events: none;
-        }
-
-        :global(.np-mux-custom-play::part(center play button icon)) {
-          display: none;
-          opacity: 0;
-          pointer-events: none;
-        }
-
-        :global(.np-mux-custom-play::part(center play button container)) {
-          display: none;
-          opacity: 0;
-          pointer-events: none;
-        }
-
         .vertical-text {
           writing-mode: vertical-rl;
           text-orientation: mixed;
