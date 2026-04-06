@@ -18,6 +18,5 @@ test("register page renders signup fields", async ({ page }) => {
 test("login page shows oauth and credentials options", async ({ page }) => {
   await page.goto("/login");
   await expect(page.getByRole("button", { name: "Google" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Microsoft" })).toBeVisible();
   await expect(page.getByRole("button", { name: /Log ind/i })).toBeVisible();
 });

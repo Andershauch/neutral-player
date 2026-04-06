@@ -1,7 +1,7 @@
 # Testing Strategy
 ## Document Version
-- Current release: v0.2.1
-- Last updated: 2026-02-22
+- Current release: v0.3.0
+- Last updated: 2026-04-06
 
 
 ## Mål
@@ -30,7 +30,7 @@
 - Dækker baseline public flows:
   - Landing -> Pricing navigation
   - Register-side rendering
-  - Login-side rendering (credentials + OAuth-knapper)
+  - Login-side rendering (credentials + Google OAuth-knap)
 
 ## Kommandoer
 - `npm run test` -> unit + API contract tests
