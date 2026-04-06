@@ -80,6 +80,9 @@ test.describe("Branding E2E flows", () => {
       await expect(page.getByRole("heading", { level: 1, name: /Tema og designprofil/i })).toBeVisible();
       await expect(page.getByText(/Custom branding kr.*Enterprise-plan/i)).toHaveCount(0);
       await expect(page.getByRole("button", { name: /Gem kladde/i })).toBeEnabled();
+      await expect(page.getByText(/godkendt token-subset/i)).toBeVisible();
+      await expect(page.getByText("Card shadow")).toHaveCount(0);
+      await expect(page.getByText("Danger")).toHaveCount(0);
 
       await page.goto(`/embed/${account.embedId}`);
       const playerVars = await page.locator("mux-player").evaluate((element) => {

@@ -20,7 +20,7 @@ describe("Branding theme API contracts", () => {
     expect(source).toContain("getOrgPlanAndCapabilities");
     expect(source).toContain("capabilities.enterpriseBrandingEnabled");
     expect(source).toContain('code: "ENTERPRISE_REQUIRED"');
-    expect(source).toContain("validateThemeTokens");
+    expect(source).toContain("validateCustomerThemeTokens");
   });
 
   it("records audit log entries when customer branding is published", () => {
@@ -78,5 +78,13 @@ describe("Branding theme API contracts", () => {
 
     expect(source).toContain("Invalid theme payload detected");
     expect(source).toContain("Sentry.captureMessage");
+  });
+
+  it("limits customer branding UI to the approved self-service subset", () => {
+    const pageSource = read("app/admin/profile/branding/page.tsx");
+    const cardSource = read("components/admin/BrandingSettingsCard.tsx");
+
+    expect(pageSource).toContain('editorMode="customer_limited"');
+    expect(cardSource).toContain("Enterprise self-service viser et godkendt token-subset");
   });
 });

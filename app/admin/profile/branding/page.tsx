@@ -35,6 +35,7 @@ export default async function BrandingProfilePage() {
         canManageBranding={canManageBranding}
         canUseEnterpriseBranding={planCapabilities.capabilities.enterpriseBrandingEnabled}
         currentPlanLabel={toPlanLabel(planCapabilities.plan)}
+        editorMode="customer_limited"
       />
     </div>
   );

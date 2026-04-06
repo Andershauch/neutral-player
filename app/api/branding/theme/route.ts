@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { getOrgContextForBranding } from "@/lib/authz";
 import { getRequestIdFromRequest, logApiError, logApiInfo, logApiWarn } from "@/lib/observability";
 import { getOrgPlanAndCapabilities } from "@/lib/plan-capabilities";
-import { DEFAULT_THEME_TOKENS, validateThemeTokens } from "@/lib/theme-schema";
+import { DEFAULT_THEME_TOKENS, validateCustomerThemeTokens } from "@/lib/theme-schema";
 import { getLatestDraftThemeForOrganization, getNextOrgThemeVersion, resolveThemeForOrganization } from "@/lib/theme";
 
 export async function GET(req: Request) {
@@ -61,7 +61,12 @@ export async function PUT(req: Request) {
     }
 
     const body = (await req.json()) as { name?: unknown; tokens?: unknown };
-    const validated = validateThemeTokens(body.tokens);
+    const [draft, resolvedTheme] = await Promise.all([
+      getLatestDraftThemeForOrganization(orgCtx.orgId),
+      resolveThemeForOrganization(orgCtx.orgId),
+    ]);
+    const baselineTokens = draft?.tokens ?? resolvedTheme.tokens;
+    const validated = validateCustomerThemeTokens(body.tokens, baselineTokens);
     if (!validated.ok || !validated.value) {
       logApiWarn(req, "Customer branding draft save rejected due to invalid payload", {
         area: "branding-theme",
@@ -74,7 +79,6 @@ export async function PUT(req: Request) {
 
     const rawName = typeof body.name === "string" ? body.name.trim() : "";
     const nextName = rawName ? rawName.slice(0, 80) : "Enterprise theme draft";
-    const draft = await getLatestDraftThemeForOrganization(orgCtx.orgId);
 
     const saved = draft
       ? await prisma.organizationTheme.update({

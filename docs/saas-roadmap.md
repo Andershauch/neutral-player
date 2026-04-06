@@ -192,7 +192,7 @@
 **Priority:** `LATER` (ikke nu)
 
 ### TASK-6.1 Chatbot scope and guardrails
-**Status:** `IN PROGRESS`
+**Status:** `DONE`
 - Define allowed topics (product, pricing, setup, troubleshooting).
 - Define out-of-scope and escalation triggers to human support.
 - Define response style (friendly, concise, Danish-first).
@@ -311,7 +311,7 @@
   - `DONE`: Org selector + internal API-lag implementeret.
   - `DONE`: Audit-log events ved internal publish/rollback pÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¢ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¡ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¥ org-themes.
   - `DONE`: Rolle-governance i internal branding-flows: `np_support_admin` er read-only, kun `np_super_admin` kan write/publish/rollback.
-  - `IN PROGRESS`: Endelig governance-policys for bootstrap via `INTERNAL_ADMIN_EMAILS` (driftsproces + dokumentation).
+  - `DONE`: Endelig governance-policys for bootstrap via `INTERNAL_ADMIN_EMAILS` dokumenteret med klare bootstrap- og afviklingsregler.
 
 ### TASK-7.6 Internal theme management UI
 **Status:** `DONE`
@@ -326,7 +326,7 @@
   - Rollback restores previous published version immediately.
 
 ### TASK-7.7 Customer-facing brand controls (Enterprise-only)
-**Status:** `IN PROGRESS`
+**Status:** `DONE`
 - Implement Enterprise self-service branding controls:
   - Enterprise customer admins can edit limited token subset in `/admin/profile/branding`.
   - Neutral internal admins can still override/support via internal admin console.
@@ -334,6 +334,10 @@
 - **Acceptance criteria:**
   - Enterprise self-service is implemented consistently in UI + API + permissions.
   - Unauthorized edits return clear `403` responses.
+- Progress note:
+  - `DONE`: Enterprise customer admins har self-service branding i `/admin/profile/branding`.
+  - `DONE`: Customer self-service er begrÃ¦nset til et godkendt token-subset, mens internal console stadig har fuld kontrol.
+  - `DONE`: API validerer og afviser advanced token-aendringer uden for customer subset.
 
 ### TASK-7.8 Migration, fallback, and rollout plan
 **Status:** `IN PROGRESS`

@@ -6,7 +6,7 @@ export type InternalRole = "np_super_admin" | "np_support_admin";
 
 const INTERNAL_ROLES = new Set<InternalRole>(["np_super_admin", "np_support_admin"]);
 
-function getInternalAdminEmails(): Set<string> {
+export function getInternalAdminEmails(): Set<string> {
   const raw = process.env.INTERNAL_ADMIN_EMAILS || "";
   return new Set(
     raw
@@ -14,6 +14,22 @@ function getInternalAdminEmails(): Set<string> {
       .map((value) => value.trim().toLowerCase())
       .filter(Boolean)
   );
+}
+
+export function resolveInternalRole(input: {
+  userRole: string;
+  email: string;
+  internalEmailAllowlist: Set<string>;
+}): InternalRole | null {
+  if (INTERNAL_ROLES.has(input.userRole as InternalRole)) {
+    return input.userRole as InternalRole;
+  }
+
+  if (input.internalEmailAllowlist.has(input.email)) {
+    return "np_super_admin";
+  }
+
+  return null;
 }
 
 export async function getInternalAdminContext(): Promise<{
@@ -30,25 +46,21 @@ export async function getInternalAdminContext(): Promise<{
     select: { id: true, role: true, email: true },
   });
 
-  if (!user) return null;
-  if (INTERNAL_ROLES.has(user.role as InternalRole)) {
-    return {
-      userId: user.id,
-      email: user.email,
-      role: user.role as InternalRole,
-    };
-  }
-
   const internalEmailAllowlist = getInternalAdminEmails();
-  if (internalEmailAllowlist.has(email)) {
-    return {
-      userId: user.id,
-      email: user.email,
-      role: "np_super_admin",
-    };
-  }
+  if (!user) return null;
 
-  return null;
+  const resolvedRole = resolveInternalRole({
+    userRole: user.role,
+    email,
+    internalEmailAllowlist,
+  });
+  if (!resolvedRole) return null;
+
+  return {
+    userId: user.id,
+    email: user.email,
+    role: resolvedRole,
+  };
 }
 
 export function canManageInternalBranding(role: InternalRole): boolean {

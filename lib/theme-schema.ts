@@ -143,6 +143,36 @@ export function validateThemeTokens(input: unknown): ThemeValidationResult {
   return { ok: true, errors: [], value };
 }
 
+export function validateCustomerThemeTokens(input: unknown, baseline: ThemeTokens): ThemeValidationResult {
+  const validated = validateThemeTokens(input);
+  if (!validated.ok || !validated.value) {
+    return validated;
+  }
+
+  const candidate = validated.value;
+  const errors: string[] = [];
+
+  assertLockedField(errors, "colors.successBg", candidate.colors.successBg, baseline.colors.successBg);
+  assertLockedField(errors, "colors.successFg", candidate.colors.successFg, baseline.colors.successFg);
+  assertLockedField(errors, "colors.warningBg", candidate.colors.warningBg, baseline.colors.warningBg);
+  assertLockedField(errors, "colors.warningFg", candidate.colors.warningFg, baseline.colors.warningFg);
+  assertLockedField(errors, "colors.danger", candidate.colors.danger, baseline.colors.danger);
+  assertLockedField(errors, "typography.headingWeight", candidate.typography.headingWeight, baseline.typography.headingWeight);
+  assertLockedField(errors, "typography.bodyWeight", candidate.typography.bodyWeight, baseline.typography.bodyWeight);
+  assertLockedField(errors, "shadows.card", candidate.shadows.card, baseline.shadows.card);
+  assertLockedField(errors, "player.playButtonShadow", candidate.player.playButtonShadow, baseline.player.playButtonShadow);
+
+  if (errors.length > 0) {
+    return {
+      ok: false,
+      errors,
+      value: null,
+    };
+  }
+
+  return validated;
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -218,4 +248,10 @@ function readString(parent: Record<string, unknown>, key: string, errors: string
     errors.push(`"${key}" er for lang.`);
   }
   return trimmed;
+}
+
+function assertLockedField(errors: string[], path: string, candidate: string | number, baseline: string | number) {
+  if (candidate !== baseline) {
+    errors.push(`"${path}" er ikke tilgaengelig i self-service branding.`);
+  }
 }

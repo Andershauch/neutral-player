@@ -22,6 +22,7 @@ interface BrandingSettingsCardProps {
   canManageBranding: boolean;
   canUseEnterpriseBranding: boolean;
   currentPlanLabel: string;
+  editorMode?: "full" | "customer_limited";
   endpoint?: string;
   sectionKicker?: string;
   sectionTitle?: string;
@@ -34,6 +35,7 @@ export default function BrandingSettingsCard({
   canManageBranding,
   canUseEnterpriseBranding,
   currentPlanLabel,
+  editorMode = "full",
   endpoint = "/api/branding/theme",
   sectionKicker = "Branding",
   sectionTitle = "Designprofil",
@@ -94,6 +96,7 @@ export default function BrandingSettingsCard({
   }, [canManageBranding, endpoint, refreshKey]);
 
   const isReadOnly = !canManageBranding || !canUseEnterpriseBranding;
+  const isCustomerLimited = editorMode === "customer_limited";
 
   const previewStyle = useMemo(() => {
     if (!tokens) return undefined;
@@ -307,37 +310,47 @@ export default function BrandingSettingsCard({
                 <option value="Manrope">Manrope</option>
               </select>
             </label>
-            <label className="space-y-1">
-              <span className="text-[11px] font-black uppercase tracking-widest text-gray-500">Heading weight</span>
-              <select
-                value={tokens.typography.headingWeight}
-                onChange={(e) => updateFontWeight("headingWeight", Number(e.target.value))}
-                disabled={isReadOnly}
-                className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-60"
-              >
-                <option value={400}>400</option>
-                <option value={500}>500</option>
-                <option value={600}>600</option>
-                <option value={700}>700</option>
-                <option value={800}>800</option>
-              </select>
-            </label>
-            <label className="space-y-1">
-              <span className="text-[11px] font-black uppercase tracking-widest text-gray-500">Body weight</span>
-              <select
-                value={tokens.typography.bodyWeight}
-                onChange={(e) => updateFontWeight("bodyWeight", Number(e.target.value))}
-                disabled={isReadOnly}
-                className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-60"
-              >
-                <option value={400}>400</option>
-                <option value={500}>500</option>
-                <option value={600}>600</option>
-                <option value={700}>700</option>
-                <option value={800}>800</option>
-              </select>
-            </label>
+            {!isCustomerLimited ? (
+              <>
+                <label className="space-y-1">
+                  <span className="text-[11px] font-black uppercase tracking-widest text-gray-500">Heading weight</span>
+                  <select
+                    value={tokens.typography.headingWeight}
+                    onChange={(e) => updateFontWeight("headingWeight", Number(e.target.value))}
+                    disabled={isReadOnly}
+                    className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-60"
+                  >
+                    <option value={400}>400</option>
+                    <option value={500}>500</option>
+                    <option value={600}>600</option>
+                    <option value={700}>700</option>
+                    <option value={800}>800</option>
+                  </select>
+                </label>
+                <label className="space-y-1">
+                  <span className="text-[11px] font-black uppercase tracking-widest text-gray-500">Body weight</span>
+                  <select
+                    value={tokens.typography.bodyWeight}
+                    onChange={(e) => updateFontWeight("bodyWeight", Number(e.target.value))}
+                    disabled={isReadOnly}
+                    className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-60"
+                  >
+                    <option value={400}>400</option>
+                    <option value={500}>500</option>
+                    <option value={600}>600</option>
+                    <option value={700}>700</option>
+                    <option value={800}>800</option>
+                  </select>
+                </label>
+              </>
+            ) : null}
           </div>
+
+          {isCustomerLimited ? (
+            <p className="rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700">
+              Enterprise self-service viser et godkendt token-subset. Avancerede felter styres af internal admin.
+            </p>
+          ) : null}
 
           <div className="grid gap-3 md:grid-cols-3">
             <ColorField label="Primary" value={tokens.colors.primary} onChange={(v) => updateColor("primary", v)} disabled={isReadOnly} />
@@ -347,11 +360,15 @@ export default function BrandingSettingsCard({
             <ColorField label="Foreground" value={tokens.colors.foreground} onChange={(v) => updateColor("foreground", v)} disabled={isReadOnly} />
             <ColorField label="Line" value={tokens.colors.line} onChange={(v) => updateColor("line", v)} disabled={isReadOnly} />
             <ColorField label="Muted" value={tokens.colors.muted} onChange={(v) => updateColor("muted", v)} disabled={isReadOnly} />
-            <ColorField label="Success BG" value={tokens.colors.successBg} onChange={(v) => updateColor("successBg", v)} disabled={isReadOnly} />
-            <ColorField label="Success FG" value={tokens.colors.successFg} onChange={(v) => updateColor("successFg", v)} disabled={isReadOnly} />
-            <ColorField label="Warning BG" value={tokens.colors.warningBg} onChange={(v) => updateColor("warningBg", v)} disabled={isReadOnly} />
-            <ColorField label="Warning FG" value={tokens.colors.warningFg} onChange={(v) => updateColor("warningFg", v)} disabled={isReadOnly} />
-            <ColorField label="Danger" value={tokens.colors.danger} onChange={(v) => updateColor("danger", v)} disabled={isReadOnly} />
+            {!isCustomerLimited ? (
+              <>
+                <ColorField label="Success BG" value={tokens.colors.successBg} onChange={(v) => updateColor("successBg", v)} disabled={isReadOnly} />
+                <ColorField label="Success FG" value={tokens.colors.successFg} onChange={(v) => updateColor("successFg", v)} disabled={isReadOnly} />
+                <ColorField label="Warning BG" value={tokens.colors.warningBg} onChange={(v) => updateColor("warningBg", v)} disabled={isReadOnly} />
+                <ColorField label="Warning FG" value={tokens.colors.warningFg} onChange={(v) => updateColor("warningFg", v)} disabled={isReadOnly} />
+                <ColorField label="Danger" value={tokens.colors.danger} onChange={(v) => updateColor("danger", v)} disabled={isReadOnly} />
+              </>
+            ) : null}
           </div>
 
           <div className="grid gap-3 md:grid-cols-4">
@@ -364,15 +381,19 @@ export default function BrandingSettingsCard({
           <div className="grid gap-3 md:grid-cols-3">
             <TokenTextField label="Card radius" value={tokens.radius.card} onChange={(v) => updateRadius("card", v)} disabled={isReadOnly} />
             <TokenTextField label="Pill radius" value={tokens.radius.pill} onChange={(v) => updateRadius("pill", v)} disabled={isReadOnly} />
-            <TokenTextField label="Card shadow" value={tokens.shadows.card} onChange={(v) => updateShadow("card", v)} disabled={isReadOnly} />
+            {!isCustomerLimited ? (
+              <TokenTextField label="Card shadow" value={tokens.shadows.card} onChange={(v) => updateShadow("card", v)} disabled={isReadOnly} />
+            ) : null}
           </div>
 
-          <TokenTextField
-            label="Play button shadow"
-            value={tokens.player.playButtonShadow}
-            onChange={(v) => updatePlayer("playButtonShadow", v)}
-            disabled={isReadOnly}
-          />
+          {!isCustomerLimited ? (
+            <TokenTextField
+              label="Play button shadow"
+              value={tokens.player.playButtonShadow}
+              onChange={(v) => updatePlayer("playButtonShadow", v)}
+              disabled={isReadOnly}
+            />
+          ) : null}
 
           <div className="rounded-2xl border px-4 py-4" style={previewStyle}>
             <p className="text-xs font-semibold opacity-70">Preview</p>

@@ -15,6 +15,7 @@
 - Placering: `tests/unit/*.test.ts`
 - Dækker:
   - RBAC rolle-regler
+  - Internal admin bootstrap/precedence regler
   - Plan-limit mapping/fallback
   - Rate-limit logik
   - Theme fallback resolution mellem default/global/org
@@ -27,6 +28,7 @@
   - Plan-limit håndhævelse i create-heavy flows
   - Branding theme guardrails: permissions, enterprise plan-gate, payload validation og audit-log publish/rollback
   - Branding observability contracts: requestId logs for write flows og runtime failure reporting til Sentry
+  - Customer self-service subset validation for enterprise branding
 
 ### 3) E2E smoke tests (Playwright)
 - Placering: `tests/e2e/*.spec.ts`
@@ -36,6 +38,7 @@
   - Login-side rendering (credentials + Google OAuth-knap)
   - Branding smoke for starter vs enterprise orger (plan-gate + theme application i admin)
   - Player-skin smoke for enterprise themes via player CSS variables
+  - Customer branding page exposes only the approved self-service subset
 
 ## Kommandoer
 - `npm run test` -> unit + API contract tests
