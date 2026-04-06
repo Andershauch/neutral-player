@@ -184,6 +184,11 @@
 - Add API tests (tenant isolation + RBAC + limits).
 - **Acceptance criteria:**
   - CI enforces lint + typecheck + tests + build.
+- Progress note:
+  - `DONE`: CI koerer allerede lint, typecheck, unit/API tests, E2E smoke og build.
+  - `DONE`: API contract tests daekker tenant isolation, RBAC, plan-limits og branding guardrails.
+  - `DONE`: Full lokal acquisition/content E2E daekker signup, workspace setup, billing fixture, projekt, variant og embed.
+  - `IN PROGRESS`: Ekstern hosted checkout og rigtig Mux-upload mangler stadig et dedikeret testmiljoe uden for standard-CI.
 
 ---
 
@@ -299,7 +304,7 @@
   - Non-Enterprise orgs continue using standard Neutralplayer skin.
 
 ### TASK-7.5 Internal Neutral admin role and permissions
-**Status:** `IN PROGRESS`
+**Status:** `DONE`
 - Add internal platform role(s): `np_super_admin`, `np_support_admin`.
 - Add protected admin area (e.g. `/internal`) only for Neutral staff.
 - Implement org selector + permission checks + audit logging.

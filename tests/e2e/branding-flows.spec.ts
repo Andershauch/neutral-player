@@ -85,7 +85,9 @@ test.describe("Branding E2E flows", () => {
       await expect(page.getByText("Danger")).toHaveCount(0);
 
       await page.goto(`/embed/${account.embedId}`);
-      const playerVars = await page.locator("mux-player").evaluate((element) => {
+      const player = page.locator("mux-player");
+      await player.waitFor({ state: "attached", timeout: 15_000 });
+      const playerVars = await player.evaluate((element) => {
         const styles = getComputedStyle(element);
         return {
           accent: styles.getPropertyValue("--media-accent-color").trim(),
