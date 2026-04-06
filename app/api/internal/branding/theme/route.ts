@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { canManageInternalBranding, getInternalAdminContext } from "@/lib/internal-auth";
+import { getRequestIdFromRequest, logApiError, logApiInfo, logApiWarn } from "@/lib/observability";
 import { getOrgPlanAndCapabilities } from "@/lib/plan-capabilities";
 import { DEFAULT_THEME_TOKENS, validateThemeTokens, type ThemeScope } from "@/lib/theme-schema";
 import { resolveThemeForOrganization } from "@/lib/theme";
@@ -12,6 +13,7 @@ type ScopeConfig = {
 };
 
 export async function GET(req: Request) {
+  const requestId = getRequestIdFromRequest(req);
   try {
     const internalCtx = await getInternalAdminContext();
     if (!internalCtx) {
@@ -115,12 +117,14 @@ export async function GET(req: Request) {
       versions,
     });
   } catch (error) {
+    logApiError(req, "Internal branding theme read failed", error, { area: "internal-branding-theme", requestId });
     const message = error instanceof Error ? error.message : "Ukendt fejl";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: message, requestId }, { status: 500 });
   }
 }
 
 export async function PUT(req: Request) {
+  const requestId = getRequestIdFromRequest(req);
   try {
     const internalCtx = await getInternalAdminContext();
     if (!internalCtx) {
@@ -138,6 +142,12 @@ export async function PUT(req: Request) {
     if (config.scope === "organization" && config.organizationId) {
       const { capabilities } = await getOrgPlanAndCapabilities(config.organizationId);
       if (!capabilities.enterpriseBrandingEnabled) {
+        logApiWarn(req, "Internal branding draft save blocked by enterprise plan gate", {
+          area: "internal-branding-theme",
+          organizationId: config.organizationId,
+          actorRole: internalCtx.role,
+          requestId,
+        });
         return NextResponse.json(
           { error: "Valgt organisation har ikke Enterprise-plan.", code: "ENTERPRISE_REQUIRED" },
           { status: 400 }
@@ -148,6 +158,13 @@ export async function PUT(req: Request) {
     const body = (await req.json()) as { name?: unknown; tokens?: unknown };
     const validated = validateThemeTokens(body.tokens);
     if (!validated.ok || !validated.value) {
+      logApiWarn(req, "Internal branding draft save rejected due to invalid payload", {
+        area: "internal-branding-theme",
+        organizationId: config.organizationId,
+        actorRole: internalCtx.role,
+        requestId,
+        errors: validated.errors,
+      });
       return NextResponse.json({ error: "Ugyldigt theme payload.", details: validated.errors }, { status: 400 });
     }
 
@@ -184,14 +201,25 @@ export async function PUT(req: Request) {
           },
         });
 
+    logApiInfo(req, "Internal branding draft saved", {
+      area: "internal-branding-theme",
+      organizationId: config.organizationId,
+      scope: config.scope,
+      actorRole: internalCtx.role,
+      requestId,
+      themeId: saved.id,
+      themeVersion: saved.version,
+    });
     return NextResponse.json({ ok: true, theme: saved, actorRole: internalCtx.role });
   } catch (error) {
+    logApiError(req, "Internal branding draft save failed", error, { area: "internal-branding-theme", requestId });
     const message = error instanceof Error ? error.message : "Ukendt fejl";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: message, requestId }, { status: 500 });
   }
 }
 
 export async function POST(req: Request) {
+  const requestId = getRequestIdFromRequest(req);
   try {
     const internalCtx = await getInternalAdminContext();
     if (!internalCtx) {
@@ -274,10 +302,21 @@ export async function POST(req: Request) {
       return next;
     });
 
+    logApiInfo(req, "Internal branding theme transition completed", {
+      area: "internal-branding-theme",
+      organizationId: config.organizationId,
+      scope: config.scope,
+      actorRole: internalCtx.role,
+      requestId,
+      action,
+      themeId: published.id,
+      themeVersion: published.version,
+    });
     return NextResponse.json({ ok: true, theme: published, actorRole: internalCtx.role });
   } catch (error) {
+    logApiError(req, "Internal branding theme transition failed", error, { area: "internal-branding-theme", requestId });
     const message = error instanceof Error ? error.message : "Ukendt fejl";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: message, requestId }, { status: 500 });
   }
 }
 

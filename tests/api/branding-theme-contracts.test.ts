@@ -30,6 +30,15 @@ describe("Branding theme API contracts", () => {
     expect(source).toContain('action: "PUBLISH_ORG_THEME"');
   });
 
+  it("emits observability logs for customer branding writes and failures", () => {
+    const source = read("app/api/branding/theme/route.ts");
+
+    expect(source).toContain("logApiInfo");
+    expect(source).toContain("logApiWarn");
+    expect(source).toContain("logApiError");
+    expect(source).toContain("requestId");
+  });
+
   it("guards internal branding routes with internal admin access", () => {
     const source = read("app/api/internal/branding/theme/route.ts");
 
@@ -53,5 +62,21 @@ describe("Branding theme API contracts", () => {
 
     expect(source).toContain("auditLog.create");
     expect(source).toContain('action === "publish" ? "INTERNAL_PUBLISH_ORG_THEME" : "INTERNAL_ROLLBACK_ORG_THEME"');
+  });
+
+  it("emits observability logs for internal branding writes and failures", () => {
+    const source = read("app/api/internal/branding/theme/route.ts");
+
+    expect(source).toContain("logApiInfo");
+    expect(source).toContain("logApiWarn");
+    expect(source).toContain("logApiError");
+    expect(source).toContain("requestId");
+  });
+
+  it("reports invalid theme payloads to logs and Sentry during runtime resolution", () => {
+    const source = read("lib/theme.ts");
+
+    expect(source).toContain("Invalid theme payload detected");
+    expect(source).toContain("Sentry.captureMessage");
   });
 });

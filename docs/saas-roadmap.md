@@ -192,7 +192,7 @@
 **Priority:** `LATER` (ikke nu)
 
 ### TASK-6.1 Chatbot scope and guardrails
-**Status:** `TODO`
+**Status:** `IN PROGRESS`
 - Define allowed topics (product, pricing, setup, troubleshooting).
 - Define out-of-scope and escalation triggers to human support.
 - Define response style (friendly, concise, Danish-first).
@@ -288,7 +288,7 @@
   - Switching org/theme reflects correctly after publish.
 
 ### TASK-7.4 Enterprise player skinning
-**Status:** `TODO`
+**Status:** `DONE`
 - Extend player UI layer to consume theme tokens for:
   - Play button style
   - Controls color states
@@ -336,7 +336,7 @@
   - Unauthorized edits return clear `403` responses.
 
 ### TASK-7.8 Migration, fallback, and rollout plan
-**Status:** `TODO`
+**Status:** `IN PROGRESS`
 - Backfill all orgs with default theme reference.
 - Add safe fallback if org theme is missing/corrupt.
 - Rollout in phases:
@@ -346,9 +346,13 @@
 - **Acceptance criteria:**
   - Existing customers see zero visual regression during rollout.
   - Fallback protects runtime if theme payload fails validation.
+- Progress note:
+  - `DONE`: Runtime fallback validerer stored theme payloads og falder sikkert tilbage til global/default theme.
+  - `DONE`: Backfill-script til published global default theme dokumenteret og tilgængeligt via `npm run theme:backfill-default`.
+  - `IN PROGRESS`: Rollout-guide er dokumenteret, men Phase B/C er stadig driftsopgaver.
 
 ### TASK-7.9 Monitoring, tests, and operational guardrails
-**Status:** `TODO`
+**Status:** `IN PROGRESS`
 - Add tests:
   - API tests for permission + validation + plan gate
   - E2E tests for themed vs non-themed org behavior
@@ -358,6 +362,11 @@
 - **Acceptance criteria:**
   - CI covers critical theme flows.
   - Theme incidents are diagnosable in logs/Sentry.
+- Progress note:
+  - `DONE`: API contract tests dækker permissions, validation, plan-gate og observability hooks for branding flows.
+  - `DONE`: E2E smoke dækker starter vs enterprise branding samt player-skin variables.
+  - `DONE`: Theme publish/rollback og runtime resolve-fejl logger nu med structured metadata og `requestId`.
+  - `IN PROGRESS`: Repeated-error alerting er dokumenteret til Sentry, men skal aktiveres i driftmiljoet.
 
 ---
 

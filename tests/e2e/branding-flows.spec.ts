@@ -56,12 +56,15 @@ test.describe("Branding E2E flows", () => {
       await expect(page.getByText(/Custom branding kr.*Enterprise-plan/i)).toBeVisible();
       await expect(page.getByRole("button", { name: /Gem kladde/i })).toBeDisabled();
     } finally {
-      await cleanupUser(account.userId, account.organizationId);
+      await cleanupUser(account.userId, account.organizationId, account.embedId ?? null);
     }
   });
 
   test("enterprise org theme is applied in admin and branding controls are enabled", async ({ page }) => {
-    const account = await createUserWithPlan("enterprise_monthly", { themePrimary: ENTERPRISE_PRIMARY });
+    const account = await createUserWithPlan("enterprise_monthly", {
+      themePrimary: ENTERPRISE_PRIMARY,
+      createEmbed: true,
+    });
 
     try {
       await loginWithCredentials(page, account.email, TEST_PASSWORD);
@@ -77,8 +80,22 @@ test.describe("Branding E2E flows", () => {
       await expect(page.getByRole("heading", { level: 1, name: /Tema og designprofil/i })).toBeVisible();
       await expect(page.getByText(/Custom branding kr.*Enterprise-plan/i)).toHaveCount(0);
       await expect(page.getByRole("button", { name: /Gem kladde/i })).toBeEnabled();
+
+      await page.goto(`/embed/${account.embedId}`);
+      const playerVars = await page.locator("mux-player").evaluate((element) => {
+        const styles = getComputedStyle(element);
+        return {
+          accent: styles.getPropertyValue("--media-accent-color").trim(),
+          controlBackground: styles.getPropertyValue("--media-control-background").trim(),
+          focusRing: styles.getPropertyValue("--media-focus-box-shadow").trim(),
+        };
+      });
+
+      expect(playerVars.accent).toBe("#ea580c");
+      expect(playerVars.controlBackground).toContain("color-mix");
+      expect(playerVars.focusRing).toContain("0 0 0 2px");
     } finally {
-      await cleanupUser(account.userId, account.organizationId);
+      await cleanupUser(account.userId, account.organizationId, account.embedId ?? null);
     }
   });
 });
@@ -95,6 +112,7 @@ async function createUserWithPlan(
   plan: TestPlan,
   options?: {
     themePrimary?: string;
+    createEmbed?: boolean;
   }
 ) {
   const suffix = randomUUID().slice(0, 8);
@@ -149,14 +167,48 @@ async function createUserWithPlan(
     select: { id: true },
   });
 
+  const embed = options?.createEmbed
+    ? await prisma.embed.create({
+        data: {
+          name: `E2E Embed ${suffix}`,
+          allowedDomains: "*",
+          organizationId: organization.id,
+          groups: {
+            create: {
+              name: "Main",
+              sortOrder: 0,
+              organizationId: organization.id,
+              variants: {
+                create: {
+                  title: "Dansk",
+                  lang: "da",
+                  sortOrder: 0,
+                  muxPlaybackId: "test-playback-id",
+                  organizationId: organization.id,
+                },
+              },
+            },
+          },
+        },
+        select: { id: true },
+      })
+    : null;
+
   return {
     email: user.email,
     userId: user.id,
     organizationId: organization.id,
+    embedId: embed?.id ?? null,
   };
 }
 
-async function cleanupUser(userId: string, organizationId: string) {
+async function cleanupUser(userId: string, organizationId: string, embedId: string | null) {
+  if (embedId) {
+    await prisma.embed.delete({
+      where: { id: embedId },
+    });
+  }
+
   await prisma.organization.delete({
     where: { id: organizationId },
   });

@@ -223,6 +223,84 @@ h6 {
     transform: scale(0.98);
   }
 
+  .np-mux-play-skin {
+    --media-primary-color: var(--primary);
+    --media-secondary-color: color-mix(in srgb, var(--foreground) 82%, transparent);
+    --media-accent-color: var(--primary-strong);
+    --media-text-color: #ffffff;
+    --media-control-background: color-mix(in srgb, var(--foreground) 68%, transparent);
+    --media-control-hover-background: color-mix(in srgb, var(--primary) 78%, transparent);
+    --media-control-height: 42px;
+    --media-control-padding: 10px;
+    --media-control-border-radius: 9999px;
+    --media-control-box-shadow: 0 8px 24px color-mix(in srgb, var(--foreground) 24%, transparent);
+    --media-button-icon-width: 18px;
+    --media-button-icon-height: 18px;
+    --media-focus-box-shadow: 0 0 0 2px #ffffff, 0 0 0 5px color-mix(in srgb, var(--primary) 72%, transparent);
+    --media-range-bar-color: var(--primary-strong);
+    --media-range-track-background: color-mix(in srgb, #ffffff 24%, transparent);
+    --media-range-thumb-background: #ffffff;
+    --media-range-thumb-border: 2px solid var(--primary);
+    --media-range-thumb-box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 30%, transparent);
+    --media-tooltip-background: color-mix(in srgb, var(--foreground) 92%, transparent);
+    --media-tooltip-color: #ffffff;
+    --media-tooltip-border-radius: 0.75rem;
+    --controls-backdrop-color: color-mix(in srgb, var(--foreground) 38%, transparent);
+  }
+
+  .np-mux-play-skin::part(controller) {
+    --media-control-background: color-mix(in srgb, var(--foreground) 68%, transparent);
+    --media-control-hover-background: color-mix(in srgb, var(--primary) 78%, transparent);
+  }
+
+  .np-mux-play-skin::part(vertical-layer) {
+    background-color: var(--controls-backdrop-color);
+  }
+
+  .np-mux-play-skin::part(bottom),
+  .np-mux-play-skin::part(layer),
+  .np-mux-play-skin::part(centered-layer) {
+    color: #ffffff;
+  }
+
+  .np-mux-play-skin::part(button),
+  .np-mux-play-skin::part(play),
+  .np-mux-play-skin::part(mute),
+  .np-mux-play-skin::part(captions),
+  .np-mux-play-skin::part(fullscreen),
+  .np-mux-play-skin::part(pip),
+  .np-mux-play-skin::part(audio-track),
+  .np-mux-play-skin::part(playback-rate) {
+    border-radius: 9999px;
+    background: var(--media-control-background);
+    color: #ffffff;
+    box-shadow: var(--media-control-box-shadow);
+  }
+
+  .np-mux-play-skin::part(time),
+  .np-mux-play-skin::part(display) {
+    color: #ffffff;
+  }
+
+  .np-mux-play-skin::part(range),
+  .np-mux-play-skin::part(time-range),
+  .np-mux-play-skin::part(volume-range),
+  .np-mux-play-skin::part(thumb),
+  .np-mux-play-skin::part(menu-item) {
+    color: #ffffff;
+  }
+
+  .np-mux-play-skin::part(button):hover,
+  .np-mux-play-skin::part(play):hover,
+  .np-mux-play-skin::part(mute):hover,
+  .np-mux-play-skin::part(captions):hover,
+  .np-mux-play-skin::part(fullscreen):hover,
+  .np-mux-play-skin::part(pip):hover,
+  .np-mux-play-skin::part(audio-track):hover,
+  .np-mux-play-skin::part(playback-rate):hover {
+    background: var(--media-control-hover-background);
+  }
+
   .np-center-play-btn {
     height: 78px;
     width: 78px;

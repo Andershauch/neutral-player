@@ -2,11 +2,13 @@ import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getOrgContextForBranding } from "@/lib/authz";
+import { getRequestIdFromRequest, logApiError, logApiInfo, logApiWarn } from "@/lib/observability";
 import { getOrgPlanAndCapabilities } from "@/lib/plan-capabilities";
 import { DEFAULT_THEME_TOKENS, validateThemeTokens } from "@/lib/theme-schema";
 import { getLatestDraftThemeForOrganization, getNextOrgThemeVersion, resolveThemeForOrganization } from "@/lib/theme";
 
-export async function GET() {
+export async function GET(req: Request) {
+  const requestId = getRequestIdFromRequest(req);
   try {
     const orgCtx = await getOrgContextForBranding();
     if (!orgCtx) {
@@ -31,12 +33,14 @@ export async function GET() {
       draftTheme,
     });
   } catch (error) {
+    logApiError(req, "Customer branding theme read failed", error, { area: "branding-theme", requestId });
     const message = error instanceof Error ? error.message : "Ukendt fejl";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: message, requestId }, { status: 500 });
   }
 }
 
 export async function PUT(req: Request) {
+  const requestId = getRequestIdFromRequest(req);
   try {
     const orgCtx = await getOrgContextForBranding();
     if (!orgCtx) {
@@ -45,6 +49,11 @@ export async function PUT(req: Request) {
 
     const { capabilities } = await getOrgPlanAndCapabilities(orgCtx.orgId);
     if (!capabilities.enterpriseBrandingEnabled) {
+      logApiWarn(req, "Customer branding draft save blocked by plan gate", {
+        area: "branding-theme",
+        organizationId: orgCtx.orgId,
+        requestId,
+      });
       return NextResponse.json(
         { error: "Custom branding kræver Enterprise-plan.", code: "ENTERPRISE_REQUIRED" },
         { status: 403 }
@@ -54,6 +63,12 @@ export async function PUT(req: Request) {
     const body = (await req.json()) as { name?: unknown; tokens?: unknown };
     const validated = validateThemeTokens(body.tokens);
     if (!validated.ok || !validated.value) {
+      logApiWarn(req, "Customer branding draft save rejected due to invalid payload", {
+        area: "branding-theme",
+        organizationId: orgCtx.orgId,
+        requestId,
+        errors: validated.errors,
+      });
       return NextResponse.json({ error: "Ugyldigt theme payload.", details: validated.errors }, { status: 400 });
     }
 
@@ -80,14 +95,23 @@ export async function PUT(req: Request) {
           },
         });
 
+    logApiInfo(req, "Customer branding draft saved", {
+      area: "branding-theme",
+      organizationId: orgCtx.orgId,
+      requestId,
+      themeId: saved.id,
+      themeVersion: saved.version,
+    });
     return NextResponse.json({ ok: true, theme: saved });
   } catch (error) {
+    logApiError(req, "Customer branding draft save failed", error, { area: "branding-theme", requestId });
     const message = error instanceof Error ? error.message : "Ukendt fejl";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: message, requestId }, { status: 500 });
   }
 }
 
 export async function POST(req: Request) {
+  const requestId = getRequestIdFromRequest(req);
   try {
     const orgCtx = await getOrgContextForBranding();
     if (!orgCtx) {
@@ -96,6 +120,11 @@ export async function POST(req: Request) {
 
     const { capabilities } = await getOrgPlanAndCapabilities(orgCtx.orgId);
     if (!capabilities.enterpriseBrandingEnabled) {
+      logApiWarn(req, "Customer branding publish blocked by plan gate", {
+        area: "branding-theme",
+        organizationId: orgCtx.orgId,
+        requestId,
+      });
       return NextResponse.json(
         { error: "Custom branding kræver Enterprise-plan.", code: "ENTERPRISE_REQUIRED" },
         { status: 403 }
@@ -155,9 +184,18 @@ export async function POST(req: Request) {
       return next;
     });
 
+    logApiInfo(req, "Customer branding theme published", {
+      area: "branding-theme",
+      organizationId: orgCtx.orgId,
+      requestId,
+      themeId: published.id,
+      themeVersion: published.version,
+      source: "customer",
+    });
     return NextResponse.json({ ok: true, theme: published });
   } catch (error) {
+    logApiError(req, "Customer branding publish failed", error, { area: "branding-theme", requestId });
     const message = error instanceof Error ? error.message : "Ukendt fejl";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: message, requestId }, { status: 500 });
   }
 }

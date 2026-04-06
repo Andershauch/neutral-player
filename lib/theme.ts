@@ -1,6 +1,7 @@
+import * as Sentry from "@sentry/nextjs";
 import { prisma } from "@/lib/prisma";
 import { getOrgPlanAndCapabilities } from "@/lib/plan-capabilities";
-import { DEFAULT_THEME_TOKENS, type ThemeTokens, type ThemeScope, type ThemeStatus } from "@/lib/theme-schema";
+import { DEFAULT_THEME_TOKENS, validateThemeTokens, type ThemeTokens, type ThemeScope, type ThemeStatus } from "@/lib/theme-schema";
 
 type ThemeRecord = {
   id: string;
@@ -53,18 +54,20 @@ export async function resolveThemeForOrganization(orgId: string): Promise<{
     capabilities.enterpriseBrandingEnabled ? getPublishedOrganizationTheme(orgId) : Promise.resolve(null),
   ]);
 
-  let source: "default" | "global" | "organization" = "default";
-  let tokens = structuredClone(DEFAULT_THEME_TOKENS);
-
-  if (globalTheme) {
-    tokens = globalTheme.tokens;
-    source = "global";
-  }
-
-  if (orgTheme && capabilities.enterpriseBrandingEnabled) {
-    tokens = orgTheme.tokens;
-    source = "organization";
-  }
+  const { tokens, source } = resolveThemeTokenSource({
+    defaultTokens: DEFAULT_THEME_TOKENS,
+    globalTokens: readThemeTokensOrNull(globalTheme, {
+      scope: "global_default",
+      organizationId: null,
+    }),
+    organizationTokens: capabilities.enterpriseBrandingEnabled
+      ? readThemeTokensOrNull(orgTheme, {
+          scope: "organization",
+          organizationId: orgId,
+        })
+      : null,
+    enterpriseBrandingEnabled: capabilities.enterpriseBrandingEnabled,
+  });
 
   return {
     tokens,
@@ -95,6 +98,35 @@ export async function getNextOrgThemeVersion(orgId: string): Promise<number> {
   return (maxTheme?.version ?? 0) + 1;
 }
 
+export function resolveThemeTokenSource(input: {
+  defaultTokens: ThemeTokens;
+  globalTokens: ThemeTokens | null;
+  organizationTokens: ThemeTokens | null;
+  enterpriseBrandingEnabled: boolean;
+}): {
+  tokens: ThemeTokens;
+  source: "default" | "global" | "organization";
+} {
+  if (input.enterpriseBrandingEnabled && input.organizationTokens) {
+    return {
+      tokens: structuredClone(input.organizationTokens),
+      source: "organization",
+    };
+  }
+
+  if (input.globalTokens) {
+    return {
+      tokens: structuredClone(input.globalTokens),
+      source: "global",
+    };
+  }
+
+  return {
+    tokens: structuredClone(input.defaultTokens),
+    source: "default",
+  };
+}
+
 function toThemeRecord(theme: {
   id: string;
   organizationId: string | null;
@@ -120,4 +152,45 @@ function toThemeRecord(theme: {
     createdAt: theme.createdAt,
     updatedAt: theme.updatedAt,
   };
+}
+
+function readThemeTokensOrNull(
+  theme: ThemeRecord | null,
+  meta: {
+    scope: ThemeScope;
+    organizationId: string | null;
+  }
+): ThemeTokens | null {
+  if (!theme) return null;
+
+  const validated = validateThemeTokens(theme.tokens);
+  if (validated.ok && validated.value) {
+    return validated.value;
+  }
+
+  console.warn(
+    JSON.stringify({
+      level: "warn",
+      message: "Invalid theme payload detected. Falling back to safe theme source.",
+      scope: meta.scope,
+      organizationId: meta.organizationId,
+      themeId: theme.id,
+      errors: validated.errors,
+      timestamp: new Date().toISOString(),
+    })
+  );
+  Sentry.captureMessage("Invalid theme payload detected", {
+    level: "warning",
+    tags: {
+      scope: meta.scope,
+      themeSubsystem: "runtime-resolve",
+    },
+    extra: {
+      organizationId: meta.organizationId,
+      themeId: theme.id,
+      errors: validated.errors,
+    },
+  });
+
+  return null;
 }

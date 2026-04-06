@@ -171,6 +171,7 @@ export default function MuxPlayerClient({ initialVariant, allVariants, embedName
           }}
           primaryColor="var(--primary)"
           secondaryColor="var(--foreground)"
+          accentColor="var(--primary-strong)"
           className="np-mux-play-skin w-full h-full object-contain"
           style={{ height: "100%", width: "100%" }}
         />
