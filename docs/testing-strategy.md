@@ -24,6 +24,7 @@
   - Tenant-scope kontrakter på centrale write-ruter
   - Brug af RBAC/org-context guards
   - Plan-limit håndhævelse i create-heavy flows
+  - Branding theme guardrails: permissions, enterprise plan-gate, payload validation og audit-log publish/rollback
 
 ### 3) E2E smoke tests (Playwright)
 - Placering: `tests/e2e/*.spec.ts`
@@ -31,6 +32,7 @@
   - Landing -> Pricing navigation
   - Register-side rendering
   - Login-side rendering (credentials + Google OAuth-knap)
+  - Branding smoke for starter vs enterprise orger (plan-gate + theme application i admin)
 
 ## Kommandoer
 - `npm run test` -> unit + API contract tests
