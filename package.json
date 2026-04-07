@@ -12,6 +12,7 @@
                     "test":  "vitest run",
                     "test:watch":  "vitest",
                     "test:e2e":  "playwright test",
+                    "test:e2e:external":  "playwright test tests/e2e/full-acquisition-and-content.external.spec.ts",
                     "test:ci":  "npm run test \u0026\u0026 npm run test:e2e",
                     "encoding:check":  "node scripts/check-encoding.mjs",
                     "perf:budget":  "node scripts/check-client-bundle-budget.mjs",

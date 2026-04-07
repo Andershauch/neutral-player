@@ -1,7 +1,7 @@
 # SaaS Roadmap (Source of Truth)
 ## Document Version
 - Current release: v0.3.0
-- Last updated: 2026-04-06
+- Last updated: 2026-04-07
 
 
 ## Status legend
@@ -179,7 +179,7 @@
   - Runtime errors are traceable with context.
 
 ### TASK-5.4 Test strategy
-**Status:** `IN PROGRESS`
+**Status:** `DONE`
 - Add E2E (signup/checkout/upload/embed).
 - Add API tests (tenant isolation + RBAC + limits).
 - **Acceptance criteria:**
@@ -188,7 +188,13 @@
   - `DONE`: CI koerer allerede lint, typecheck, unit/API tests, E2E smoke og build.
   - `DONE`: API contract tests daekker tenant isolation, RBAC, plan-limits og branding guardrails.
   - `DONE`: Full lokal acquisition/content E2E daekker signup, workspace setup, billing fixture, projekt, variant og embed.
-  - `IN PROGRESS`: Ekstern hosted checkout og rigtig Mux-upload mangler stadig et dedikeret testmiljoe uden for standard-CI.
+  - `DONE`: Gated ekstern E2E-suite er scaffolded til rigtig Stripe checkout og rigtig Mux upload via appens normale upload-entrypoint.
+  - `DONE`: Ekstern hosted checkout og rigtig Mux-upload blev verificeret lokalt den 2026-04-07 via den gatede suite.
+- Next-session closeout plan:
+  - `DONE`: Stripe test-price IDs, webhook secret og Mux credentials blev brugt i en succesfuld lokal gated run.
+  - `DONE`: Den gatede eksterne suite koerer nu stabilt mod rigtig hosted checkout.
+  - `DONE`: Den gatede eksterne suite koerer nu stabilt mod rigtig Mux upload og playback readiness.
+  - `DONE`: Den eksterne E2E holdes fortsat ude af standard-CI og koeres som preview eller manual gated suite.
 
 ---
 
@@ -380,6 +386,76 @@
 
 ---
 
+## SPRINT-8 General Default Layout and Look and Feel
+**Goal:** Loefte marketing-sider, standard-sider og default layout til et mere sammenhaengende, bevidst og professionelt look and feel.
+**Status:** `TODO`
+**Scope:** Offentlige marketing-sider, auth/default sider og andre ikke-theme-overstyrede standardflader.
+**Princip:** Bevar implementationen enkel og genbrug eksisterende primitives, men vaer mere konsekvent i layout, spacing, typografi, farver og visuel retning.
+
+### TASK-8.1 UI audit og baseline
+**Status:** `TODO`
+- Kortlaeg nuvaerende marketing-sider og standard-sider:
+  - Landing
+  - Pricing
+  - FAQ
+  - Contact
+  - Login
+  - Register
+  - Verify/setup flows
+- Identificer inkonsistenser i:
+  - hero-struktur
+  - spacing
+  - card-styles
+  - typography hierarchy
+  - CTA-behandling
+- **Acceptance criteria:**
+  - Der findes en kort prioriteret liste over de vigtigste layout- og visual-design-huller.
+
+### TASK-8.2 Shared default layout primitives
+**Status:** `TODO`
+- Definer eller stram et lille default UI-lag for ikke-enterprise flader:
+  - page shell
+  - section rhythm
+  - content width regler
+  - headline/subhead moenstre
+  - CTA-raekker
+- **Acceptance criteria:**
+  - Marketing og standard-sider bruger samme baseline for layout og spacing.
+
+### TASK-8.3 Marketing polish sprint
+**Status:** `TODO`
+- Opdater Landing, Pricing, FAQ og Contact til en tydelig faelles visuel retning.
+- Fokus:
+  - staerkere hero-komposition
+  - mere konsekvent CTA-hierarki
+  - bedre brug af baggrunde, overflader og sektionsovergange
+  - mindre generisk SaaS-look
+- **Acceptance criteria:**
+  - Marketing-siderne foeles som samme produkt og samme brandfamilie.
+
+### TASK-8.4 Default auth og system pages polish
+**Status:** `TODO`
+- Opdater Login, Register, Verify og Setup-sider, saa de matcher marketingens baseline.
+- Fokus:
+  - tydeligere informationshierarki
+  - renere formular-layouts
+  - bedre tomrum og visuel ro
+- **Acceptance criteria:**
+  - Default-siderne foeles som en naturlig fortsaettelse af marketingoplevelsen.
+
+### TASK-8.5 Default design rules og guardrails
+**Status:** `TODO`
+- Dokumenter de vigtigste default designregler direkte i roadmapen eller relateret docs:
+  - typografi
+  - spacing
+  - card og surface treatment
+  - CTA-principper
+  - hvad der skal forblive simpelt
+- **Acceptance criteria:**
+  - Naeste UI-arbejde paa marketing og default sider kan foelge samme retning uden at opfinde nyt hver gang.
+
+---
+
 ## Suggested execution order
 1. `EPIC-1` (all tasks)
 2. `EPIC-2` (all tasks)
@@ -387,6 +463,7 @@
 4. `EPIC-4`
 5. `EPIC-5` (continuous hardening)
 6. `EPIC-7` (start with `TASK-7.1` + `TASK-7.2`, then internal admin + rollout)
+7. `SPRINT-8` (general default layout, marketing polish og look and feel)
 
 ---
 

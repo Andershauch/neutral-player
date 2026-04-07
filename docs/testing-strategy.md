@@ -1,7 +1,7 @@
 # Testing Strategy
 ## Document Version
 - Current release: v0.3.0
-- Last updated: 2026-04-06
+- Last updated: 2026-04-07
 
 ## Maal
 - Fange regressions tidligt i CI.
@@ -39,10 +39,17 @@
   - Player-skin smoke for enterprise themes via player CSS variables
   - Customer branding page exposes only the approved self-service subset
   - Full lokal acquisition/content flow via Prisma-fixtures for verification, billing og Mux-ready variant
+- Gated ekstern E2E:
+  - Fil: `tests/e2e/full-acquisition-and-content.external.spec.ts`
+  - Daekker rigtig hosted Stripe checkout og rigtig Mux upload via appens normale `/api/uploads`-entrypoint
+  - Playwright-origin skal matche `NEXTAUTH_URL` ved lokale Stripe-runs for at bevare session cookies efter hosted checkout-return
+  - Verificeret lokalt den 2026-04-07 med rigtig hosted checkout, rigtig upload og embed-render
+  - Koeres kun manuelt eller i dedikeret preview-miljoe
 
 ## Kommandoer
 - `npm run test` -> unit + API contract tests
 - `npm run test:e2e` -> E2E smoke
+- `npm run test:e2e:external` -> gated ekstern Stripe/Mux suite
 - `npm run typecheck`
 - `npm run lint`
 - `npx next build`
@@ -64,4 +71,9 @@
   - billing fixture
   - projekt + variant
   - embed-verifikation
-- Naeste skridt for denne test er at erstatte billing/Mux-fixtures med dedikeret eksternt Stripe/Mux testmiljoe, naar det er klar.
+- Gated ekstern partner-test:
+  - Fil: `tests/e2e/full-acquisition-and-content.external.spec.ts`
+  - Kraever `E2E_ENABLE_EXTERNAL_BILLING_UPLOAD=1`
+  - Kraever Stripe og Mux credentials konfigureret lokalt eller i dedikeret preview-miljoe
+  - Kraever at Playwright bruger samme lokale origin som `NEXTAUTH_URL` eller eksplicit `PLAYWRIGHT_BASE_URL`
+  - Holdes uden for standard-CI, indtil den er stabil over flere runs
