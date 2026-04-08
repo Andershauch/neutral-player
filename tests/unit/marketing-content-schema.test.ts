@@ -7,6 +7,7 @@ import {
   validateHomeMarketingContent,
   validateMarketingPageContent,
 } from "@/lib/marketing-content-schema";
+import { getDefaultMarketingContent } from "@/lib/marketing-content-defaults";
 
 const hero = {
   kicker: "Serviceoplevelser",
@@ -216,5 +217,12 @@ describe("marketing content schema", () => {
       "supportPoints",
       "primaryActions",
     ]);
+  });
+
+  it("accepts the shipped default marketing content for every supported page", () => {
+    for (const pageKey of ["home", "pricing", "faq", "contact"] as const) {
+      const result = validateMarketingPageContent(pageKey, getDefaultMarketingContent(pageKey));
+      expect(result.ok).toBe(true);
+    }
   });
 });

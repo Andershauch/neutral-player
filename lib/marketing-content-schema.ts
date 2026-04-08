@@ -322,7 +322,7 @@ function requireHeroSection(
 
   return {
     kicker: section ? requireString(section, `${path}.kicker`, errors, { maxLength: 60 }) : "",
-    badge: section ? requireOptionalString(section, `${path}.badge`, errors, { maxLength: 50 }) : null,
+    badge: section ? requireOptionalString(section, `${path}.badge`, errors, { maxLength: 120 }) : null,
     title: section ? requireString(section, `${path}.title`, errors, { maxLength: 160 }) : "",
     body: section ? requireString(section, `${path}.body`, errors, { maxLength: 420 }) : "",
     primaryCta: section ? requireLinkField(section, `${path}.primaryCta`, errors) : emptyLink(),

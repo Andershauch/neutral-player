@@ -177,15 +177,15 @@ export default function InternalMarketingConsole() {
   }
 
   async function handleSaveDraft() {
-    setStatus(null);
     const draft = buildValidatedDraft();
     setValidationErrors(draft.errors);
     if (!draft.ok || !draft.value) {
-      return;
+      return false;
     }
 
     setSaving(true);
     setError(null);
+    setStatus(null);
     try {
       const res = await fetch("/api/internal/marketing/content", {
         method: "PUT",
@@ -204,18 +204,26 @@ export default function InternalMarketingConsole() {
       setStatus("Draft gemt.");
       setChangeSummary("");
       await loadPage(selectedPageKey);
+      return true;
     } catch (err) {
       const message = err instanceof Error ? err.message : "Ukendt fejl";
       setError(message);
+      return false;
     } finally {
       setSaving(false);
     }
   }
 
   async function handlePublish() {
-    setPublishing(true);
     setError(null);
     setStatus(null);
+
+    const saved = await handleSaveDraft();
+    if (!saved) {
+      return;
+    }
+
+    setPublishing(true);
     try {
       const res = await fetch("/api/internal/marketing/content", {
         method: "POST",
@@ -230,7 +238,7 @@ export default function InternalMarketingConsole() {
         throw new Error(data.error || "Publish fejlede.");
       }
 
-      setStatus("Version publiceret.");
+      setStatus("Draft gemt og version publiceret.");
       await loadPage(selectedPageKey);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Ukendt fejl";
@@ -425,10 +433,10 @@ export default function InternalMarketingConsole() {
                   <button
                     type="button"
                     onClick={handlePublish}
-                    disabled={!canManage || publishing}
+                    disabled={!canManage || publishing || saving}
                     className="np-btn-ghost inline-flex px-4 py-2 disabled:opacity-50"
                   >
-                    {publishing ? "Publicerer..." : canManage ? "Publish" : "Preview only"}
+                    {publishing ? "Publicerer..." : saving ? "Gemmer..." : canManage ? "Gem og publish" : "Preview only"}
                   </button>
                 </div>
               </div>
@@ -616,7 +624,7 @@ export default function InternalMarketingConsole() {
               <p className="np-kicker text-blue-600">Historik</p>
               <h3 className="text-base font-bold uppercase tracking-tight text-gray-900">Versioner</h3>
               <div className="rounded-xl border border-gray-100 bg-gray-50/80 px-3 py-3 text-xs font-semibold text-gray-600">
-                Draft preview ligger under internal og er tydeligt adskilt fra live public-siden.
+                Draft preview ligger under internal og er tydeligt adskilt fra live public-siden. Publish gemmer altid den aktuelle draft først.
               </div>
               {versions.length === 0 ? <p className="text-sm text-gray-500">Ingen versioner endnu.</p> : null}
               <div className="space-y-2">

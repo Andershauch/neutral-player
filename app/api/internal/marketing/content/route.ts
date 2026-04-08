@@ -278,7 +278,10 @@ export async function POST(req: Request) {
     });
 
     if (!page) {
-      return NextResponse.json({ error: "Marketing-siden findes ikke endnu." }, { status: 404 });
+      return NextResponse.json(
+        { error: "Marketing-siden findes ikke endnu. Gem en draft først, før du publicerer." },
+        { status: 404 }
+      );
     }
 
     const targetVersion = action === "publish"
@@ -300,7 +303,12 @@ export async function POST(req: Request) {
 
     if (!targetVersion) {
       return NextResponse.json(
-        { error: action === "publish" ? "Ingen draft fundet til publish." : "Ingen version fundet til rollback." },
+        {
+          error:
+            action === "publish"
+              ? "Ingen draft fundet til publish. Gem en draft først."
+              : "Ingen version fundet til rollback.",
+        },
         { status: 404 }
       );
     }
