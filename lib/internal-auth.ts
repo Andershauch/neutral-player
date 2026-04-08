@@ -66,3 +66,7 @@ export async function getInternalAdminContext(): Promise<{
 export function canManageInternalBranding(role: InternalRole): boolean {
   return role === "np_super_admin";
 }
+
+export function canManageMarketingContent(role: InternalRole): boolean {
+  return role === "np_super_admin";
+}

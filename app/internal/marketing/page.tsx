@@ -1,20 +1,20 @@
 import Link from "next/link";
-import InternalBrandingConsole from "@/components/internal/InternalBrandingConsole";
+import InternalMarketingConsole from "@/components/internal/InternalMarketingConsole";
 
 export const dynamic = "force-dynamic";
 
-export default function InternalPage() {
+export default function InternalMarketingPage() {
   return (
     <div className="space-y-6">
       <section className="np-card np-card-pad bg-gradient-to-br from-white via-white to-blue-50/30">
         <p className="np-kicker text-blue-600">Internal admin</p>
-        <h1 className="text-3xl font-bold text-gray-900 uppercase tracking-tight">Neutral control center</h1>
+        <h1 className="text-3xl font-bold text-gray-900 uppercase tracking-tight">Marketing control center</h1>
         <p className="mt-1 text-sm text-gray-500">
-          Administrér globale design-tokens og enterprise-branding pr. kunde.
+          Redigér marketing-sider med draft, preview, publish og rollback fra samme internal spor.
         </p>
         <div className="mt-4 flex flex-wrap gap-3">
-          <Link href="/internal/marketing" className="np-btn-primary inline-flex px-4 py-3">
-            Åbn marketing editor
+          <Link href="/internal" className="np-btn-ghost inline-flex px-4 py-3">
+            Tilbage til internal
           </Link>
           <Link href="/admin/dashboard" className="np-btn-ghost inline-flex px-4 py-3">
             Tilbage til dashboard
@@ -22,7 +22,7 @@ export default function InternalPage() {
         </div>
       </section>
 
-      <InternalBrandingConsole />
+      <InternalMarketingConsole />
     </div>
   );
 }

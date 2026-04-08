@@ -1,8 +1,10 @@
 import Link from "next/link";
-import { getBillingPlansForDisplay, type BillingPlanKey } from "@/lib/plans";
 import HeroMedia from "@/components/public/HeroMedia";
 import HomeHeaderActions from "@/components/public/HomeHeaderActions";
 import { Providers } from "@/components/Providers";
+import { getResolvedMarketingPageContent, type ResolvedMarketingAsset } from "@/lib/marketing-content-runtime";
+import { type HomeMarketingContent, type MarketingLinkField } from "@/lib/marketing-content-schema";
+import { getBillingPlansForDisplay, type BillingPlanKey } from "@/lib/plans";
 
 type HomePlanMeta = {
   highlighted: boolean;
@@ -16,84 +18,21 @@ const PLAN_META: Record<BillingPlanKey, HomePlanMeta> = {
   custom_monthly: { highlighted: false, badge: "Designet til specialbehov" },
 };
 
-const HERO_MEDIA = {
-  type: "video" as "video" | "image",
+const DEFAULT_HERO_MEDIA = {
+  type: "video" as const,
   videoSources: [{ src: "/images/hero_video_test.mp4", type: "video/mp4" }],
   posterSrc: "/images/hero-product-demo.svg",
   imageSrc: "/images/hero-product-demo.svg",
   imageAlt: "NeutralPlayer produktdemo med projekter, embeds og varianter",
 };
 
-const SERVICE_OPTIONS = [
-  {
-    title: "Customer support video",
-    summary: "Til teams der vil samle embeds, sprogversioner og supportflow i en enkel serviceoplevelse.",
-    points: ["Ét projekt med flere varianter", "Hurtig onboarding", "Klar til marketing og support"],
-    href: "/pricing",
-    label: "Se planer",
-  },
-  {
-    title: "Onboarding og rollout",
-    summary: "Til teams der vil rulle videooplevelser ud på tværs af markeder, sites og interne ejere.",
-    points: ["Domænestyring", "Redaktionelle roller", "Mindre dobbeltarbejde"],
-    href: "/contact",
-    label: "Tal med salg",
-  },
-  {
-    title: "Enterprise service design",
-    summary: "Til organisationer der vil have governance, branding og et setup der kan vokse med forretningen.",
-    points: ["Branded player", "Audit og godkendelser", "Custom setup og support"],
-    href: "/contact",
-    label: "Book en intro",
-  },
-];
-
-const STORIES = [
-  {
-    company: "Northlane Mobility",
-    impact: "47% hurtigere vej fra brief til publiceret embed",
-    quote:
-      "Vi gik fra at koordinere video per marked til at styre hele serviceoplevelsen i et samlet flow. Det gjorde både marketing og support hurtigere.",
-    person: "Signe Holm",
-    role: "Head of Customer Programs",
-  },
-  {
-    company: "Careline Nordic",
-    impact: "Tre servicespor samlet i et setup for salg, onboarding og help content",
-    quote:
-      "Det vigtigste for os var ikke bare playeren. Det var at kunderne kunne vælge den rigtige service og altid lande det rigtige sted bagefter.",
-    person: "Jonas Becker",
-    role: "Director of Revenue Enablement",
-  },
-  {
-    company: "Atlas Industrial",
-    impact: "Lancering i 8 markeder uden nye one-off embeds",
-    quote:
-      "Vi fik governance, historier og servicevalg til at spille sammen. Resultatet føltes mere som et produkt og mindre som en samling sider.",
-    person: "Maja Lund",
-    role: "VP Commercial Operations",
-  },
-];
-
-const TRUSTED_BY = ["Northlane", "Careline", "Atlas", "BrightLearn", "FieldOps", "Urban Retail"];
-
-const DECISION_SIGNALS = [
-  {
-    label: "Til teams med fart på",
-    value: "Fra marketing-side til første embed på samme dag",
-  },
-  {
-    label: "Til teams med salg i loopet",
-    value: "Tydelige steder at kontakte os før valg af plan",
-  },
-  {
-    label: "Til teams med mange historier",
-    value: "Kundecases, servicespor og CTA'er der arbejder sammen",
-  },
-];
-
 export default async function Home() {
-  const plans = await getBillingPlansForDisplay();
+  const [plans, marketing] = await Promise.all([
+    getBillingPlansForDisplay(),
+    getResolvedMarketingPageContent<HomeMarketingContent>("home"),
+  ]);
+  const content = marketing.content;
+  const heroMedia = resolveHomeHeroMedia(content, marketing.assetsByKey);
 
   return (
     <main className="np-default-theme np-page-shell">
@@ -113,29 +52,34 @@ export default async function Home() {
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(23,73,77,0.16),transparent_30%),radial-gradient(circle_at_bottom_left,rgba(168,103,48,0.14),transparent_34%)]" />
           <div className="relative grid grid-cols-1 gap-8 xl:grid-cols-[1.15fr_0.85fr] xl:gap-10">
             <div className="space-y-6">
-              <p className="np-kicker text-blue-600">Serviceoplevelser til teams med mange video-flader</p>
+              <p className="np-kicker text-blue-600">{content.hero.kicker}</p>
               <div className="space-y-4">
-                <p className="np-pill-badge">Vælg service. Tal med salg. Del historier der virker.</p>
+                {content.hero.badge ? <p className="np-pill-badge">{content.hero.badge}</p> : null}
                 <h2 className="text-4xl font-black uppercase tracking-tight text-gray-900 md:text-6xl md:leading-[0.94]">
-                  Byg en SaaS-oplevelse omkring video, service og gode historier.
+                  {content.hero.title}
                 </h2>
-                <p className="np-support-copy text-base md:text-lg">
-                  NeutralPlayer hjælper teams med at samle flersprogede embeds, tydelige servicevalg og salgsnære
-                  kundehistorier i en oplevelse, der føles som et rigtigt produkt fra forside til onboarding.
-                </p>
+                <p className="np-support-copy text-base md:text-lg">{content.hero.body}</p>
               </div>
 
               <div className="flex flex-col gap-3 sm:flex-row">
-                <Link href="/pricing" className="np-btn-primary px-6 py-4 text-center">
-                  Se planer
+                <Link
+                  href={content.hero.primaryCta.href}
+                  className={`${marketingButtonClass(content.hero.primaryCta)} px-6 py-4 text-center`}
+                >
+                  {content.hero.primaryCta.label}
                 </Link>
-                <Link href="/contact" className="np-btn-ghost px-6 py-4 text-center">
-                  Kontakt salg
-                </Link>
+                {content.hero.secondaryCta ? (
+                  <Link
+                    href={content.hero.secondaryCta.href}
+                    className={`${marketingButtonClass(content.hero.secondaryCta)} px-6 py-4 text-center`}
+                  >
+                    {content.hero.secondaryCta.label}
+                  </Link>
+                ) : null}
               </div>
 
               <div className="np-data-strip">
-                {DECISION_SIGNALS.map((signal) => (
+                {content.decisionSignals.map((signal) => (
                   <div key={signal.label} className="np-data-chip">
                     <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-500">{signal.label}</p>
                     <p className="mt-2 text-sm font-semibold text-gray-900">{signal.value}</p>
@@ -148,11 +92,11 @@ export default async function Home() {
               <div className="np-section-card-muted overflow-hidden">
                 <div className="relative aspect-[4/3] overflow-hidden rounded-[1.75rem] border border-white/70 bg-white/70">
                   <HeroMedia
-                    type={HERO_MEDIA.type}
-                    videoSources={HERO_MEDIA.videoSources}
-                    posterSrc={HERO_MEDIA.posterSrc}
-                    imageSrc={HERO_MEDIA.imageSrc}
-                    imageAlt={HERO_MEDIA.imageAlt}
+                    type={heroMedia.type}
+                    videoSources={heroMedia.videoSources}
+                    posterSrc={heroMedia.posterSrc}
+                    imageSrc={heroMedia.imageSrc}
+                    imageAlt={heroMedia.imageAlt}
                   />
                   <div
                     className="absolute inset-0 backdrop-blur-[1px]"
@@ -199,7 +143,7 @@ export default async function Home() {
           </div>
 
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-            {SERVICE_OPTIONS.map((service) => (
+            {content.serviceCards.map((service) => (
               <article key={service.title} className="np-section-card flex flex-col gap-5">
                 <div className="space-y-3">
                   <p className="np-kicker text-blue-600">Service</p>
@@ -214,8 +158,8 @@ export default async function Home() {
                 </ul>
 
                 <div className="mt-auto">
-                  <Link href={service.href} className="np-btn-primary inline-flex px-5 py-3 text-center">
-                    {service.label}
+                  <Link href={service.cta.href} className={`${marketingButtonClass(service.cta)} inline-flex px-5 py-3 text-center`}>
+                    {service.cta.label}
                   </Link>
                 </div>
               </article>
@@ -316,7 +260,7 @@ export default async function Home() {
           </div>
 
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-            {STORIES.map((story) => (
+            {content.stories.map((story) => (
               <article key={story.company} className="np-story-card">
                 <div className="space-y-3">
                   <span className="np-pill-badge">{story.company}</span>
@@ -347,7 +291,7 @@ export default async function Home() {
           </div>
 
           <div className="flex flex-wrap gap-3">
-            {TRUSTED_BY.map((brand) => (
+            {content.trustedBy.map((brand) => (
               <span key={brand} className="np-pill-badge">
                 {brand}
               </span>
@@ -358,32 +302,34 @@ export default async function Home() {
         <section className="np-section-card" id="sales">
           <div className="np-marketing-grid">
             <div className="space-y-4">
-              <p className="np-kicker text-blue-600">Kontakt salg</p>
+              <p className="np-kicker text-blue-600">{content.salesCta.kicker}</p>
               <h3 className="text-3xl font-black uppercase tracking-tight text-gray-900 md:text-4xl">
-                Fortæl hvilken serviceoplevelse du vil bygge.
+                {content.salesCta.title}
               </h3>
-              <p className="np-support-copy">
-                Hvis du vil have en forside der leder kunder mod den rigtige service, hjælper vi gerne med at forme
-                både struktur, historier og rollout. Det er netop her sales-led copy og produktoplevelse skal mødes.
-              </p>
+              <p className="np-support-copy">{content.salesCta.body}</p>
             </div>
 
             <div className="np-section-card-muted space-y-4">
               <div>
                 <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-500">Typiske behov</p>
                 <ul className="mt-3 np-check-list">
-                  <li>Flere serviceveje ind på samme forside</li>
-                  <li>Bedre kobling mellem kundehistorier og CTA</li>
-                  <li>Et default-look der er let at redesigne senere</li>
+                  {(content.salesCta.bullets || []).map((bullet) => (
+                    <li key={bullet}>{bullet}</li>
+                  ))}
                 </ul>
               </div>
               <div className="flex flex-col gap-3 sm:flex-row">
-                <Link href="/contact" className="np-btn-primary px-5 py-3 text-center">
-                  Kontakt salg
+                <Link href={content.salesCta.primaryCta.href} className={`${marketingButtonClass(content.salesCta.primaryCta)} px-5 py-3 text-center`}>
+                  {content.salesCta.primaryCta.label}
                 </Link>
-                <Link href="/pricing" className="np-btn-ghost px-5 py-3 text-center">
-                  Se planer
-                </Link>
+                {content.salesCta.secondaryCta ? (
+                  <Link
+                    href={content.salesCta.secondaryCta.href}
+                    className={`${marketingButtonClass(content.salesCta.secondaryCta)} px-5 py-3 text-center`}
+                  >
+                    {content.salesCta.secondaryCta.label}
+                  </Link>
+                ) : null}
               </div>
             </div>
           </div>
@@ -391,4 +337,43 @@ export default async function Home() {
       </div>
     </main>
   );
+}
+
+function marketingButtonClass(link: MarketingLinkField): string {
+  return link.variant === "primary" ? "np-btn-primary" : "np-btn-ghost";
+}
+
+function resolveHomeHeroMedia(
+  content: HomeMarketingContent,
+  assetsByKey: Record<string, ResolvedMarketingAsset>
+) {
+  const media = content.hero.media;
+  if (!media) {
+    return DEFAULT_HERO_MEDIA;
+  }
+
+  const primaryAsset = assetsByKey[media.primaryAsset.assetKey];
+  const posterAsset = media.posterAsset ? assetsByKey[media.posterAsset.assetKey] : null;
+
+  if (media.kind === "image" && primaryAsset) {
+    return {
+      type: "image" as const,
+      videoSources: [] as Array<{ src: string; type: string }>,
+      posterSrc: primaryAsset.url,
+      imageSrc: primaryAsset.url,
+      imageAlt: primaryAsset.altText || media.primaryAsset.alt,
+    };
+  }
+
+  if (media.kind === "video" && primaryAsset && primaryAsset.mimeType.startsWith("video/")) {
+    return {
+      type: "video" as const,
+      videoSources: [{ src: primaryAsset.url, type: primaryAsset.mimeType }],
+      posterSrc: posterAsset?.url || DEFAULT_HERO_MEDIA.posterSrc,
+      imageSrc: posterAsset?.url || DEFAULT_HERO_MEDIA.imageSrc,
+      imageAlt: primaryAsset.altText || media.primaryAsset.alt,
+    };
+  }
+
+  return DEFAULT_HERO_MEDIA;
 }

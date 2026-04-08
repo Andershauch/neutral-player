@@ -19,8 +19,11 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  organizations OrganizationUser[]
-  invitesSent   Invite[]           @relation("InvitesSent")
+  organizations                  OrganizationUser[]
+  invitesSent                    Invite[]               @relation("InvitesSent")
+  marketingPageVersionsCreated   MarketingPageVersion[] @relation("MarketingPageVersionCreatedBy")
+  marketingPageVersionsPublished MarketingPageVersion[] @relation("MarketingPageVersionPublishedBy")
+  marketingAssetsUploaded        MarketingAsset[]       @relation("MarketingAssetUploadedBy")
 }
 
 model Organization {
@@ -186,20 +189,87 @@ model AuditLog {
 }
 
 model OrganizationTheme {
-  id             String   @id @default(cuid())
+  id             String    @id @default(cuid())
   organizationId String?
-  scope          String   @default("organization")
-  status         String   @default("draft")
-  version        Int      @default(1)
+  scope          String    @default("organization")
+  status         String    @default("draft")
+  version        Int       @default(1)
   name           String?
   tokens         Json
   publishedAt    DateTime?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
+  @@unique([organizationId, scope, version])
   @@index([organizationId])
   @@index([scope, status])
-  @@unique([organizationId, scope, version])
+}
+
+model MarketingPage {
+  id                 String   @id @default(cuid())
+  key                String   @unique
+  title              String
+  description        String?
+  activeDraftId      String?  @unique
+  publishedVersionId String?  @unique
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  versions         MarketingPageVersion[]
+  activeDraft      MarketingPageVersion?  @relation("MarketingPageActiveDraft", fields: [activeDraftId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  publishedVersion MarketingPageVersion?  @relation("MarketingPagePublishedVersion", fields: [publishedVersionId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+
+  @@index([key])
+}
+
+model MarketingPageVersion {
+  id                String    @id @default(cuid())
+  marketingPageId   String
+  version           Int
+  status            String    @default("draft")
+  schemaVersion     Int       @default(1)
+  content           Json
+  changeSummary     String?
+  createdByUserId   String?
+  publishedByUserId String?
+  publishedAt       DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  marketingPage   MarketingPage  @relation(fields: [marketingPageId], references: [id], onDelete: Cascade)
+  createdByUser   User?          @relation("MarketingPageVersionCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  publishedByUser User?          @relation("MarketingPageVersionPublishedBy", fields: [publishedByUserId], references: [id], onDelete: SetNull)
+  activeDraftFor  MarketingPage? @relation("MarketingPageActiveDraft")
+  publishedFor    MarketingPage? @relation("MarketingPagePublishedVersion")
+
+  @@unique([marketingPageId, version])
+  @@index([marketingPageId, status])
+  @@index([marketingPageId, publishedAt])
+  @@index([createdByUserId])
+  @@index([publishedByUserId])
+}
+
+model MarketingAsset {
+  id               String   @id @default(cuid())
+  key              String   @unique
+  kind             String   @default("image")
+  fileName         String
+  storageKey       String
+  url              String
+  mimeType         String
+  altText          String?
+  title            String?
+  width            Int?
+  height           Int?
+  metadata         Json?
+  uploadedByUserId String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  uploadedByUser User? @relation("MarketingAssetUploadedBy", fields: [uploadedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([kind])
+  @@index([uploadedByUserId])
 }

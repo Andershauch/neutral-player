@@ -476,6 +476,159 @@
 
 ---
 
+## SPRINT-9 Internal Marketing Content Control
+**Goal:** Give `np_super_admin` mulighed for at redigere og publicere marketing-indhold, billeder og udvalgte CTA'er uden kodeændringer.
+**Status:** `DONE`
+**Scope:** Landing, Pricing, FAQ og Contact i første version. Senere kan andre public/default sider kobles på samme model.
+**Princip:** Byg et internt, struktureret CMS i egen app. Undgaa fri page-builder i v1. Layout og rendering bliver i kode; indhold, billeder og sektion-data bliver redigerbare.
+
+### TASK-9.1 Marketing content domain model
+**Status:** `DONE`
+- Tilføj marketing content-modeller med versionsstyring:
+  - `MarketingPage`
+  - `MarketingPageVersion`
+  - `MarketingAsset`
+- Brug `draft` og `published` status i stedet for at skrive direkte på live-indhold.
+- Gem sideindhold som struktureret JSON pr. sideversion.
+- **Acceptance criteria:**
+  - Hver marketing-side kan have mindst én draft og én published version.
+  - Assets kan refereres fra sideindhold uden at hardcode paths i page-filer.
+  - Schemaet er klart afgrænset til marketing/public content og blander ikke planlogik eller theme-motor sammen med content.
+- **Progress note (2026-04-08):**
+  - Prisma-domænet er lagt i [prisma/schema.prisma](/C:/Users/ander/neutral-player/prisma/schema.prisma) med separate modeller for pages, versions og assets.
+  - Første migration er genereret i [prisma/migrations/20260408121000_add_marketing_content_models/migration.sql](/C:/Users/ander/neutral-player/prisma/migrations/20260408121000_add_marketing_content_models/migration.sql).
+  - V1-sidekatalog og statuses er samlet i [lib/marketing-pages.ts](/C:/Users/ander/neutral-player/lib/marketing-pages.ts) med en lille kontrakttest i [tests/unit/marketing-pages.test.ts](/C:/Users/ander/neutral-player/tests/unit/marketing-pages.test.ts).
+
+### TASK-9.2 Safe content schema og editor-contracts
+**Status:** `DONE`
+- Definér validerede content schemas for:
+  - `home`
+  - `pricing`
+  - `faq`
+  - `contact`
+- Hold schemas strukturerede og sektion-specifikke:
+  - hero
+  - service cards
+  - stories
+  - trusted-by
+  - CTA blocks
+  - FAQ groups
+- Brug allowlisted felter frem for fri rich text i v1.
+- **Acceptance criteria:**
+  - Indhold kan valideres server-side før save og publish.
+  - Ugyldige eller ufuldstændige payloads kan ikke publiceres.
+  - Det er tydeligt hvilke felter der er editable, og hvilke der stadig er kodestyrrede.
+- **Progress note (2026-04-08):**
+  - De server-side schemas og editor-kontrakter ligger i [lib/marketing-content-schema.ts](/C:/Users/ander/neutral-player/lib/marketing-content-schema.ts).
+  - Validatoren er strict og afviser ukendte felter, usikre links og ufuldstændige sektioner.
+  - Editable sektioner pr. side er samlet i `MARKETING_EDITOR_SECTIONS`, så editor-UI'et kan bygges oven på samme contract.
+  - Kontrakterne er dækket af [tests/unit/marketing-content-schema.test.ts](/C:/Users/ander/neutral-player/tests/unit/marketing-content-schema.test.ts).
+
+### TASK-9.3 Internal marketing editor UI
+**Status:** `DONE`
+- Tilføj et nyt internal spor, fx `/internal/marketing`.
+- Byg en editor med:
+  - sidevælger
+  - sektion-for-sektion formularer
+  - asset picker/reference
+  - save draft
+  - preview
+  - publish
+  - rollback
+- Begræns write-adgang til `np_super_admin`.
+- **Acceptance criteria:**
+  - Super admin kan redigere mindst én marketing-side end-to-end uden kode.
+  - `np_support_admin` kan højst have read/preview, ikke publish.
+  - Editorfladen bruger samme internal governance- og audit-mønstre som branding-sporet.
+- **Progress note (2026-04-08):**
+  - Internal editoren ligger nu på [app/internal/marketing/page.tsx](/C:/Users/ander/neutral-player/app/internal/marketing/page.tsx) med UI i [components/internal/InternalMarketingConsole.tsx](/C:/Users/ander/neutral-player/components/internal/InternalMarketingConsole.tsx).
+  - API-flowet for read, save draft, publish og rollback ligger i [app/api/internal/marketing/content/route.ts](/C:/Users/ander/neutral-player/app/api/internal/marketing/content/route.ts).
+  - Write-adgang er låst til `np_super_admin`, mens andre internal roller får read/preview via [lib/internal-auth.ts](/C:/Users/ander/neutral-player/lib/internal-auth.ts) og [app/api/internal/access/route.ts](/C:/Users/ander/neutral-player/app/api/internal/access/route.ts).
+  - V1 bruger section-for-section JSON-formularer med fælles server-validator og en lokal preview, så vi kan redigere mindst én marketing-side end-to-end uden at bygge en fri page-builder.
+
+### TASK-9.4 Asset management for marketing
+**Status:** `DONE`
+- Tilføj en enkel asset-model til hero-billeder, posters og udvalgte marketing-media.
+- Understøt:
+  - upload
+  - alt-tekst
+  - aspect-ratio guidance
+  - preview
+  - reference fra marketing content
+- Hold v1 enkel: billeder først, video senere hvis nødvendigt.
+- **Acceptance criteria:**
+  - Marketing-editoren kan skifte billeder uden kode deploy.
+  - Assets har title/alt og er sikre at bruge på public sider.
+  - Der er en klar fallback hvis et asset mangler eller slettes.
+- **Progress note (2026-04-08):**
+  - Asset-upload ligger i [app/api/internal/marketing/assets/route.ts](/C:/Users/ander/neutral-player/app/api/internal/marketing/assets/route.ts) med mime/size-guardrails, alt-tekstkrav, observability og audit log.
+  - V1 asset-helperne ligger i [lib/marketing-assets.ts](/C:/Users/ander/neutral-player/lib/marketing-assets.ts) med key-normalisering, ratio-guidance og fallback-URL.
+  - Editoren i [components/internal/InternalMarketingConsole.tsx](/C:/Users/ander/neutral-player/components/internal/InternalMarketingConsole.tsx) kan nu uploade billeder, vise preview, vise ratio-guidance og kopiere `assetKey` direkte ind i content-felter.
+  - Asset-kontrakterne er dækket i [tests/unit/marketing-assets.test.ts](/C:/Users/ander/neutral-player/tests/unit/marketing-assets.test.ts) og [tests/api/marketing-content-contracts.test.ts](/C:/Users/ander/neutral-player/tests/api/marketing-content-contracts.test.ts).
+
+### TASK-9.5 Runtime resolver og public fallback
+**Status:** `DONE`
+- Byg en content-resolver til public sider:
+  - brug `published` content hvis det findes
+  - fallback til kode-defaults hvis content mangler eller er ugyldigt
+- Hold layout-komposition i kode og map kun content ind i sektioner.
+- Start med `home`, og udvid derefter til `pricing`, `faq` og `contact`.
+- **Acceptance criteria:**
+  - Public sider kan rendere published marketing content uden at miste eksisterende layout/system.
+  - Manglende content giver ikke runtime-fejl på live sider.
+  - Live oplevelsen kan stadig fungere fuldt ud uden editor-data i DB.
+- **Progress note (2026-04-08):**
+  - Runtime-resolveren ligger i [lib/marketing-content-runtime.ts](/C:/Users/ander/neutral-player/lib/marketing-content-runtime.ts) med validering, asset-opslag og sikkert fallback til kode-defaults.
+  - Public siderne [app/page.tsx](/C:/Users/ander/neutral-player/app/page.tsx), [app/pricing/page.tsx](/C:/Users/ander/neutral-player/app/pricing/page.tsx), [app/faq/page.tsx](/C:/Users/ander/neutral-player/app/faq/page.tsx) og [app/contact/page.tsx](/C:/Users/ander/neutral-player/app/contact/page.tsx) bruger nu published marketing content når det findes.
+  - Hvis DB-data mangler, er ugyldige eller migrationen ikke er deployet endnu, falder siderne automatisk tilbage til defaults i [lib/marketing-content-defaults.ts](/C:/Users/ander/neutral-player/lib/marketing-content-defaults.ts).
+  - Fallback-opførslen er dækket i [tests/unit/marketing-content-runtime.test.ts](/C:/Users/ander/neutral-player/tests/unit/marketing-content-runtime.test.ts).
+
+### TASK-9.6 Preview, publish, rollback og audit
+**Status:** `DONE`
+- Tilføj preview-flow for drafts før publish.
+- Log alle ændringer i audit:
+  - draft saved
+  - asset changed
+  - published
+  - rolled back
+- Giv tydelig skelnen mellem draft og live.
+- **Acceptance criteria:**
+  - Super admin kan se og teste draft før publish.
+  - Publish og rollback er sporbare med bruger, tidspunkt og side.
+  - Live marketing-indhold kan genskabes til tidligere version ved fejl.
+- **Progress note (2026-04-08):**
+  - Draft-previewet ligger nu på [app/internal/marketing/preview/[pageKey]/page.tsx](/C:/Users/ander/neutral-player/app/internal/marketing/preview/%5BpageKey%5D/page.tsx) og bruger samme content-model som editoren.
+  - Editoren i [components/internal/InternalMarketingConsole.tsx](/C:/Users/ander/neutral-player/components/internal/InternalMarketingConsole.tsx) linker nu tydeligt til både draft preview og live public-side.
+  - Audit-sporet dækker draft save, asset upload, publish og rollback via [app/api/internal/marketing/content/route.ts](/C:/Users/ander/neutral-player/app/api/internal/marketing/content/route.ts) og [app/api/internal/marketing/assets/route.ts](/C:/Users/ander/neutral-player/app/api/internal/marketing/assets/route.ts).
+  - Preview-kontrakten er dækket i [tests/api/marketing-content-contracts.test.ts](/C:/Users/ander/neutral-player/tests/api/marketing-content-contracts.test.ts).
+
+### TASK-9.7 Tests og operational guardrails
+**Status:** `DONE`
+- Tilføj tests for:
+  - role-gates
+  - schema validation
+  - resolver fallback
+  - publish/rollback flow
+- Tilføj observability omkring content resolve og preview/publish fejl.
+- Dokumentér runbook for hvordan marketing-indhold redigeres sikkert.
+- **Acceptance criteria:**
+  - CI dækker de kritiske content-management flows.
+  - Marketing-indholdsfejl er diagnoserbare i logs og audit.
+  - En super admin kan følge en dokumenteret proces for redigering uden at gætte.
+- **Progress note (2026-04-08):**
+  - Kontrakt- og unit-tests dækker nu role-gates, schema validation, asset helpers, resolver fallback og preview/publish/rollback contracts i [tests/api/marketing-content-contracts.test.ts](/C:/Users/ander/neutral-player/tests/api/marketing-content-contracts.test.ts), [tests/unit/marketing-content-schema.test.ts](/C:/Users/ander/neutral-player/tests/unit/marketing-content-schema.test.ts), [tests/unit/marketing-content-runtime.test.ts](/C:/Users/ander/neutral-player/tests/unit/marketing-content-runtime.test.ts) og [tests/unit/marketing-assets.test.ts](/C:/Users/ander/neutral-player/tests/unit/marketing-assets.test.ts).
+  - Runtime og preview fallback-situationer logges nu tydeligere i [lib/marketing-content-runtime.ts](/C:/Users/ander/neutral-player/lib/marketing-content-runtime.ts).
+  - Den operationelle arbejdsgang er dokumenteret i [docs/marketing-content-runbook.md](/C:/Users/ander/neutral-player/docs/marketing-content-runbook.md).
+
+### Implementation notes
+- V1 skal være et struktureret content-system, ikke en fri blok-editor.
+- Planer, Stripe-priser, theme-tokens og produktregler forbliver kodestyrrede.
+- Marketing-copy, billeder, cards, stories, FAQ og CTA'er bliver redigerbare.
+- Start med `home` som reference-side. Når mønsteret er godt, udvid til de øvrige marketing-sider.
+- Public rendering skal altid kunne falde tilbage til de nuværende kode-defaults.
+
+---
+
 ## Suggested execution order
 1. `EPIC-1` (all tasks)
 2. `EPIC-2` (all tasks)
@@ -484,6 +637,7 @@
 5. `EPIC-5` (continuous hardening)
 6. `EPIC-7` (start with `TASK-7.1` + `TASK-7.2`, then internal admin + rollout)
 7. `SPRINT-8` (general default layout, marketing polish og look and feel)
+8. `SPRINT-9` (internal marketing content control med draft/publish/preview)
 
 ---
 
