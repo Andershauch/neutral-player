@@ -47,7 +47,7 @@ const ENTERPRISE_THEME_TOKENS = {
 
 test.describe("Branding E2E flows", () => {
   test("starter org is blocked from enterprise branding controls", async ({ page }) => {
-    test.skip(!hasDatabaseUrl, "Branding E2E krÃ¦ver DATABASE_URL.");
+    test.skip(!hasDatabaseUrl, "Branding E2E kræver DATABASE_URL.");
     const account = await createUserWithPlan("starter_monthly");
 
     try {
@@ -63,7 +63,7 @@ test.describe("Branding E2E flows", () => {
   });
 
   test("enterprise org theme is applied in admin and branding controls are enabled", async ({ page }) => {
-    test.skip(!hasDatabaseUrl, "Branding E2E krÃ¦ver DATABASE_URL.");
+    test.skip(!hasDatabaseUrl, "Branding E2E kræver DATABASE_URL.");
     const account = await createUserWithPlan("enterprise_monthly", {
       themePrimary: ENTERPRISE_PRIMARY,
       createEmbed: true,

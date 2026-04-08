@@ -9,7 +9,7 @@ const TEST_PLAYBACK_ID = "test-playback-id";
 
 test.describe("Full SaaS flow (signup/checkout/upload/embed)", () => {
   test("signup -> workspace -> billing fixture -> project -> variant -> embed", async ({ page }) => {
-    test.skip(!hasDatabaseUrl, "Full acquisition E2E krÃ¦ver DATABASE_URL.");
+    test.skip(!hasDatabaseUrl, "Full acquisition E2E kræver DATABASE_URL.");
     test.setTimeout(120_000);
 
     const suffix = randomUUID().slice(0, 8);
