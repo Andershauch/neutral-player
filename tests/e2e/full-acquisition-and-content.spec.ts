@@ -2,12 +2,14 @@ import { randomUUID } from "crypto";
 import { expect, test } from "@playwright/test";
 import { PrismaClient } from "@prisma/client";
 
-const prisma = new PrismaClient();
+const hasDatabaseUrl = Boolean(process.env.DATABASE_URL);
+const prisma = hasDatabaseUrl ? new PrismaClient() : null;
 const TEST_PASSWORD = "Password123!";
 const TEST_PLAYBACK_ID = "test-playback-id";
 
 test.describe("Full SaaS flow (signup/checkout/upload/embed)", () => {
   test("signup -> workspace -> billing fixture -> project -> variant -> embed", async ({ page }) => {
+    test.skip(!hasDatabaseUrl, "Full acquisition E2E krÃ¦ver DATABASE_URL.");
     test.setTimeout(120_000);
 
     const suffix = randomUUID().slice(0, 8);
@@ -34,12 +36,12 @@ test.describe("Full SaaS flow (signup/checkout/upload/embed)", () => {
       const membership = await waitForMembership(user.id);
       organizationId = membership.organizationId;
 
-      await prisma.user.update({
+      await requirePrisma().user.update({
         where: { id: user.id },
         data: { emailVerified: new Date() },
       });
 
-      await prisma.subscription.create({
+      await requirePrisma().subscription.create({
         data: {
           organizationId: membership.organizationId,
           plan: "starter_monthly",
@@ -68,7 +70,7 @@ test.describe("Full SaaS flow (signup/checkout/upload/embed)", () => {
       await expect(page.getByRole("heading", { name: new RegExp(variantTitle, "i") })).toBeVisible();
 
       const variant = await waitForVariant(membership.organizationId, embed.id, variantTitle);
-      await prisma.variant.update({
+      await requirePrisma().variant.update({
         where: { id: variant.id },
         data: {
           muxPlaybackId: TEST_PLAYBACK_ID,
@@ -77,7 +79,7 @@ test.describe("Full SaaS flow (signup/checkout/upload/embed)", () => {
         },
       });
 
-      await prisma.auditLog.create({
+      await requirePrisma().auditLog.create({
         data: {
           organizationId: membership.organizationId,
           userId: membership.userId,
@@ -98,13 +100,13 @@ test.describe("Full SaaS flow (signup/checkout/upload/embed)", () => {
       await expect(page.locator("mux-player")).toBeVisible();
     } finally {
       if (organizationId) {
-        await prisma.organization.delete({
+        await requirePrisma().organization.delete({
           where: { id: organizationId },
         });
       }
 
       if (userId) {
-        await prisma.user.delete({
+        await requirePrisma().user.delete({
           where: { id: userId },
         });
       }
@@ -113,8 +115,9 @@ test.describe("Full SaaS flow (signup/checkout/upload/embed)", () => {
 });
 
 async function waitForUserByEmail(email: string) {
+  const db = requirePrisma();
   for (let attempt = 0; attempt < 20; attempt += 1) {
-    const user = await prisma.user.findUnique({
+    const user = await db.user.findUnique({
       where: { email },
       select: { id: true, email: true },
     });
@@ -126,8 +129,9 @@ async function waitForUserByEmail(email: string) {
 }
 
 async function waitForMembership(userId: string) {
+  const db = requirePrisma();
   for (let attempt = 0; attempt < 20; attempt += 1) {
-    const membership = await prisma.organizationUser.findUnique({
+    const membership = await db.organizationUser.findUnique({
       where: { userId },
       select: { organizationId: true, userId: true },
     });
@@ -139,8 +143,9 @@ async function waitForMembership(userId: string) {
 }
 
 async function waitForEmbed(organizationId: string, name: string) {
+  const db = requirePrisma();
   for (let attempt = 0; attempt < 20; attempt += 1) {
-    const embed = await prisma.embed.findFirst({
+    const embed = await db.embed.findFirst({
       where: {
         organizationId,
         name,
@@ -156,8 +161,9 @@ async function waitForEmbed(organizationId: string, name: string) {
 }
 
 async function waitForVariant(organizationId: string, embedId: string, title: string) {
+  const db = requirePrisma();
   for (let attempt = 0; attempt < 20; attempt += 1) {
-    const variant = await prisma.variant.findFirst({
+    const variant = await db.variant.findFirst({
       where: {
         organizationId,
         title,
@@ -177,4 +183,12 @@ async function waitForVariant(organizationId: string, embedId: string, title: st
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function requirePrisma() {
+  if (!prisma) {
+    throw new Error("DATABASE_URL mangler for full acquisition E2E.");
+  }
+
+  return prisma;
 }

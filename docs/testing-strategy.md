@@ -35,6 +35,7 @@
   - Landing -> Pricing navigation
   - Register-side rendering
   - Login-side rendering (credentials + Google OAuth-knap)
+- DB-baserede smoke-specs koeres kun naar `DATABASE_URL` er sat:
   - Branding smoke for starter vs enterprise orger (plan-gate + theme application i admin)
   - Player-skin smoke for enterprise themes via player CSS variables
   - Customer branding page exposes only the approved self-service subset

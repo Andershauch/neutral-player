@@ -3,7 +3,8 @@ import { expect, test, type Page } from "@playwright/test";
 import { PrismaClient } from "@prisma/client";
 import { hash } from "bcryptjs";
 
-const prisma = new PrismaClient();
+const hasDatabaseUrl = Boolean(process.env.DATABASE_URL);
+const prisma = hasDatabaseUrl ? new PrismaClient() : null;
 const TEST_PASSWORD = "Password123!";
 const ENTERPRISE_PRIMARY = "#ff6b00";
 type TestPlan = "starter_monthly" | "enterprise_monthly";
@@ -46,6 +47,7 @@ const ENTERPRISE_THEME_TOKENS = {
 
 test.describe("Branding E2E flows", () => {
   test("starter org is blocked from enterprise branding controls", async ({ page }) => {
+    test.skip(!hasDatabaseUrl, "Branding E2E krÃ¦ver DATABASE_URL.");
     const account = await createUserWithPlan("starter_monthly");
 
     try {
@@ -61,6 +63,7 @@ test.describe("Branding E2E flows", () => {
   });
 
   test("enterprise org theme is applied in admin and branding controls are enabled", async ({ page }) => {
+    test.skip(!hasDatabaseUrl, "Branding E2E krÃ¦ver DATABASE_URL.");
     const account = await createUserWithPlan("enterprise_monthly", {
       themePrimary: ENTERPRISE_PRIMARY,
       createEmbed: true,
@@ -135,11 +138,12 @@ async function createUserWithPlan(
     createEmbed?: boolean;
   }
 ) {
+  const db = requirePrisma();
   const suffix = randomUUID().slice(0, 8);
   const email = `e2e-branding-${suffix}@example.com`;
   const passwordHash = await hash(TEST_PASSWORD, 12);
 
-  const user = await prisma.user.create({
+  const user = await db.user.create({
     data: {
       email,
       password: passwordHash,
@@ -148,7 +152,7 @@ async function createUserWithPlan(
     select: { id: true, email: true },
   });
 
-  const organization = await prisma.organization.create({
+  const organization = await db.organization.create({
     data: {
       name: `E2E Branding ${suffix}`,
       users: {
@@ -188,7 +192,7 @@ async function createUserWithPlan(
   });
 
   const embed = options?.createEmbed
-    ? await prisma.embed.create({
+    ? await db.embed.create({
         data: {
           name: `E2E Embed ${suffix}`,
           allowedDomains: "*",
@@ -223,17 +227,26 @@ async function createUserWithPlan(
 }
 
 async function cleanupUser(userId: string, organizationId: string, embedId: string | null) {
+  const db = requirePrisma();
   if (embedId) {
-    await prisma.embed.delete({
+    await db.embed.delete({
       where: { id: embedId },
     });
   }
 
-  await prisma.organization.delete({
+  await db.organization.delete({
     where: { id: organizationId },
   });
 
-  await prisma.user.delete({
+  await db.user.delete({
     where: { id: userId },
   });
+}
+
+function requirePrisma() {
+  if (!prisma) {
+    throw new Error("DATABASE_URL mangler for branding E2E.");
+  }
+
+  return prisma;
 }
