@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { canManageMarketingContent, getInternalAdminContext } from "@/lib/internal-auth";
@@ -15,6 +16,7 @@ import {
   isSupportedMarketingPageKey,
   type MarketingPageKey,
 } from "@/lib/marketing-pages";
+import { getMarketingRevalidationPaths } from "@/lib/marketing-routes";
 import { getRequestIdFromRequest, logApiError, logApiInfo, logApiWarn } from "@/lib/observability";
 import { prisma } from "@/lib/prisma";
 
@@ -368,6 +370,11 @@ export async function POST(req: Request) {
       version: updatedVersion.version,
       actorRole: internalCtx.role,
     });
+
+    for (const path of getMarketingRevalidationPaths(pageKey)) {
+      revalidatePath(path);
+    }
+
     return NextResponse.json({ ok: true, version: updatedVersion, actorRole: internalCtx.role, requestId });
   } catch (error) {
     logApiError(req, "Internal marketing version transition failed", error, { area: "internal-marketing-content", requestId });

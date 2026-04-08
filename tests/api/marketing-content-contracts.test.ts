@@ -20,6 +20,8 @@ describe("Marketing content internal contracts", () => {
 
     expect(source).toContain("validateMarketingPageContent");
     expect(source).toContain("auditLog.create");
+    expect(source).toContain("revalidatePath");
+    expect(source).toContain("getMarketingRevalidationPaths");
     expect(source).toContain("INTERNAL_MARKETING_PAGE_PUBLISHED");
     expect(source).toContain("INTERNAL_MARKETING_PAGE_ROLLED_BACK");
     expect(source).toContain("INTERNAL_MARKETING_DRAFT_SAVED");
