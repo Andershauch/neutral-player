@@ -3,6 +3,7 @@ import Link from "next/link";
 import dynamicImport from "next/dynamic";
 import { prisma } from "@/lib/prisma";
 import CreateProjectButton from "@/components/admin/CreateProjectButton";
+import AppPageHeader from "@/components/navigation/AppPageHeader";
 import { getOrgContextForContentEdit } from "@/lib/authz";
 import { getMessages } from "@/lib/i18n/messages";
 import { getOnboardingStatus } from "@/lib/onboarding";
@@ -84,28 +85,27 @@ export default async function DashboardPage({
 
   return (
     <div className="space-y-6 md:space-y-7">
-      <section className="np-card np-card-pad rounded-2xl border-gray-200/90 shadow-[0_8px_24px_rgba(15,23,42,0.08)] bg-gradient-to-br from-white via-white to-blue-50/40">
-        <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
-          <div className="space-y-2">
-            <p className="np-kicker text-blue-600">Dashboard</p>
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 uppercase tracking-tight">{t.dashboard.title}</h1>
-            <p className="text-sm text-gray-500 font-light max-w-2xl">{t.dashboard.subtitle}</p>
-          </div>
-
-          <div className="w-full sm:w-auto flex flex-col sm:flex-row gap-2">
-            {shouldShowOnboardingOnDashboard && (
+      <AppPageHeader
+        kicker="Dashboard"
+        title={t.dashboard.title}
+        description={t.dashboard.subtitle}
+        actions={
+          <>
+            {shouldShowOnboardingOnDashboard ? (
               <Link
                 href={showOnboarding ? "/admin/dashboard" : "/admin/dashboard?onboarding=1"}
                 className="np-btn-ghost inline-flex items-center justify-center px-4 py-3"
               >
                 {showOnboarding ? "Skjul onboarding" : "Vis onboarding"}
               </Link>
-            )}
+            ) : null}
             <CreateProjectButton />
-          </div>
-        </div>
+          </>
+        }
+      />
 
-        <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+      <section className="np-card np-card-pad rounded-2xl border-gray-200/90 shadow-[0_8px_24px_rgba(15,23,42,0.08)] bg-gradient-to-br from-white via-white to-blue-50/40">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
           <StatCard label="Projekter" value={totalProjects.toString()} />
           <StatCard label="Varianter" value={totalVariants.toString()} />
           <StatCard label="Visninger" value={totalViews.toLocaleString("da-DK")} />

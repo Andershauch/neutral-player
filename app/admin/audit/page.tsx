@@ -1,6 +1,8 @@
-import { prisma } from "@/lib/prisma";
+import Link from "next/link";
 import { redirect } from "next/navigation";
+import AppPageHeader from "@/components/navigation/AppPageHeader";
 import { getCurrentOrgContext } from "@/lib/org-context";
+import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +16,6 @@ export default async function AuditPage() {
     where: {
       OR: [
         { organizationId: orgCtx.orgId },
-        // Legacy logs from before tenant-scoping migration.
         { organizationId: null, userId: orgCtx.userId },
       ],
     },
@@ -32,13 +33,16 @@ export default async function AuditPage() {
 
   return (
     <div className="space-y-6 md:space-y-7">
-      <section className="np-card np-card-pad bg-gradient-to-br from-white via-white to-blue-50/30">
-        <p className="np-kicker text-blue-600">Sikkerhed og historik</p>
-        <h1 className="text-3xl font-bold text-gray-900 uppercase tracking-tight">Audit</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Seneste administrative hændelser for dit workspace.
-        </p>
-      </section>
+      <AppPageHeader
+        kicker="Sikkerhed og historik"
+        title="Audit"
+        description="Seneste administrative hændelser for dit workspace."
+        actions={
+          <Link href="/admin/profile" className="np-btn-ghost inline-flex px-4 py-3">
+            Til kontoindstillinger
+          </Link>
+        }
+      />
 
       <section className="np-card overflow-hidden">
         <div className="px-5 py-4 md:px-6 md:py-5 border-b border-gray-100 bg-white">
@@ -101,9 +105,7 @@ export default async function AuditPage() {
                       </span>
                     </td>
 
-                    <td className="px-4 md:px-6 py-4 text-sm text-gray-500 min-w-[240px]">
-                      {log.target}
-                    </td>
+                    <td className="px-4 md:px-6 py-4 text-sm text-gray-500 min-w-[240px]">{log.target}</td>
                   </tr>
                 ))
               )}

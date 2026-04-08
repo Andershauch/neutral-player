@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import AppPageHeader from "@/components/navigation/AppPageHeader";
 import MarketingPagePreview from "@/components/internal/MarketingPagePreview";
 import {
   getInternalMarketingPreviewContent,
@@ -31,25 +32,26 @@ export default async function InternalMarketingPreviewPage({
 
   return (
     <div className="space-y-6">
-      <section className="np-card np-card-pad bg-gradient-to-br from-white via-white to-blue-50/30">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="space-y-3">
-            <p className="np-kicker text-blue-600">Internal draft preview</p>
-            <h1 className="text-3xl font-bold text-gray-900 uppercase tracking-tight">
-              {MARKETING_PAGE_TITLES[pageKey]}
-            </h1>
-            <p className="text-sm text-gray-500">{MARKETING_PAGE_DESCRIPTIONS[pageKey]}</p>
-          </div>
-          <div className="flex flex-wrap gap-3">
+      <AppPageHeader
+        kicker="Internal preview"
+        title={`${MARKETING_PAGE_TITLES[pageKey]} preview`}
+        description={MARKETING_PAGE_DESCRIPTIONS[pageKey]}
+        breadcrumbs={[
+          { label: "Internal", href: "/internal" },
+          { label: "Marketing", href: "/internal/marketing" },
+          { label: "Preview" },
+        ]}
+        actions={
+          <>
             <Link href="/internal/marketing" className="np-btn-ghost inline-flex px-4 py-3">
               Tilbage til editor
             </Link>
             <Link href={getMarketingPublicPath(pageKey)} className="np-btn-ghost inline-flex px-4 py-3" target="_blank">
               Åbn live side
             </Link>
-          </div>
-        </div>
-      </section>
+          </>
+        }
+      />
 
       <section className="np-card p-5 md:p-6 space-y-4">
         <div className="flex flex-wrap gap-3">
@@ -61,16 +63,23 @@ export default async function InternalMarketingPreviewPage({
         </div>
 
         <p className="text-sm text-gray-600">
-          Denne side er kun til intern preview. Live public-siden fortsætter med at vise published content, indtil du
-          publicerer draften fra editoren.
+          Denne side er kun til intern preview. Live public-siden fortsætter med at vise published content, indtil du publicerer draften fra editoren.
         </p>
 
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900">
-          {getPreviewNotice(preview)}
+        <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900">
+            {getPreviewNotice(preview)}
+          </div>
+          <div className="rounded-2xl border border-gray-100 bg-gray-50/80 px-4 py-4">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Arbejdsgang</p>
+            <p className="mt-3 text-sm text-gray-600">
+              Preview her først. Hvis alt ser rigtigt ud, går du tilbage til editoren og publicerer. Live public-siden ændrer sig først efter publish.
+            </p>
+          </div>
         </div>
       </section>
 
-      <section className="np-card p-5 md:p-6 space-y-4">
+      <section className="np-card space-y-4 p-5 md:p-6">
         <MarketingPagePreview pageKey={pageKey} content={preview.content} />
       </section>
     </div>

@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getInternalAdminContext } from "@/lib/internal-auth";
+import InternalNav from "@/components/internal/InternalNav";
 
 export default async function InternalLayout({
   children,
@@ -13,7 +14,10 @@ export default async function InternalLayout({
 
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-6 md:px-8 md:py-8">
-      <div className="mx-auto w-full max-w-7xl">{children}</div>
+      <div className="mx-auto w-full max-w-7xl space-y-6">
+        <InternalNav />
+        {children}
+      </div>
     </div>
   );
 }

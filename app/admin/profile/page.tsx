@@ -7,6 +7,7 @@ import BillingPlansCard from "@/components/admin/BillingPlansCard";
 import UsageLimitsCard from "@/components/admin/UsageLimitsCard";
 import OnboardingChecklistCard from "@/components/admin/OnboardingChecklistCard";
 import ProfileAvatarCard from "@/components/admin/ProfileAvatarCard";
+import AppPageHeader from "@/components/navigation/AppPageHeader";
 import { canManageBillingRole, canManageBrandingRole } from "@/lib/authz";
 import { getCurrentOrgContext } from "@/lib/org-context";
 import { getBillingPlansForDisplay } from "@/lib/plans";
@@ -51,12 +52,26 @@ export default async function ProfilePage() {
 
   return (
     <div className="space-y-6 md:space-y-7">
-      <section className="np-card np-card-pad bg-gradient-to-br from-white via-white to-blue-50/30">
-        <p className="np-kicker text-blue-600">Brugerprofil</p>
-        <h1 className="text-3xl font-bold text-gray-900 uppercase tracking-tight">Min konto</h1>
-        <p className="text-sm text-gray-500 mt-1">Her finder du kontooplysninger, plan og abonnement.</p>
+      <AppPageHeader
+        kicker="Indstillinger"
+        title="Min konto"
+        description="Her finder du kontooplysninger, plan, abonnement og de vigtigste kontoindstillinger."
+        actions={
+          <>
+            <Link href="/admin/profile/branding" className="np-btn-ghost inline-flex px-4 py-3">
+              Åbn branding
+            </Link>
+            {isAuditAdmin ? (
+              <Link href="/admin/audit" className="np-btn-ghost inline-flex px-4 py-3">
+                Åbn audit
+              </Link>
+            ) : null}
+          </>
+        }
+      />
 
-        <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-3">
+      <section className="np-card np-card-pad bg-gradient-to-br from-white via-white to-blue-50/30">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <ProfileStat label="Navn" value={session.user.name || "Ikke angivet"} />
           <ProfileStat label="Email" value={session.user.email} />
           <ProfileStat label="Rolle" value={orgCtx.role} />
@@ -144,7 +159,7 @@ function ProfileStat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function toPlanLabel(plan: string): string {
+function toPlanLabel(plan: string) {
   if (plan === "starter_monthly") return "Starter";
   if (plan === "pro_monthly") return "Pro";
   if (plan === "enterprise_monthly") return "Enterprise";
@@ -152,7 +167,7 @@ function toPlanLabel(plan: string): string {
   return "Free";
 }
 
-function toStatusLabel(status: string): string {
+function toStatusLabel(status: string) {
   if (status === "active") return "Aktiv";
   if (status === "trialing") return "Trial";
   if (status === "past_due") return "Forfalden";

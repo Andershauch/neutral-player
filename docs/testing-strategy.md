@@ -33,6 +33,7 @@
 - Placering: `tests/e2e/*.spec.ts`
 - Daekker baseline public flows:
   - Landing -> Pricing navigation
+  - Shared public shell paa login og register
   - Register-side rendering
   - Login-side rendering (credentials + Google OAuth-knap)
 - DB-baserede smoke-specs koeres kun naar `DATABASE_URL` er sat:

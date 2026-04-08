@@ -1,7 +1,6 @@
 import Link from "next/link";
 import ContactForm from "@/components/public/ContactForm";
-import HomeHeaderActions from "@/components/public/HomeHeaderActions";
-import { Providers } from "@/components/Providers";
+import PublicSiteHeader from "@/components/public/PublicSiteHeader";
 import { getResolvedMarketingPageContent } from "@/lib/marketing-content-runtime";
 import { type ContactMarketingContent, type MarketingLinkField } from "@/lib/marketing-content-schema";
 
@@ -12,14 +11,7 @@ export default async function ContactPage() {
   return (
     <main className="np-default-theme np-page-shell">
       <div className="np-page-wrap np-page-stack">
-        <header className="np-public-header">
-          <Link href="/" className="np-brand">
-            Neutral<span className="np-brand-dot">.</span>
-          </Link>
-          <Providers>
-            <HomeHeaderActions />
-          </Providers>
-        </header>
+        <PublicSiteHeader activePath="/contact" />
 
         <section className="np-section-card space-y-8">
           <div className="np-marketing-grid">

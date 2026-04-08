@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
+import PublicSiteHeader from "@/components/public/PublicSiteHeader";
+import WorkspaceSetupCard from "@/components/public/WorkspaceSetupCard";
 import { getCurrentOrgContext } from "@/lib/org-context";
 import { prisma } from "@/lib/prisma";
-import WorkspaceSetupCard from "@/components/public/WorkspaceSetupCard";
 
 export const dynamic = "force-dynamic";
 
@@ -23,13 +24,16 @@ export default async function WorkspaceSetupPage() {
   ]);
 
   return (
-    <main className="np-default-theme np-form-shell">
-      <div className="w-full flex justify-center">
-        <WorkspaceSetupCard
-          initialName={organization?.name || ""}
-          email={user?.email || ""}
-          emailVerified={Boolean(user?.emailVerified)}
-        />
+    <main className="np-default-theme np-page-shell">
+      <div className="np-page-wrap np-page-stack">
+        <PublicSiteHeader />
+        <div className="w-full flex justify-center">
+          <WorkspaceSetupCard
+            initialName={organization?.name || ""}
+            email={user?.email || ""}
+            emailVerified={Boolean(user?.emailVerified)}
+          />
+        </div>
       </div>
     </main>
   );

@@ -30,13 +30,7 @@ export default function OnboardingChecklistCard({
   const [isHidden, setIsHidden] = useState(false);
 
   useEffect(() => {
-    if (!isCompleted) {
-      setIsCollapsed(false);
-      setIsHidden(false);
-      return;
-    }
-
-    if (forceExpanded) {
+    if (!isCompleted || forceExpanded) {
       setIsCollapsed(false);
       setIsHidden(false);
       return;
@@ -103,20 +97,20 @@ export default function OnboardingChecklistCard({
 
   if (isCompleted && isCollapsed) {
     return (
-      <div className="bg-white border border-gray-100 rounded-[2rem] p-5 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="flex flex-col gap-3 rounded-[2rem] border border-gray-100 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
         <p className="text-xs font-black uppercase tracking-widest text-emerald-700">Onboarding er gennemført</p>
         <div className="flex gap-2">
           <button
             type="button"
             onClick={showInDashboard}
-            className="px-4 py-2 rounded-xl bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all"
+            className="rounded-xl bg-blue-600 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white transition-all hover:bg-blue-700"
           >
             Vis onboarding
           </button>
           <button
             type="button"
             onClick={hideFromDashboard}
-            className="px-4 py-2 rounded-xl border border-gray-200 text-gray-600 text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 transition-all"
+            className="rounded-xl border border-gray-200 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-gray-600 transition-all hover:bg-gray-50"
           >
             Skjul
           </button>
@@ -126,28 +120,28 @@ export default function OnboardingChecklistCard({
   }
 
   return (
-    <div className="bg-white border border-gray-100 rounded-[2rem] p-5 md:p-8 shadow-sm space-y-6">
+    <div className="space-y-6 rounded-[2rem] border border-gray-100 bg-white p-5 shadow-sm md:p-8">
       <div className="space-y-2">
         <div className="flex items-center justify-between gap-4">
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600">Kom i gang</p>
-          {isCompleted && (
+          {isCompleted ? (
             <div className="flex gap-2">
               <button
                 type="button"
                 onClick={hideFromDashboard}
-                className="px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 transition-all"
+                className="rounded-lg border border-gray-200 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-gray-600 transition-all hover:bg-gray-50"
               >
                 Skjul
               </button>
             </div>
-          )}
+          ) : null}
         </div>
-        <h2 className="text-xl font-bold text-gray-900 uppercase tracking-tight">Onboarding-guide</h2>
+        <h2 className="text-xl font-bold uppercase tracking-tight text-gray-900">Onboarding-guide</h2>
         <p className="text-sm text-gray-500">Følg disse trin for at få dit første projekt helt i mål.</p>
       </div>
 
       <div className="space-y-2">
-        <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+        <div className="h-2 overflow-hidden rounded-full bg-gray-100">
           <div className="h-full bg-blue-600 transition-all" style={{ width: `${progressPercent}%` }} />
         </div>
         <p className="text-xs font-semibold text-gray-500">{completedSteps}/4 trin gennemført</p>
@@ -158,16 +152,16 @@ export default function OnboardingChecklistCard({
         <Step
           done={hasUploadedVariant}
           label="2. Upload din første video"
-          hint="Åbn projektet og upload en sprogversion."
+          hint="Åbn projektet og upload din første sprogversion."
           action={
             firstProjectId ? (
-              <Link href={`/admin/embed/${firstProjectId}`} className="text-blue-600 hover:text-blue-700 text-xs font-black uppercase tracking-widest">
+              <Link href={`/admin/embed/${firstProjectId}`} className="text-xs font-black uppercase tracking-widest text-blue-600 hover:text-blue-700">
                 Åbn projekt
               </Link>
             ) : null
           }
         />
-        <Step done={hasCopiedEmbed} label="3. Kopiér din embed-kode" hint="Brug knappen 'Hent embed-kode' på et projekt." />
+        <Step done={hasCopiedEmbed} label="3. Kopiér embed-koden" hint="Brug knappen 'Kopiér embed-kode' på projektet, når en video er klar." />
         <Step
           done={isCompleted}
           label="4. Marker onboarding som færdig"
@@ -178,7 +172,7 @@ export default function OnboardingChecklistCard({
                 type="button"
                 onClick={markCompleted}
                 disabled={!readyToComplete || saving}
-                className="px-4 py-2 rounded-xl bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 disabled:opacity-50 transition-all"
+                className="rounded-xl bg-blue-600 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-white transition-all hover:bg-blue-700 disabled:opacity-50"
               >
                 {saving ? "Gemmer..." : "Marker som færdig"}
               </button>
@@ -187,13 +181,13 @@ export default function OnboardingChecklistCard({
         />
       </div>
 
-      {isCompleted && (
+      {isCompleted ? (
         <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-3">
           <p className="text-xs font-black uppercase tracking-widest text-emerald-700">Onboarding er gennemført</p>
         </div>
-      )}
+      ) : null}
 
-      {error && <p className="text-xs font-semibold text-red-600">{error}</p>}
+      {error ? <p className="text-xs font-semibold text-red-600">{error}</p> : null}
     </div>
   );
 }
@@ -212,7 +206,7 @@ function Step({
   return (
     <div className="flex items-start gap-3 rounded-xl border border-gray-100 p-3">
       <div
-        className={`mt-0.5 h-5 w-5 rounded-full flex items-center justify-center text-[10px] font-black ${
+        className={`mt-0.5 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-black ${
           done ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-500"
         }`}
       >
@@ -226,4 +220,3 @@ function Step({
     </div>
   );
 }
-

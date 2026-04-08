@@ -60,7 +60,7 @@ test.describe("Full SaaS flow (signup/checkout/upload/embed)", () => {
 
       await page.getByRole("button", { name: /nyt projekt/i }).click();
       await page.getByPlaceholder(/sommerkampagne/i).fill(projectName);
-      await page.getByRole("button", { name: /opret og forts.*t/i }).click();
+      await page.getByRole("button", { name: /opret projekt og g.* til editor/i }).click();
       await page.waitForURL(/\/admin\/embed\//, { timeout: 20_000 });
 
       const embed = await waitForEmbed(membership.organizationId, projectName);
@@ -85,7 +85,7 @@ test.describe("Full SaaS flow (signup/checkout/upload/embed)", () => {
           userId: membership.userId,
           userName: email,
           action: "ONBOARDING_VARIANT_UPLOADED",
-          target: "Onboarding: Uploadede foerste video",
+          target: "Onboarding: Uploadede første video",
         },
       });
 
@@ -97,7 +97,7 @@ test.describe("Full SaaS flow (signup/checkout/upload/embed)", () => {
       await expect(textareas.nth(1)).toHaveValue(new RegExp(`/embed/${embed.id}`));
 
       await page.goto(`/embed/${embed.id}`);
-      await expect(page.locator("mux-player")).toBeVisible();
+      await expect(page.locator("main.np-themed")).toBeVisible();
     } finally {
       if (organizationId) {
         await requirePrisma().organization.delete({

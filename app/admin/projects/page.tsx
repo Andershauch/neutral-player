@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import dynamicImport from "next/dynamic";
 import { prisma } from "@/lib/prisma";
 import CreateProjectButton from "@/components/admin/CreateProjectButton";
+import AppPageHeader from "@/components/navigation/AppPageHeader";
 import { getOrgContextForContentEdit } from "@/lib/authz";
 
 const ProjectListClient = dynamicImport(() => import("@/components/admin/ProjectListClient"), {
@@ -44,18 +45,12 @@ export default async function ProjectsPage() {
 
   return (
     <div className="space-y-6 md:space-y-7">
-      <section className="np-card np-card-pad bg-gradient-to-br from-white via-white to-blue-50/40">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
-          <div>
-            <p className="np-kicker text-blue-600">Projektoversigt</p>
-            <h1 className="text-3xl font-bold text-gray-900 uppercase tracking-tight">Projekter</h1>
-            <p className="text-sm text-gray-500 mt-1 font-normal">Opret, redigér og administrer alle projekter.</p>
-          </div>
-          <div className="w-full sm:w-auto">
-            <CreateProjectButton />
-          </div>
-        </div>
-      </section>
+      <AppPageHeader
+        kicker="Projektoversigt"
+        title="Projekter"
+        description="Opret, redigér og administrer alle projekter fra samme arbejdsområde."
+        actions={<CreateProjectButton />}
+      />
 
       {projects.length > 0 ? (
         <ProjectListClient initialProjects={projects} />

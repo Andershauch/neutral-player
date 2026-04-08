@@ -2,11 +2,23 @@ import { expect, test } from "@playwright/test";
 
 test("landing -> pricing flow works", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1, name: /Neutral/i })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Neutral/i })).toBeVisible();
   await page.getByRole("link", { name: /Se planer/i }).first().click();
   await expect(page).toHaveURL(/\/pricing/);
   await expect(page.getByRole("heading", { level: 1, name: /løsning der passer/i })).toBeVisible();
   await expect(page.getByRole("link", { name: /Kontakt salg/i }).first()).toBeVisible();
+});
+
+test("guided auth pages stay inside the public shell", async ({ page }) => {
+  await page.goto("/register");
+  await expect(page.getByRole("link", { name: /Neutral/i })).toBeVisible();
+  await expect(page.getByRole("banner").getByRole("link", { name: /Se priser|Se planer/i }).first()).toBeVisible();
+  await expect(page.getByLabel(/Navn/i)).toBeVisible();
+
+  await page.goto("/login");
+  await expect(page.getByRole("link", { name: /Neutral/i })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Kontakt/i })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Log ind/i })).toBeVisible();
 });
 
 test("register page renders signup fields", async ({ page }) => {

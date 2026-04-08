@@ -46,17 +46,24 @@ export default function EmbedVariantCard({ variant, languages }: EmbedVariantCar
     () => !shouldGateMedia || (typeof window !== "undefined" && typeof IntersectionObserver === "undefined")
   );
 
+  const hasVideo = Boolean(variant.muxPlaybackId);
+  const hasPoster = Boolean(variant.posterFrameUrl);
+  const statusTone = hasVideo ? "border-emerald-100 bg-emerald-50 text-emerald-700" : "border-amber-200 bg-amber-50 text-amber-800";
+  const statusTitle = hasVideo ? "Klar til deling" : "Næste skridt: upload video";
+  const statusHint = hasVideo
+    ? hasPoster
+      ? "Video og posterframe er klar til brug i embed-afspilleren."
+      : "Videoen er klar. Tilføj gerne en posterframe for et skarpere preview."
+    : "Upload en video for at gøre denne version klar til preview og embed.";
+
   useEffect(() => {
     setTitleDraft(variant.title || "");
   }, [variant.title]);
 
   useEffect(() => {
-    if (!shouldGateMedia) return;
-    if (isMediaActive) return;
+    if (!shouldGateMedia || isMediaActive) return;
     const node = mediaRef.current;
-    if (!node) return;
-
-    if (typeof IntersectionObserver === "undefined") return;
+    if (!node || typeof IntersectionObserver === "undefined") return;
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -263,13 +270,13 @@ export default function EmbedVariantCard({ variant, languages }: EmbedVariantCar
   };
 
   return (
-    <article className="group relative np-card np-card-pad flex flex-col gap-5 md:gap-6 transition-shadow hover:shadow-md">
+    <article className="group relative flex flex-col gap-5 rounded-[2rem] border border-gray-200 bg-white p-5 shadow-[0_8px_24px_rgba(15,23,42,0.08)] transition-shadow hover:shadow-md md:gap-6 md:p-6">
       <button
         onClick={deleteVariant}
-        className="absolute top-4 right-4 md:top-5 md:right-5 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-red-100 bg-white text-red-400 transition-colors hover:bg-red-50 hover:text-red-600 opacity-100 md:opacity-0 md:group-hover:opacity-100"
+        className="absolute right-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-red-100 bg-white text-red-400 transition-colors hover:bg-red-50 hover:text-red-600 md:right-5 md:top-5 md:opacity-0 md:group-hover:opacity-100"
         aria-label="Slet version"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="h-4 w-4">
           <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
         </svg>
       </button>
@@ -278,18 +285,19 @@ export default function EmbedVariantCard({ variant, languages }: EmbedVariantCar
         <select
           value={variant.lang}
           onChange={(e) => updateVariantLang(e.target.value)}
-          className="w-fit text-[10px] font-black uppercase text-blue-700 bg-blue-50 px-3 py-2 rounded-xl border border-blue-100 outline-none focus:ring-2 focus:ring-blue-400 cursor-pointer appearance-none tracking-widest"
+          className="w-fit cursor-pointer appearance-none rounded-xl border border-blue-100 bg-blue-50 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-blue-700 outline-none focus:ring-2 focus:ring-blue-400"
         >
           {languages.map((lang) => (
             <option key={lang.code} value={lang.code}>
-              {lang.code.toUpperCase()} VERSION
+              {lang.code.toUpperCase()} version
             </option>
           ))}
         </select>
-        <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 bg-gray-50 border border-gray-100 px-3 py-2 rounded-xl">
-          {variant.views?.toLocaleString() || 0} visninger
+        <p className="rounded-xl border border-gray-100 bg-gray-50 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-500">
+          {variant.views?.toLocaleString("da-DK") || 0} visninger
         </p>
       </div>
+
       <div className="flex items-center gap-2">
         {isEditingTitle ? (
           <>
@@ -304,7 +312,7 @@ export default function EmbedVariantCard({ variant, languages }: EmbedVariantCar
               type="button"
               onClick={saveVariantTitle}
               disabled={savingTitle}
-              className="px-3 py-2 rounded-xl border border-blue-200 bg-blue-50 text-[10px] font-black uppercase tracking-widest text-blue-700 hover:bg-blue-100 disabled:opacity-50"
+              className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-blue-700 hover:bg-blue-100 disabled:opacity-50"
             >
               {savingTitle ? "Gemmer..." : "Gem"}
             </button>
@@ -316,14 +324,14 @@ export default function EmbedVariantCard({ variant, languages }: EmbedVariantCar
                 setTitleError(null);
               }}
               disabled={savingTitle}
-              className="px-3 py-2 rounded-xl border border-gray-200 bg-white text-[10px] font-black uppercase tracking-widest text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-700 hover:bg-gray-50 disabled:opacity-50"
             >
               Annuller
             </button>
           </>
         ) : (
           <>
-            <h4 className="font-black text-lg md:text-xl text-gray-900 tracking-tight uppercase">{variant.title || "Uden titel"}</h4>
+            <h4 className="text-lg font-black uppercase tracking-tight text-gray-900 md:text-xl">{variant.title || "Uden titel"}</h4>
             <button
               type="button"
               onClick={() => {
@@ -331,7 +339,7 @@ export default function EmbedVariantCard({ variant, languages }: EmbedVariantCar
                 setIsEditingTitle(true);
                 setTitleError(null);
               }}
-              className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-colors"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700"
               aria-label="Rediger variantnavn"
               title="Rediger variantnavn"
             >
@@ -344,10 +352,15 @@ export default function EmbedVariantCard({ variant, languages }: EmbedVariantCar
       </div>
       {titleError ? <p className="text-xs font-semibold text-red-600">{titleError}</p> : null}
 
-      <div
-        ref={mediaRef}
-        className="aspect-video bg-gray-100 rounded-2xl overflow-hidden shadow-inner border border-gray-100 flex items-center justify-center relative"
-      >
+      <div className={`rounded-2xl border px-4 py-3 ${statusTone}`}>
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em]">{statusTitle}</p>
+          <p className="text-[10px] font-black uppercase tracking-widest">{hasVideo ? "Preview og embed er aktivt" : "Upload mangler"}</p>
+        </div>
+        <p className="mt-2 text-sm font-semibold">{statusHint}</p>
+      </div>
+
+      <div ref={mediaRef} className="relative flex aspect-video items-center justify-center overflow-hidden rounded-2xl border border-gray-100 bg-gray-100 shadow-inner">
         {shouldGateMedia && !isMediaActive ? (
           <>
             {variant.posterFrameUrl ? (
@@ -356,7 +369,7 @@ export default function EmbedVariantCard({ variant, languages }: EmbedVariantCar
             <button
               type="button"
               onClick={() => setIsMediaActive(true)}
-              className="relative z-10 px-4 py-2 rounded-xl border border-gray-200 bg-white text-[10px] font-black uppercase tracking-widest text-gray-700 hover:bg-gray-50 transition"
+              className="relative z-10 rounded-xl border border-gray-200 bg-white px-4 py-2 text-[10px] font-black uppercase tracking-widest text-gray-700 transition hover:bg-gray-50"
             >
               {variant.muxPlaybackId ? "Aktiver afspiller" : "Aktiver uploader"}
             </button>
@@ -365,40 +378,61 @@ export default function EmbedVariantCard({ variant, languages }: EmbedVariantCar
           <MuxPlayer
             playbackId={variant.muxPlaybackId}
             poster={variant.posterFrameUrl || undefined}
-            className="np-mux-play-skin w-full h-full object-contain"
+            className="np-mux-play-skin h-full w-full object-contain"
             primaryColor="var(--primary)"
             secondaryColor="var(--foreground)"
             onPlay={trackView}
           />
         ) : (
-          <MuxVideoUploader onUploadSuccess={onUploadSuccess} />
+          <div className="flex h-full w-full flex-col items-center justify-center gap-4 bg-gradient-to-br from-gray-100 via-white to-blue-50 p-5 text-center">
+            <div className="max-w-sm space-y-2">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Upload første video</p>
+              <p className="text-sm text-gray-600">
+                Når uploaden er gennemført, bliver denne version klar til preview, posterframe og embed.
+              </p>
+            </div>
+            <div className="w-full max-w-sm">
+              <MuxVideoUploader onUploadSuccess={onUploadSuccess} />
+            </div>
+          </div>
         )}
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <input ref={posterInputRef} type="file" accept="image/*" onChange={onPosterFileChange} className="hidden" />
-        <button
-          type="button"
-          onClick={() => posterInputRef.current?.click()}
-          disabled={!variant.muxPlaybackId || savingPoster}
-          className="px-3 py-2 rounded-xl border border-gray-200 bg-white text-[10px] font-black uppercase tracking-widest text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-        >
-          {savingPoster ? "Gemmer..." : "Upload posterframe"}
-        </button>
-        <button
-          type="button"
-          onClick={() => savePosterFrame(null)}
-          disabled={!variant.posterFrameUrl || savingPoster}
-          className="px-3 py-2 rounded-xl border border-gray-200 bg-white text-[10px] font-black uppercase tracking-widest text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-        >
-          Fjern posterframe
-        </button>
+      <div className="space-y-3 rounded-2xl border border-gray-100 bg-gray-50/80 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-[10px] font-black uppercase tracking-widest text-gray-500">Posterframe</p>
+          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+            {hasPoster ? "Klar til preview" : "Valgfrit men anbefalet"}
+          </p>
+        </div>
+        <p className="text-sm text-gray-600">
+          Upload et billede i 16:9 for at styre, hvordan varianten ser ud før afspilning.
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <input ref={posterInputRef} type="file" accept="image/*" onChange={onPosterFileChange} className="hidden" />
+          <button
+            type="button"
+            onClick={() => posterInputRef.current?.click()}
+            disabled={!variant.muxPlaybackId || savingPoster}
+            className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+          >
+            {savingPoster ? "Gemmer..." : "Upload posterframe"}
+          </button>
+          <button
+            type="button"
+            onClick={() => savePosterFrame(null)}
+            disabled={!variant.posterFrameUrl || savingPoster}
+            className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+          >
+            Fjern posterframe
+          </button>
+        </div>
+        {posterError ? <p className="text-xs font-semibold text-red-600">{posterError}</p> : null}
       </div>
-      {posterError ? <p className="text-xs font-semibold text-red-600">{posterError}</p> : null}
 
       <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-gray-100 bg-gray-50/70 px-3 py-2.5">
-        <div className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">{variant.lang.toUpperCase()} VERSION</div>
-        <div className="text-[10px] font-bold uppercase tracking-widest text-gray-600">{variant.muxPlaybackId ? "Video klar" : "Mangler upload"}</div>
+        <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500">{variant.lang.toUpperCase()} version</div>
+        <div className="text-[10px] font-bold uppercase tracking-widest text-gray-600">{hasVideo ? "Video klar" : "Mangler upload"}</div>
       </div>
     </article>
   );

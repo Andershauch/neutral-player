@@ -1,10 +1,11 @@
-import { prisma } from "@/lib/prisma";
 import Image from "next/image";
-import DeleteUserButton from "@/app/admin/users/DeleteUserButton";
-import RoleSelector from "@/app/admin/users/RoleSelector";
-import { getOrgContextForMemberManagement } from "@/lib/authz";
 import AddMemberForm from "@/app/admin/users/AddMemberForm";
+import DeleteUserButton from "@/app/admin/users/DeleteUserButton";
 import InviteActions from "@/app/admin/users/InviteActions";
+import RoleSelector from "@/app/admin/users/RoleSelector";
+import AppPageHeader from "@/components/navigation/AppPageHeader";
+import { getOrgContextForMemberManagement } from "@/lib/authz";
+import { prisma } from "@/lib/prisma";
 
 export default async function TeamManagementPage() {
   const orgCtx = await getOrgContextForMemberManagement();
@@ -56,11 +57,11 @@ export default async function TeamManagementPage() {
 
   return (
     <div className="space-y-6 md:space-y-7">
-      <section className="np-card np-card-pad bg-gradient-to-br from-white via-white to-blue-50/30">
-        <p className="np-kicker text-blue-600">Team administration</p>
-        <h1 className="text-3xl font-bold text-gray-900 uppercase tracking-tight">Team</h1>
-        <p className="text-sm text-gray-500 mt-1">Administrer medlemmer, roller og invitationer.</p>
-      </section>
+      <AppPageHeader
+        kicker="Team administration"
+        title="Team"
+        description="Administrer medlemmer, roller og invitationer uden at miste overblikket over workspace-adgangen."
+      />
 
       <AddMemberForm canAssignOwner={canAssignOwner} />
 
@@ -102,7 +103,7 @@ export default async function TeamManagementPage() {
                         }).format(invite.expiresAt)}
                         {isExpired ? (
                           <span className="ml-2 px-2 py-1 rounded-full bg-red-50 text-red-600 text-[10px] font-black uppercase tracking-widest">
-                            Udlobet
+                            Udløbet
                           </span>
                         ) : null}
                       </td>

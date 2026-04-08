@@ -6,9 +6,16 @@ import { useRouter } from "next/navigation";
 interface EmbedCodeGeneratorProps {
   projectId: string;
   projectTitle: string;
+  disabled?: boolean;
+  disabledReason?: string | null;
 }
 
-export default function EmbedCodeGenerator({ projectId, projectTitle }: EmbedCodeGeneratorProps) {
+export default function EmbedCodeGenerator({
+  projectId,
+  projectTitle,
+  disabled = false,
+  disabledReason = null,
+}: EmbedCodeGeneratorProps) {
   const router = useRouter();
   const [copied, setCopied] = useState(false);
 
@@ -26,6 +33,10 @@ export default function EmbedCodeGenerator({ projectId, projectTitle }: EmbedCod
 </div>`.trim();
 
   const copyToClipboard = async () => {
+    if (disabled) {
+      return;
+    }
+
     try {
       await navigator.clipboard.writeText(embedCode);
       const onboardingRes = await fetch("/api/onboarding/step", {
@@ -46,39 +57,58 @@ export default function EmbedCodeGenerator({ projectId, projectTitle }: EmbedCod
   };
 
   return (
-    <div className="p-6 md:p-8 bg-gray-50/50 rounded-[2rem] border border-gray-100 shadow-inner">
-      <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-4 ml-1">
-        Embed-kode (16:9 responsiv)
-      </h3>
+    <div className="rounded-[2rem] border border-gray-100 bg-gray-50/50 p-6 shadow-inner md:p-8">
+      <div className="mb-4 space-y-2">
+        <h3 className="ml-1 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
+          Embed-kode (16:9 responsiv)
+        </h3>
+        <p className="text-sm text-gray-600">
+          Brug koden nedenfor på din hjemmeside eller i dit CMS. Når mindst én video er klar, kan du kopiere koden og indsætte den direkte.
+        </p>
+      </div>
 
-      <div className="relative group">
+      <div className="group relative">
         <textarea
           readOnly
           value={embedCode}
-          className="w-full h-40 md:h-32 p-4 text-[11px] md:text-xs font-mono bg-white border border-gray-100 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:outline-none shadow-sm text-gray-600 leading-relaxed resize-none"
+          className="h-40 w-full resize-none rounded-2xl border border-gray-100 bg-white p-4 font-mono text-[11px] leading-relaxed text-gray-600 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 md:h-32 md:text-xs"
         />
 
         <button
           onClick={copyToClipboard}
-          className={`absolute bottom-4 right-4 md:top-4 md:bottom-auto px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg active:scale-95 ${
-            copied ? "bg-green-500 text-white shadow-green-100" : "bg-blue-600 text-white hover:bg-blue-700 shadow-blue-100"
+          disabled={disabled}
+          className={`absolute bottom-4 right-4 rounded-xl px-6 py-3 text-[10px] font-black uppercase tracking-widest transition-all md:bottom-auto md:top-4 ${
+            disabled
+              ? "cursor-not-allowed bg-gray-200 text-gray-500 shadow-none"
+              : copied
+                ? "bg-green-500 text-white shadow-lg shadow-green-100"
+                : "bg-blue-600 text-white shadow-lg shadow-blue-100 hover:bg-blue-700 active:scale-95"
           }`}
         >
           {copied ? (
             <span className="flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
               Kopieret!
             </span>
           ) : (
-            "Kopiér kode"
+            "Kopiér embed-kode"
           )}
         </button>
       </div>
 
-      <div className="mt-4 flex items-center gap-2 px-2">
-        <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
-        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">
-          Tip: Koden tilpasser sig automatisk bredden på din hjemmeside.
+      <div className="mt-4 space-y-2 px-2">
+        <div className="flex items-center gap-2">
+          <div className={`h-1.5 w-1.5 rounded-full ${disabled ? "bg-amber-400" : "animate-pulse bg-blue-400"}`} />
+          <p className="text-[10px] font-bold uppercase tracking-tight text-gray-400">
+            {disabled
+              ? disabledReason || "Upload mindst én video før du deler projektet."
+              : "Tip: Koden tilpasser sig automatisk bredden på din hjemmeside."}
+          </p>
+        </div>
+        <p className="text-xs text-gray-500">
+          Embed-url: <span className="font-mono text-[11px]">{baseUrl}/embed/{projectId}</span>
         </p>
       </div>
     </div>

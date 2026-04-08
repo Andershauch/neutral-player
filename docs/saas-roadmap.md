@@ -641,6 +641,54 @@
 
 ---
 
+## SPRINT-10 Unified User Journey and Navigation
+**Goal:** Skabe en helt gennemfoert og logisk brugerrejse paa tvaers af public sider, auth/setup, koebsflow, customer admin og internal admin.
+**Status:** `DONE`
+**Scope:** Navigation, shells, page-intros, breadcrumbs, CTA-retning og "naeste skridt"-logik paa tvaers af hele appen.
+**Princip:** Faerre navigationstyper, tydeligere informationsarkitektur og samme oplevelse af orientering foer login, efter login og i interne flows.
+
+### TASK-10.1 Journey audit og target map
+**Status:** `DONE`
+- Audit og target-state er dokumenteret i `docs/user-journey-audit.md`.
+
+### TASK-10.2 Shared shell strategy
+**Status:** `DONE`
+- Shell-strategien er dokumenteret i `docs/navigation-shell-strategy.md`.
+- `/internal` har nu en egentlig internal shell via `app/internal/layout.tsx` og `components/internal/InternalNav.tsx`.
+- Customer admin-shellens hovedgruppering er strammet i `components/admin/Sidebar.tsx`.
+
+### TASK-10.3 Shared page header and breadcrumb contract
+**Status:** `DONE`
+- Faelles page-header kontrakt ligger i `components/navigation/AppPageHeader.tsx`.
+- Dashboard, Projects, Profile, Internal home, Internal marketing og embed-editoren bruger nu samme page-header familie.
+
+### TASK-10.4 Public and acquisition journey cleanup
+**Status:** `DONE`
+- Public siderne bruger nu faelles header via `components/public/PublicSiteHeader.tsx`.
+- Login, Register, Verify, Invite, Unauthorized og Workspace setup er koblet paa samme public shell.
+
+### TASK-10.5 Customer admin IA and shell refinement
+**Status:** `DONE`
+- Billing er nu en rigtig destinationsside i `app/admin/billing/page.tsx`.
+- Team, Audit, Branding og Profile bruger samme page-header familie som resten af admin.
+
+### TASK-10.6 Project and embed editor journey
+**Status:** `DONE`
+- `app/admin/embed/[embedId]/page.tsx` giver nu tydelig breadcrumb og bedre tilbageveje.
+- `components/admin/EmbedEditor.tsx` er bygget som en 4-trins arbejdsgang med projektinfo, versioner, upload/preview og deling.
+- `components/admin/EmbedVariantCard.tsx`, `components/admin/EmbedCodeGenerator.tsx` og `components/admin/CreateProjectModal.tsx` peger nu tydeligere paa naeste handling.
+
+### TASK-10.7 Internal shell and tool navigation
+**Status:** `DONE`
+- Internal-shellen har nu mere konsekvent tool-navigation paa tvaers af branding, marketing og preview via `components/internal/InternalNav.tsx`, `app/internal/page.tsx` og `app/internal/marketing/preview/[pageKey]/page.tsx`.
+
+### TASK-10.8 Journey verification and guardrails
+**Status:** `DONE`
+- Journey-reglerne er dokumenteret i `docs/journey-guardrails.md`.
+- Public smoke dækker nu også shared før-login shell i `tests/e2e/public-flows.spec.ts`.
+
+---
+
 ## Deployment Checklist (Vercel)
 1. Confirm `DATABASE_URL` is set in Vercel environment variables.
 2. Commit all Prisma migrations in `prisma/migrations/*`.

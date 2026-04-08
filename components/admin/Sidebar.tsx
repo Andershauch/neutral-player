@@ -70,11 +70,12 @@ export default function Sidebar() {
       label: "Organisation",
       items: [
         { name: "Team", href: "/admin/team", isActive: pathname === "/admin/team" || pathname === "/admin/users" },
-        { name: "Profil", href: "/admin/profile", isActive: pathname.startsWith("/admin/profile") || pathname === "/admin/billing" },
+        { name: "Profil", href: "/admin/profile", isActive: pathname === "/admin/profile" || pathname.startsWith("/admin/profile/") },
+        { name: "Billing", href: "/admin/billing", isActive: pathname === "/admin/billing" },
       ],
     },
   ];
-  const navItems = sections.flatMap((section) => section.items);
+
   const userRole = session?.user?.role || "";
   const canViewInternal = canAccessInternal || userRole === "np_super_admin" || userRole === "np_support_admin";
 
@@ -114,21 +115,27 @@ export default function Sidebar() {
           </h2>
         </div>
 
-        <nav className="flex-1 px-4 pt-24 md:pt-4 space-y-2">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={() => setIsOpen(false)}
-              className={`group flex items-center px-5 py-4 text-sm font-black uppercase tracking-[0.08em] rounded-2xl border transition-all duration-200 ${
-                item.isActive
-                  ? "bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-200"
-                  : "text-gray-500 border-transparent hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 hover:shadow-md hover:shadow-blue-100 hover:-translate-y-0.5"
-              }`}
-            >
-              <span className={`${item.isActive ? "" : "group-hover:translate-x-0.5"} transition-transform duration-200`}>{item.name}</span>
-            </Link>
+        <nav className="flex-1 px-4 pt-24 md:pt-4 space-y-5">
+          {sections.map((section) => (
+            <div key={section.label} className="space-y-2">
+              <p className="px-5 text-[10px] font-black uppercase tracking-[0.24em] text-gray-400">{section.label}</p>
+              {section.items.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setIsOpen(false)}
+                  className={`group flex items-center px-5 py-4 text-sm font-black uppercase tracking-[0.08em] rounded-2xl border transition-all duration-200 ${
+                    item.isActive
+                      ? "bg-blue-600 text-white border-blue-600 shadow-lg shadow-blue-200"
+                      : "text-gray-500 border-transparent hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 hover:shadow-md hover:shadow-blue-100 hover:-translate-y-0.5"
+                  }`}
+                >
+                  <span className={`${item.isActive ? "" : "group-hover:translate-x-0.5"} transition-transform duration-200`}>{item.name}</span>
+                </Link>
+              ))}
+            </div>
           ))}
+
           {canViewInternal && (
             <Link
               href="/internal"
@@ -140,7 +147,7 @@ export default function Sidebar() {
               }`}
             >
               <span className={`${pathname.startsWith("/internal") ? "" : "group-hover:translate-x-0.5"} transition-transform duration-200`}>
-                Internal
+                Internal tools
               </span>
             </Link>
           )}
