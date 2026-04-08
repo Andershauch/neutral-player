@@ -40,12 +40,6 @@ const EXCLUDED_PATH_PREFIXES = [
   "out/",
   "test-results/",
 ];
-const MOJIBAKE_PATTERN =
-  /Ã¦|Ã¸|Ã¥|Ã†|Ã˜|Ã…|Ãƒ|Ã‚|â€™|â€œ|â€|â€“|â€”|ðŸ|ï»¿/;
-const MOJIBAKE_CHECK_EXCLUSIONS = new Set([
-  "scripts/check-encoding.mjs",
-  "scripts/fix-encoding.mjs",
-]);
 
 function isTextFile(filePath) {
   const normalizedPath = filePath.replace(/\\/g, "/");
@@ -92,59 +86,24 @@ function listCandidateFiles() {
   return [...files].sort((left, right) => left.localeCompare(right));
 }
 
-function validateFile(filePath) {
-  const issues = [];
-  const raw = fs.readFileSync(filePath);
-
-  if (raw.includes(0x00)) {
-    issues.push("binary null byte found in text file");
-  }
-
-  if (raw.length >= 3 && raw[0] === 0xef && raw[1] === 0xbb && raw[2] === 0xbf) {
-    issues.push("UTF-8 BOM found");
-  }
-
-  let text = "";
-  try {
-    text = UTF8_DECODER.decode(raw);
-  } catch {
-    issues.push("invalid UTF-8 byte sequence found");
-  }
-
-  if (text) {
-    if (text.includes("\r")) {
-      issues.push("CRLF line ending found");
-    }
-
-    if (text.includes("\ufffd")) {
-      issues.push("replacement character found");
-    }
-
-    if (
-      !MOJIBAKE_CHECK_EXCLUSIONS.has(filePath.replace(/\\/g, "/")) &&
-      MOJIBAKE_PATTERN.test(text)
-    ) {
-      issues.push("likely mojibake sequence found");
-    }
-  }
-
-  return issues;
-}
-
-const issues = [];
+let rewrittenFiles = 0;
 
 for (const filePath of listCandidateFiles()) {
-  for (const issue of validateFile(filePath)) {
-    issues.push(`${filePath}: ${issue}`);
+  const raw = fs.readFileSync(filePath);
+  const text = UTF8_DECODER.decode(raw);
+  const normalizedText = `${text.replace(/\r\n?/g, "\n").replace(/\ufeff/g, "").replace(/\n?$/, "\n")}`;
+
+  if (normalizedText === text && !(raw.length >= 3 && raw[0] === 0xef && raw[1] === 0xbb && raw[2] === 0xbf)) {
+    continue;
   }
+
+  fs.writeFileSync(filePath, normalizedText, "utf8");
+  rewrittenFiles += 1;
+  console.log(`Normalized ${filePath}`);
 }
 
-if (issues.length > 0) {
-  console.error("Encoding check failed:");
-  for (const issue of issues) {
-    console.error(`- ${issue}`);
-  }
-  process.exit(1);
+if (rewrittenFiles === 0) {
+  console.log("No encoding fixes were needed.");
+} else {
+  console.log(`Normalized ${rewrittenFiles} file(s) to UTF-8 without BOM and LF line endings.`);
 }
-
-console.log("Encoding check passed.");
