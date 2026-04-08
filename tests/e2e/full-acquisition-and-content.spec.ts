@@ -88,7 +88,8 @@ test.describe("Full SaaS flow (signup/checkout/upload/embed)", () => {
       });
 
       await page.reload();
-      await expect(page.getByText(/video klar/i)).toBeVisible();
+      await expect(page.getByRole("heading", { name: new RegExp(variantTitle, "i") })).toBeVisible();
+      await expect(page.getByText(/video klar/i).first()).toBeVisible();
 
       const textareas = page.locator("textarea");
       await expect(textareas.nth(1)).toHaveValue(new RegExp(`/embed/${embed.id}`));

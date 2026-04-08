@@ -55,11 +55,16 @@ export default function ContactForm() {
 
   return (
     <form onSubmit={onSubmit} className="np-section-card-muted space-y-4">
-      <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Skriv til os</p>
+      <div className="space-y-2">
+        <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Skriv til os</p>
+        <p className="text-sm leading-6 text-gray-600">
+          Fortæl kort hvad du vil have hjælp til, så vender vi tilbage med det rigtige næste skridt.
+        </p>
+      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
         <div>
-          <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1 mb-1">
+          <label className="mb-1 ml-1 block text-[10px] font-black uppercase tracking-widest text-gray-400">
             Navn
           </label>
           <input
@@ -67,12 +72,12 @@ export default function ContactForm() {
             required
             value={form.name}
             onChange={onChange("name")}
-            className="w-full px-4 py-3 rounded-2xl border border-gray-200 text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500"
+            className="np-field"
             placeholder="Dit navn"
           />
         </div>
         <div>
-          <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1 mb-1">
+          <label className="mb-1 ml-1 block text-[10px] font-black uppercase tracking-widest text-gray-400">
             Email
           </label>
           <input
@@ -80,27 +85,27 @@ export default function ContactForm() {
             required
             value={form.email}
             onChange={onChange("email")}
-            className="w-full px-4 py-3 rounded-2xl border border-gray-200 text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500"
+            className="np-field"
             placeholder="mail@firma.dk"
           />
         </div>
       </div>
 
       <div>
-        <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1 mb-1">
+        <label className="mb-1 ml-1 block text-[10px] font-black uppercase tracking-widest text-gray-400">
           Firma (valgfrit)
         </label>
         <input
           type="text"
           value={form.company}
           onChange={onChange("company")}
-          className="w-full px-4 py-3 rounded-2xl border border-gray-200 text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500"
+          className="np-field"
           placeholder="Firmanavn"
         />
       </div>
 
       <div>
-        <label className="block text-[10px] font-black uppercase tracking-widest text-gray-400 ml-1 mb-1">
+        <label className="mb-1 ml-1 block text-[10px] font-black uppercase tracking-widest text-gray-400">
           Besked
         </label>
         <textarea
@@ -108,7 +113,7 @@ export default function ContactForm() {
           minLength={10}
           value={form.message}
           onChange={onChange("message")}
-          className="w-full px-4 py-3 rounded-2xl border border-gray-200 text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500 min-h-32"
+          className="np-textarea"
           placeholder="Fortæl kort hvad du gerne vil have hjælp til."
         />
       </div>
@@ -124,11 +129,7 @@ export default function ContactForm() {
       />
 
       <div className="flex items-center gap-3">
-        <button
-          type="submit"
-          disabled={loading}
-          className="np-btn-primary px-5 py-3 disabled:opacity-50"
-        >
+        <button type="submit" disabled={loading} className="np-btn-primary px-5 py-3 disabled:opacity-50">
           {loading ? "Sender..." : "Send besked"}
         </button>
         {success && <p className="text-xs font-semibold text-emerald-700">Tak, vi vender tilbage snart.</p>}

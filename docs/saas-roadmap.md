@@ -432,7 +432,7 @@
   - `IN PROGRESS`: Landing og oevrige default/system flader mangler stadig sidste harmonisering mod samme baseline.
 
 ### TASK-8.3 Marketing polish sprint
-**Status:** `TODO`
+**Status:** `IN PROGRESS`
 - Opdater Landing, Pricing, FAQ og Contact til en tydelig faelles visuel retning.
 - Fokus:
   - staerkere hero-komposition
@@ -441,9 +441,13 @@
   - mindre generisk SaaS-look
 - **Acceptance criteria:**
   - Marketing-siderne foeles som samme produkt og samme brandfamilie.
+- Progress note:
+  - `DONE`: Landing prioriterer nu servicevalg, sales-led CTA'er og kundehistorier som primaer marketing-retning.
+  - `DONE`: Pricing, FAQ og Contact deler nu samme marketing-familie med section-intros, data-strips, form-primitives og tydeligere beslutningshjaelp.
+  - `IN PROGRESS`: Der mangler stadig en sidste visuel harmonisering mellem marketing-siderne og auth/system-siderne.
 
 ### TASK-8.4 Default auth og system pages polish
-**Status:** `TODO`
+**Status:** `IN PROGRESS`
 - Opdater Login, Register, Verify og Setup-sider, saa de matcher marketingens baseline.
 - Fokus:
   - tydeligere informationshierarki
@@ -451,9 +455,13 @@
   - bedre tomrum og visuel ro
 - **Acceptance criteria:**
   - Default-siderne foeles som en naturlig fortsaettelse af marketingoplevelsen.
+- Progress note:
+  - `DONE`: Login og Register bruger nu samme guided system-page familie med venstrestillet kontekst og roligere formularflade.
+  - `DONE`: Verify, Workspace setup, Invite og Unauthorized matcher nu samme default shell, status-bannere og system-side rytme.
+  - `IN PROGRESS`: Der mangler stadig sidste finish paa tvungen copy/guardrails-dokumentation i `TASK-8.5`.
 
 ### TASK-8.5 Default design rules og guardrails
-**Status:** `TODO`
+**Status:** `DONE`
 - Dokumenter de vigtigste default designregler direkte i roadmapen eller relateret docs:
   - typografi
   - spacing
@@ -462,6 +470,9 @@
   - hvad der skal forblive simpelt
 - **Acceptance criteria:**
   - Naeste UI-arbejde paa marketing og default sider kan foelge samme retning uden at opfinde nyt hver gang.
+- Progress note:
+  - `DONE`: Default designregler og guardrails er dokumenteret i `docs/default-design-rules.md`.
+  - `DONE`: Reglerne laaser struktur, CTA-hierarki, approved surfaces og copy-kvalitet uden at laase det visuelle udtryk fast.
 
 ---
 

@@ -2,41 +2,53 @@ import Link from "next/link";
 
 export default function UnauthorizedPage() {
   return (
-    <div className="np-default-theme np-form-shell flex-col">
-      <div className="np-form-card text-center">
-        <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6 border border-red-100">
-          <span className="text-3xl font-black text-red-600" aria-hidden>
-            !
-          </span>
-        </div>
+    <div className="np-default-theme np-form-shell">
+      <div className="np-form-layout">
+        <aside className="np-form-aside">
+          <div className="space-y-4">
+            <p className="np-form-kicker">Ingen adgang</p>
+            <h1 className="np-form-title">Du er inde, men ikke på den rigtige rolle endnu.</h1>
+            <p className="np-form-copy">
+              Når en bruger rammer en blokeret side, skal oplevelsen stadig føles rolig og hjælpsom. Derfor peger vi
+              tydeligt tilbage mod forside eller nyt login.
+            </p>
+          </div>
 
-        <h1 className="text-2xl font-black text-gray-900 uppercase tracking-tight mb-3">Ingen adgang</h1>
+          <div className="np-section-card-muted">
+            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-500">Typisk betyder det</p>
+            <ul className="mt-4 np-system-list">
+              <li>Du mangler administratorrettigheder for den side du prøver at åbne.</li>
+              <li>Du er logget ind med den forkerte konto i forhold til organisation eller invitation.</li>
+              <li>Du skal tilbage til forside, login eller support for at komme videre.</li>
+            </ul>
+          </div>
+        </aside>
 
-        <p className="text-sm font-medium text-gray-500 leading-relaxed mb-8">
-          Du er logget ind, men din profil mangler de nødvendige{" "}
-          <span className="text-red-500 font-bold">administratorrettigheder</span> for at se denne side.
-        </p>
+        <div className="np-form-card text-center">
+          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full border border-red-100 bg-red-50">
+            <span className="text-3xl font-black text-red-600" aria-hidden>
+              !
+            </span>
+          </div>
 
-        <div className="flex flex-col gap-4">
-          <Link
-            href="/"
-            className="np-btn-primary px-6 py-4 shadow-lg shadow-blue-100 active:scale-[0.98]"
-          >
-            Gå til forsiden
-          </Link>
+          <h1 className="mb-3 text-2xl font-black uppercase tracking-tight text-gray-900">Ingen adgang</h1>
 
-          <Link
-            href="/api/auth/signout"
-            className="np-link-quiet text-[10px] font-black uppercase tracking-widest pt-2"
-          >
-            Log ud og prøv igen
-          </Link>
+          <p className="mb-8 text-sm font-medium leading-relaxed text-gray-500">
+            Du er logget ind, men din profil mangler de nødvendige{" "}
+            <span className="font-bold text-red-500">administratorrettigheder</span> for at se denne side.
+          </p>
+
+          <div className="flex flex-col gap-4">
+            <Link href="/" className="np-btn-primary px-6 py-4">
+              Gå til forsiden
+            </Link>
+
+            <Link href="/api/auth/signout" className="np-link-quiet pt-2 text-[10px] font-black uppercase tracking-widest">
+              Log ud og prøv igen
+            </Link>
+          </div>
         </div>
       </div>
-
-      <p className="mt-8 text-[10px] font-black uppercase tracking-[0.3em] text-gray-300">
-        Neutral<span className="text-blue-400">.</span> Player
-      </p>
     </div>
   );
 }

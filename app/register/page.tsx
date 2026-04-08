@@ -69,109 +69,136 @@ function RegisterContent() {
 
   return (
     <div className="np-default-theme np-form-shell">
-      <div className="np-form-card space-y-8">
-        <div className="text-center">
-          <h2 className="text-3xl font-black tracking-tighter text-gray-900 uppercase">
-            {t.register.title}<span className="text-blue-600">.</span>
-          </h2>
-          <p className="mt-2 text-xs font-black uppercase tracking-[0.2em] text-gray-400">{t.register.subtitle}</p>
-        </div>
-
-        {invite && (
-          <div className="bg-blue-50 border border-blue-100 text-blue-700 px-4 py-3 rounded-2xl text-[11px] font-bold uppercase text-center">
-            {t.register.invited}
+      <div className="np-form-layout">
+        <aside className="np-form-aside">
+          <div className="space-y-4">
+            <p className="np-form-kicker">Opret konto</p>
+            <h1 className="np-form-title">Start roligt, og byg videre bagefter.</h1>
+            <p className="np-form-copy">
+              Kontooprettelsen skal føles tæt på planvalg og onboarding. Derfor holder vi samme visuelle retning og
+              leder videre til workspace-setup uden at miste momentum.
+            </p>
           </div>
-        )}
 
-        {error && (
-          <div className="bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-2xl text-[11px] font-bold uppercase text-center">
-            {error}
+          <div className="np-section-card-muted">
+            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-500">Efter oprettelse</p>
+            <ul className="mt-4 np-system-list">
+              <li>Du bliver sendt videre til workspace setup eller invitationen du kom fra.</li>
+              <li>Du kan vælge plan, verificere email og fortsætte direkte mod første projekt.</li>
+              <li>Hvis du er i tvivl om løsning, kan du stadig vende tilbage til pricing eller kontakt.</li>
+            </ul>
           </div>
-        )}
 
-        <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
-          <div className="space-y-3">
-            <div>
-              <label htmlFor="name" className="block text-[10px] font-black uppercase text-gray-400 ml-1 mb-1">
-                {t.register.name}
-              </label>
-              <input
-                id="name"
-                name="name"
-                type="text"
-                required
-                className="block w-full px-4 py-3 border border-gray-200 rounded-2xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all placeholder:text-gray-300"
-                placeholder="Anders Andersen"
-                value={formData.name}
-                onChange={handleChange}
-                disabled={isLoading}
-              />
+          <div className="np-data-strip">
+            <div className="np-data-chip">
+              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-500">Hurtig vej ind</p>
+              <p className="mt-2 text-sm font-semibold text-gray-900">Fra konto til workspace på få trin.</p>
             </div>
-
-            <div>
-              <label htmlFor="email" className="block text-[10px] font-black uppercase text-gray-400 ml-1 mb-1">
-                {t.register.email}
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                className="block w-full px-4 py-3 border border-gray-200 rounded-2xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all placeholder:text-gray-300"
-                placeholder="mail@eksempel.dk"
-                value={formData.email}
-                onChange={handleChange}
-                disabled={isLoading}
-              />
+            <div className="np-data-chip">
+              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-500">Inviteret?</p>
+              <p className="mt-2 text-sm font-semibold text-gray-900">Vi bruger samme flow og sender dig tilbage til invitationen.</p>
             </div>
-
-            <div>
-              <label htmlFor="password" className="block text-[10px] font-black uppercase text-gray-400 ml-1 mb-1">
-                {t.register.password}
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="new-password"
-                required
-                className="block w-full px-4 py-3 border border-gray-200 rounded-2xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all placeholder:text-gray-300"
-                placeholder={t.register.passwordPlaceholder}
-                minLength={6}
-                value={formData.password}
-                onChange={handleChange}
-                disabled={isLoading}
-              />
+            <div className="np-data-chip">
+              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-500">Brug for sparring?</p>
+              <p className="mt-2 text-sm font-semibold text-gray-900">Kontakt os hvis du vil afklare plan eller service før opstart.</p>
             </div>
           </div>
+        </aside>
 
-          <div className="pt-2">
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="np-btn-primary w-full flex justify-center py-4 px-4 shadow-lg shadow-blue-100 disabled:opacity-50 active:scale-[0.98]"
-            >
-              {isLoading ? t.register.creating : t.register.createButton}
-            </button>
+        <div className="np-form-card space-y-8">
+          <div className="text-center">
+            <h2 className="text-3xl font-black tracking-tighter text-gray-900 uppercase">
+              {t.register.title}
+              <span className="text-blue-600">.</span>
+            </h2>
+            <p className="mt-2 text-xs font-black uppercase tracking-[0.2em] text-gray-400">{t.register.subtitle}</p>
           </div>
-        </form>
 
-        <div className="text-center pt-6 border-t border-gray-50">
-          <p className="text-[11px] font-bold text-gray-400 uppercase tracking-tight">{t.register.hasAccount}</p>
-          <Link
-            href={invite ? `/login?invite=${encodeURIComponent(invite)}` : "/login"}
-            className="text-xs font-black text-blue-600 hover:text-blue-700 uppercase tracking-widest mt-2 inline-block"
-          >
-            {t.register.loginHere}
-          </Link>
-          <div className="mt-3">
+          {invite && <div className="np-status-banner np-status-banner-info">{t.register.invited}</div>}
+
+          {error && <div className="np-status-banner np-status-banner-error">{error}</div>}
+
+          <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
+            <div className="space-y-3">
+              <div>
+                <label htmlFor="name" className="mb-1 ml-1 block text-[10px] font-black uppercase text-gray-400">
+                  {t.register.name}
+                </label>
+                <input
+                  id="name"
+                  name="name"
+                  type="text"
+                  required
+                  className="np-field"
+                  placeholder="Anders Andersen"
+                  value={formData.name}
+                  onChange={handleChange}
+                  disabled={isLoading}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="email" className="mb-1 ml-1 block text-[10px] font-black uppercase text-gray-400">
+                  {t.register.email}
+                </label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  className="np-field"
+                  placeholder="mail@eksempel.dk"
+                  value={formData.email}
+                  onChange={handleChange}
+                  disabled={isLoading}
+                />
+              </div>
+
+              <div>
+                <label htmlFor="password" className="mb-1 ml-1 block text-[10px] font-black uppercase text-gray-400">
+                  {t.register.password}
+                </label>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  autoComplete="new-password"
+                  required
+                  className="np-field"
+                  placeholder={t.register.passwordPlaceholder}
+                  minLength={6}
+                  value={formData.password}
+                  onChange={handleChange}
+                  disabled={isLoading}
+                />
+              </div>
+            </div>
+
+            <div className="pt-2">
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="np-btn-primary flex w-full justify-center px-4 py-4 disabled:opacity-50 active:scale-[0.98]"
+              >
+                {isLoading ? t.register.creating : t.register.createButton}
+              </button>
+            </div>
+          </form>
+
+          <div className="border-t border-gray-50 pt-6 text-center">
+            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-tight">{t.register.hasAccount}</p>
             <Link
-              href="/pricing"
-              className="text-[10px] font-black text-gray-400 hover:text-gray-600 uppercase tracking-widest"
+              href={invite ? `/login?invite=${encodeURIComponent(invite)}` : "/login"}
+              className="mt-2 inline-block text-xs font-black text-blue-600 hover:text-blue-700 uppercase tracking-widest"
             >
-              {t.register.seePlans}
+              {t.register.loginHere}
             </Link>
+            <div className="mt-3">
+              <Link href="/pricing" className="text-[10px] font-black text-gray-400 hover:text-gray-600 uppercase tracking-widest">
+                {t.register.seePlans}
+              </Link>
+            </div>
           </div>
         </div>
       </div>
