@@ -108,7 +108,7 @@ export default function WorkspaceSetupCard({
   };
 
   return (
-    <div className="bg-white border border-gray-100 rounded-[2rem] p-6 md:p-10 shadow-xl shadow-blue-900/5 space-y-6">
+    <div className="np-form-card np-form-card-wide space-y-6">
       <div className="text-center space-y-2">
         <h1 className="text-3xl font-black text-gray-900 uppercase tracking-tight">Sæt dit workspace op</h1>
         <p className="text-sm text-gray-500">
@@ -131,14 +131,14 @@ export default function WorkspaceSetupCard({
                   void sendVerification();
                 }}
                 disabled={sendingVerification}
-                className="px-4 py-2 rounded-xl bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 disabled:opacity-50"
+                className="np-btn-primary px-4 py-2 disabled:opacity-50"
               >
               {sendingVerification ? "Sender..." : "Send verificeringsmail"}
             </button>
             <button
               type="button"
               onClick={() => router.refresh()}
-              className="ml-2 px-4 py-2 rounded-xl border border-gray-200 text-gray-600 text-[10px] font-black uppercase tracking-widest hover:bg-gray-50"
+              className="ml-2 np-btn-ghost px-4 py-2"
             >
               Jeg har verificeret
             </button>
@@ -172,7 +172,7 @@ export default function WorkspaceSetupCard({
           type="button"
           onClick={() => saveAndGo("/pricing")}
           disabled={saving}
-          className="px-4 py-3 rounded-xl bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 disabled:opacity-50 transition-all"
+          className="np-btn-primary px-4 py-3 disabled:opacity-50"
         >
           {saving ? "Gemmer..." : "Vælg plan"}
         </button>
@@ -180,7 +180,7 @@ export default function WorkspaceSetupCard({
           type="button"
           onClick={() => saveAndGo("/admin/dashboard")}
           disabled={saving}
-          className="px-4 py-3 rounded-xl border border-gray-200 text-gray-700 text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 disabled:opacity-50 transition-all"
+          className="np-btn-ghost px-4 py-3 disabled:opacity-50"
         >
           {saving ? "Gemmer..." : "Fortsæt til dashboard"}
         </button>

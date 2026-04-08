@@ -54,7 +54,7 @@ export default function ContactForm() {
   };
 
   return (
-    <form onSubmit={onSubmit} className="rounded-2xl border border-gray-100 bg-gray-50/60 p-5 space-y-4">
+    <form onSubmit={onSubmit} className="np-section-card-muted space-y-4">
       <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Skriv til os</p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -67,7 +67,7 @@ export default function ContactForm() {
             required
             value={form.name}
             onChange={onChange("name")}
-            className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-3 rounded-2xl border border-gray-200 text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Dit navn"
           />
         </div>
@@ -80,7 +80,7 @@ export default function ContactForm() {
             required
             value={form.email}
             onChange={onChange("email")}
-            className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-3 rounded-2xl border border-gray-200 text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="mail@firma.dk"
           />
         </div>
@@ -94,7 +94,7 @@ export default function ContactForm() {
           type="text"
           value={form.company}
           onChange={onChange("company")}
-          className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-4 py-3 rounded-2xl border border-gray-200 text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500"
           placeholder="Firmanavn"
         />
       </div>
@@ -108,7 +108,7 @@ export default function ContactForm() {
           minLength={10}
           value={form.message}
           onChange={onChange("message")}
-          className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500 min-h-32"
+          className="w-full px-4 py-3 rounded-2xl border border-gray-200 text-sm font-semibold outline-none focus:ring-2 focus:ring-blue-500 min-h-32"
           placeholder="Fortæl kort hvad du gerne vil have hjælp til."
         />
       </div>
@@ -127,7 +127,7 @@ export default function ContactForm() {
         <button
           type="submit"
           disabled={loading}
-          className="px-5 py-3 rounded-xl bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 disabled:opacity-50 transition-all"
+          className="np-btn-primary px-5 py-3 disabled:opacity-50"
         >
           {loading ? "Sender..." : "Send besked"}
         </button>
@@ -138,4 +138,3 @@ export default function ContactForm() {
     </form>
   );
 }
-

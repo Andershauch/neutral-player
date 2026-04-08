@@ -23,8 +23,8 @@ export default async function WorkspaceSetupPage() {
   ]);
 
   return (
-    <main className="min-h-screen bg-gray-50 px-4 py-12 md:py-16">
-      <div className="max-w-xl mx-auto">
+    <main className="np-default-theme np-form-shell">
+      <div className="w-full flex justify-center">
         <WorkspaceSetupCard
           initialName={organization?.name || ""}
           email={user?.email || ""}

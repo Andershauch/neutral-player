@@ -42,7 +42,7 @@ export default function VerifyEmailClient({ token }: VerifyEmailClientProps) {
   }, [resolvedToken]);
 
   return (
-    <div className="max-w-md w-full bg-white border border-gray-100 rounded-[2rem] p-8 shadow-xl shadow-blue-900/5 space-y-5">
+    <div className="np-form-card space-y-5">
       <h1 className="text-2xl font-black text-gray-900 uppercase tracking-tight text-center">Bekræft email</h1>
       {status === "loading" && (
         <p className="text-sm text-gray-500 text-center">Bekræfter din email...</p>
@@ -54,7 +54,7 @@ export default function VerifyEmailClient({ token }: VerifyEmailClientProps) {
           </p>
           <Link
             href="/setup/workspace"
-            className="block text-center px-4 py-3 rounded-xl bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-700"
+            className="np-btn-primary block text-center px-4 py-3"
           >
             Fortsæt til setup
           </Link>
@@ -65,7 +65,7 @@ export default function VerifyEmailClient({ token }: VerifyEmailClientProps) {
           <p className="text-sm text-red-600 text-center font-semibold">{error || "Linket er ugyldigt."}</p>
           <Link
             href="/setup/workspace"
-            className="block text-center px-4 py-3 rounded-xl border border-gray-200 text-gray-700 text-[10px] font-black uppercase tracking-widest hover:bg-gray-50"
+            className="np-btn-ghost block text-center px-4 py-3"
           >
             Tilbage til setup
           </Link>

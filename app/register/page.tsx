@@ -68,8 +68,8 @@ function RegisterContent() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4 py-12">
-      <div className="max-w-sm w-full space-y-8 bg-white p-6 sm:p-10 rounded-[2rem] shadow-xl shadow-blue-900/5 border border-gray-100">
+    <div className="np-default-theme np-form-shell">
+      <div className="np-form-card space-y-8">
         <div className="text-center">
           <h2 className="text-3xl font-black tracking-tighter text-gray-900 uppercase">
             {t.register.title}<span className="text-blue-600">.</span>
@@ -150,7 +150,7 @@ function RegisterContent() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full flex justify-center py-4 px-4 rounded-2xl text-xs font-black uppercase tracking-widest text-white bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-100 disabled:opacity-50 transition-all active:scale-[0.98]"
+              className="np-btn-primary w-full flex justify-center py-4 px-4 shadow-lg shadow-blue-100 disabled:opacity-50 active:scale-[0.98]"
             >
               {isLoading ? t.register.creating : t.register.createButton}
             </button>

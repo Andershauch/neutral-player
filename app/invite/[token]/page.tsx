@@ -80,8 +80,8 @@ function InvitePageContent() {
   const shouldRegisterFirst = invite.status === "pending" && invite.hasAccount === false;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-lg bg-white border border-gray-100 rounded-[2rem] shadow-xl shadow-blue-900/5 p-8">
+    <div className="np-default-theme np-form-shell">
+      <div className="np-form-card np-form-card-wide">
         <h1 className="text-2xl font-black uppercase tracking-tight text-gray-900">Invitation</h1>
 
         {invite.status === "loading" && (
@@ -127,13 +127,13 @@ function InvitePageContent() {
                     <div className="flex flex-col sm:flex-row gap-3">
                       <Link
                         href={`/register?invite=${encodeURIComponent(token)}`}
-                        className="px-4 py-3 rounded-xl bg-blue-600 text-white text-xs font-black uppercase tracking-widest text-center"
+                        className="np-btn-primary px-4 py-3 text-center"
                       >
                         Opret konto og acceptér
                       </Link>
                       <Link
                         href={`/login?invite=${encodeURIComponent(token)}`}
-                        className="px-4 py-3 rounded-xl border border-gray-200 text-xs font-black uppercase tracking-widest text-center"
+                        className="np-btn-ghost px-4 py-3 text-center"
                       >
                         Jeg har allerede konto
                       </Link>
@@ -143,13 +143,13 @@ function InvitePageContent() {
                   <div className="flex flex-col sm:flex-row gap-3">
                     <Link
                       href={`/login?invite=${encodeURIComponent(token)}`}
-                      className="px-4 py-3 rounded-xl bg-blue-600 text-white text-xs font-black uppercase tracking-widest text-center"
+                        className="np-btn-primary px-4 py-3 text-center"
                     >
                       Log ind for at acceptere
                     </Link>
                     <Link
                       href={`/register?invite=${encodeURIComponent(token)}`}
-                      className="px-4 py-3 rounded-xl border border-gray-200 text-xs font-black uppercase tracking-widest text-center"
+                        className="np-btn-ghost px-4 py-3 text-center"
                     >
                       Opret konto
                     </Link>
@@ -168,7 +168,7 @@ function InvitePageContent() {
                     <button
                       type="button"
                       onClick={() => signOut({ callbackUrl: `/login?invite=${encodeURIComponent(token)}` })}
-                      className="px-4 py-3 rounded-xl border border-red-200 text-red-700 text-xs font-black uppercase tracking-widest"
+                    className="np-btn-ghost px-4 py-3 text-red-700 border-red-200"
                     >
                       Log ud og brug den rigtige konto
                     </button>
@@ -178,7 +178,7 @@ function InvitePageContent() {
                     type="button"
                     onClick={acceptInvite}
                     disabled={accepting || accepted}
-                    className="px-4 py-3 rounded-xl bg-emerald-600 text-white text-xs font-black uppercase tracking-widest disabled:opacity-50"
+                    className="px-4 py-3 rounded-xl bg-emerald-600 text-white text-xs font-black uppercase tracking-widest disabled:opacity-50 hover:bg-emerald-700 transition-colors"
                   >
                     {accepting ? "Accepterer..." : "Acceptér invitation"}
                   </button>

@@ -47,8 +47,8 @@ function LoginContent() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4 py-8">
-      <div className="max-w-md w-full space-y-8 bg-white p-6 sm:p-10 rounded-[2rem] shadow-2xl shadow-blue-900/10 border border-gray-200 ring-1 ring-blue-50">
+    <div className="np-default-theme np-form-shell">
+      <div className="np-form-card space-y-8 border-gray-200 ring-1 ring-blue-50">
         <div className="text-center">
           <h2 className="text-3xl font-black tracking-tighter text-gray-900 uppercase">
             Neutral<span className="text-blue-600">.</span>
@@ -100,7 +100,7 @@ function LoginContent() {
           <button
             type="submit"
             disabled={!!loadingProvider}
-            className="w-full flex justify-center py-4 px-4 rounded-2xl text-xs font-black uppercase tracking-widest text-white bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-100 disabled:opacity-50 transition-all"
+            className="np-btn-primary w-full flex justify-center py-4 px-4 shadow-lg shadow-blue-100 disabled:opacity-50"
           >
             {loadingProvider === "credentials" ? t.login.loginLoading : t.login.loginButton}
           </button>

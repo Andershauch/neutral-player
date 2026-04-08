@@ -388,12 +388,12 @@
 
 ## SPRINT-8 General Default Layout and Look and Feel
 **Goal:** Loefte marketing-sider, standard-sider og default layout til et mere sammenhaengende, bevidst og professionelt look and feel.
-**Status:** `TODO`
+**Status:** `IN PROGRESS`
 **Scope:** Offentlige marketing-sider, auth/default sider og andre ikke-theme-overstyrede standardflader.
 **Princip:** Bevar implementationen enkel og genbrug eksisterende primitives, men vaer mere konsekvent i layout, spacing, typografi, farver og visuel retning.
 
 ### TASK-8.1 UI audit og baseline
-**Status:** `TODO`
+**Status:** `DONE`
 - Kortlaeg nuvaerende marketing-sider og standard-sider:
   - Landing
   - Pricing
@@ -410,9 +410,12 @@
   - CTA-behandling
 - **Acceptance criteria:**
   - Der findes en kort prioriteret liste over de vigtigste layout- og visual-design-huller.
+- Progress note:
+  - `DONE`: Audit og baseline er dokumenteret i `docs/default-layout-audit.md`.
+  - `DONE`: Hoeste prioriterede huller er nu tydeligt afgraenset til shared shell, CTA-hierarki, header-familie, card-system, typografi og copy/encoding sweep.
 
 ### TASK-8.2 Shared default layout primitives
-**Status:** `TODO`
+**Status:** `IN PROGRESS`
 - Definer eller stram et lille default UI-lag for ikke-enterprise flader:
   - page shell
   - section rhythm
@@ -421,6 +424,12 @@
   - CTA-raekker
 - **Acceptance criteria:**
   - Marketing og standard-sider bruger samme baseline for layout og spacing.
+- Progress note:
+  - `DONE`: Shared public/default shell-klasser er tilfoejet i `app/globals.css`.
+  - `DONE`: Default public look er nu flyttet over i et lille token-lag via `np-default-theme`, saa senere redesigns kan ske med mindre strukturelt churn.
+  - `DONE`: Pricing, FAQ og Contact bruger nu samme public header, section cards og CTA-baseline.
+  - `DONE`: Login, Register og Workspace setup bruger nu samme default form-shell og kortfamilie.
+  - `IN PROGRESS`: Landing og oevrige default/system flader mangler stadig sidste harmonisering mod samme baseline.
 
 ### TASK-8.3 Marketing polish sprint
 **Status:** `TODO`

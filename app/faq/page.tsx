@@ -1,4 +1,6 @@
 import Link from "next/link";
+import HomeHeaderActions from "@/components/public/HomeHeaderActions";
+import { Providers } from "@/components/Providers";
 
 const faqItems = [
   {
@@ -29,40 +31,29 @@ const faqItems = [
 
 export default function FAQPage() {
   return (
-    <main className="min-h-screen bg-gray-50 px-4 py-10 md:py-16">
-      <div className="max-w-4xl mx-auto space-y-8">
-        <header className="flex items-center justify-between">
-          <h1 className="text-2xl md:text-3xl font-black tracking-tight uppercase text-gray-900">
-            Neutral<span className="text-blue-600">.</span>
-          </h1>
-          <div className="flex items-center gap-2">
-            <Link
-              href="/pricing"
-              className="px-4 py-2 rounded-xl border border-gray-200 text-[10px] font-black uppercase tracking-widest text-gray-700 hover:bg-white"
-            >
-              Se planer
-            </Link>
-            <Link
-              href="/contact"
-              className="px-4 py-2 rounded-xl bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-700"
-            >
-              Kontakt
-            </Link>
-          </div>
+    <main className="np-default-theme np-page-shell">
+      <div className="np-page-wrap np-page-stack">
+        <header className="np-public-header">
+          <Link href="/" className="np-brand">
+            Neutral<span className="np-brand-dot">.</span>
+          </Link>
+          <Providers>
+            <HomeHeaderActions />
+          </Providers>
         </header>
 
-        <section className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm p-8 md:p-10">
+        <section className="np-section-card">
           <p className="text-[10px] font-black uppercase tracking-[0.3em] text-blue-600">FAQ</p>
           <h2 className="mt-3 text-3xl md:text-4xl font-black tracking-tight uppercase text-gray-900">
             Ofte stillede spørgsmål
           </h2>
-          <p className="mt-3 text-sm text-gray-600">
+          <p className="np-support-copy mt-3">
             Her er de vigtigste svar om onboarding, embeds, team og abonnement.
           </p>
 
           <div className="mt-8 space-y-4">
             {faqItems.map((item) => (
-              <article key={item.q} className="rounded-2xl border border-gray-100 bg-gray-50/60 p-5">
+              <article key={item.q} className="np-section-card-muted">
                 <h3 className="text-sm font-black text-gray-900 uppercase tracking-tight">{item.q}</h3>
                 <p className="mt-2 text-sm text-gray-600">{item.a}</p>
               </article>

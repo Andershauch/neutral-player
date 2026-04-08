@@ -109,7 +109,7 @@ export default function PricingPlans({ plans, billingState, stripeSessionId }: P
         {plans.map((plan) => {
           const isLoading = loadingPlan === plan.key;
           return (
-            <div key={plan.key} className="bg-white rounded-[2rem] border border-gray-100 p-6 shadow-sm">
+            <div key={plan.key} className="np-card np-card-pad flex flex-col">
               <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">{plan.name}</p>
               <p className="mt-1 text-2xl font-black text-gray-900">{plan.priceLabel}</p>
               <p className="mt-2 text-sm text-gray-600">{plan.description}</p>
@@ -128,14 +128,14 @@ export default function PricingPlans({ plans, billingState, stripeSessionId }: P
                       type="button"
                       disabled={isLoading}
                       onClick={() => startCheckout(plan.key)}
-                      className="px-5 py-3 rounded-xl bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 disabled:opacity-50 transition-all"
+                      className="np-btn-primary px-5 py-3 disabled:opacity-50"
                     >
                       {isLoading ? t.pricing.openCheckoutLoading : t.pricing.choosePlan}
                     </button>
                   ) : (
                     <Link
                       href="/register"
-                      className="inline-flex px-5 py-3 rounded-xl bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all"
+                      className="np-btn-primary inline-flex px-5 py-3"
                     >
                       {t.pricing.registerAndChoose}
                     </Link>
@@ -143,7 +143,7 @@ export default function PricingPlans({ plans, billingState, stripeSessionId }: P
                 ) : (
                   <Link
                     href="/contact"
-                    className="inline-flex px-5 py-3 rounded-xl border border-gray-200 text-gray-700 text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 transition-all"
+                    className="np-btn-ghost inline-flex px-5 py-3"
                   >
                     Kontakt salg
                   </Link>
@@ -158,7 +158,7 @@ export default function PricingPlans({ plans, billingState, stripeSessionId }: P
         <div className="pt-2">
           <Link
             href="/admin/dashboard"
-            className="inline-flex px-4 py-3 rounded-xl border border-gray-200 text-gray-700 text-[10px] font-black uppercase tracking-widest hover:bg-gray-50 transition-all"
+            className="np-btn-ghost inline-flex px-4 py-3"
           >
             {t.pricing.continueAdmin}
           </Link>
