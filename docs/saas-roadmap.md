@@ -638,6 +638,7 @@
 6. `EPIC-7` (start with `TASK-7.1` + `TASK-7.2`, then internal admin + rollout)
 7. `SPRINT-8` (general default layout, marketing polish og look and feel)
 8. `SPRINT-9` (internal marketing content control med draft/publish/preview)
+9. `SPRINT-11` (visual system unification paa tvaers af public, customer admin og internal)
 
 ---
 
@@ -686,6 +687,123 @@
 **Status:** `DONE`
 - Journey-reglerne er dokumenteret i `docs/journey-guardrails.md`.
 - Public smoke dækker nu også shared før-login shell i `tests/e2e/public-flows.spec.ts`.
+
+---
+
+## SPRINT-11 Visual System Unification
+**Goal:** Give hele applikationen samme overordnede look and feel foer login, efter login, i customer admin og i internal admin uden at laase fremtidige temaer eller kundebranding.
+**Status:** `TODO`
+**Scope:** Design tokens, shells, overflader, spacing, typografi, kort, formularer, tabeller, status-komponenter og temagraenser mellem public, customer og internal.
+**Princip:** Et delt grundsystem foerst. Kundetemaer og enterprise-branding maa farve oven paa systemet, men ikke bryde layout, komponenthierarki eller navigation.
+
+### TASK-11.1 Visual audit og system map
+**Status:** `TODO`
+- Kortlaeg nuvaerende visuelle familier i public, guided/auth, customer admin, embed/editor og internal admin.
+- Identificer hvad der allerede er shared, og hvad der stadig er one-off.
+- **Acceptance criteria:**
+  - Der findes en konkret liste over hvilke UI-lag der skal samles.
+  - Vi har et tydeligt billede af hvilke komponenter og overflader der divergerer i dag.
+
+### TASK-11.2 Design token hierarchy
+**Status:** `TODO`
+- Etabler et lille, klart token-hierarki i `app/globals.css`:
+  - core tokens
+  - shell tokens
+  - component tokens
+  - themed override tokens
+- Definer hvilke tokens customer themes maa override, og hvilke der skal vaere system-laaste.
+- **Acceptance criteria:**
+  - Public, customer admin og internal bygger paa samme token-grundlag.
+  - Kundebranding kan aendre accent/surface-niveau, men ikke splitte systemet i tre designs.
+
+### TASK-11.3 Shared shell surface language
+**Status:** `TODO`
+- Saml shell-fladerne visuelt:
+  - page backgrounds
+  - section cards
+  - page headers
+  - content width
+  - spacing rhythm
+- Bevar shell-identitet, men med samme familiefoelelse.
+- **Acceptance criteria:**
+  - Public, admin og internal foeles som samme produkt, ikke tre sites.
+  - Overgangen fra foer login til efter login foeles naturlig.
+
+### TASK-11.4 Shared component primitives
+**Status:** `TODO`
+- Saml og ryd op i de mest brugte primitives:
+  - buttons
+  - pills/badges
+  - cards
+  - forms
+  - empty states
+  - status banners
+  - table/list surfaces
+- Erstat one-off utility-klynger hvor det giver mening med tydelige `np-*` primitives.
+- **Acceptance criteria:**
+  - Samme komponenttype ser ud og opfoerer sig ens paa tvaers af appen.
+  - Nye sider kan bygges hurtigere uden nye lokale style-familier.
+
+### TASK-11.5 Customer admin visual uplift
+**Status:** `TODO`
+- Harmoniser customer admin:
+  - dashboard
+  - projects
+  - billing
+  - team
+  - profile
+  - audit
+  - embed/editor
+- Fokus paa kort, statistik, arbejdsflader og actions.
+- **Acceptance criteria:**
+  - Customer admin foeles som en sammenhaengende arbejdsflade.
+  - Embed/editoren foeles som en del af samme system som resten af admin.
+
+### TASK-11.6 Internal admin visual uplift
+**Status:** `TODO`
+- Giv internal et beslægtet, men tydeligt operations-look:
+  - samme komponentfamilie
+  - lidt mere system/operations-praeg
+  - tydelig live/draft/status-visualisering
+- **Acceptance criteria:**
+  - Internal ligner samme produkt, men med tydeligere operationskontekst.
+  - Branding, marketing og preview foeles som samme vaerktoejsfamilie.
+
+### TASK-11.7 Theme boundary and branding rules
+**Status:** `TODO`
+- Dokumenter og implementer tydelige regler for hvad kundetemaer maa aendre:
+  - accentfarver
+  - enkelte surfaces
+  - logo/billeder
+  - player skin
+- Dokumenter hvad de ikke maa aendre:
+  - layoutstruktur
+  - navigation
+  - spacing-system
+  - komponenthierarki
+- **Acceptance criteria:**
+  - Customer-managed branding oven paa systemet er tydeligt afgraenset.
+  - Internal/global defaults kan udvikles uden at kundetemaer bryder appens sammenhaeng.
+
+### TASK-11.8 Verification and visual QA
+**Status:** `TODO`
+- Udvid guardrails og verifikation:
+  - visuel checklist
+  - kritiske shell-smokes
+  - spot checks paa public, customer admin og internal
+- **Acceptance criteria:**
+  - Vi har en fast maade at kontrollere at look and feel stadig haenger sammen.
+  - Fremtidige redesigns kan ske centralt uden at glide tilbage i lokal styling.
+
+### Forslag til dag 1
+1. Luk `TASK-11.1` med en skarp audit af public, admin og internal surfaces.
+2. Start `TASK-11.2` med token-hierarki og klare theme-boundaries.
+3. Tag de foerste shared shell-surfaces i `TASK-11.3`, saa vi hurtigt ser systemet samle sig.
+
+### Designbeslutning for sprintet
+- Public, customer admin og internal skal ligne samme produktfamilie.
+- Customer themes skal vaere overflade- og brand-overrides, ikke nye layouts.
+- Internal maa gerne have mere operations-praeg, men ikke bryde grundsystemet.
 
 ---
 
