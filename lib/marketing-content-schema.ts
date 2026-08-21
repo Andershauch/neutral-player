@@ -125,38 +125,404 @@ export interface MarketingContentValidationResult<T> {
   value: T | null;
 }
 
+export interface MarketingEditorField {
+  /// Feltnavnet som det staar i JSON.
+  name: string;
+  /// Hvad feltet betyder, skrevet til en redaktoer og ikke til en udvikler.
+  what: string;
+  /// Konkret raad om laengde, tone eller format.
+  guidance?: string;
+  required: boolean;
+}
+
 export interface MarketingEditorSection {
   id: string;
   label: string;
   description: string;
+  /// Hvor paa siden sektionen lander, saa redaktoeren kan finde den igen.
+  placement: string;
+  /// Hvad sektionen skal opnaa. Det vigtigste at forstaa foer man skriver.
+  purpose: string;
+  /// Antalsgraenser, hvis sektionen er en liste.
+  count?: { min: number; max: number; unit: string };
+  fields: MarketingEditorField[];
+  /// Konkrete raad om hvad der virker og hvad man skal undgaa.
+  tips?: string[];
 }
+
+/// Faellesfelter der gaar igen paa tvaers af sektioner.
+const CTA_FIELDS: MarketingEditorField[] = [
+  {
+    name: "label",
+    what: "Teksten på knappen.",
+    guidance: "Skriv hvad der sker, når man klikker. \"Prøv gratis i 10 dage\" slår \"Læs mere\".",
+    required: true,
+  },
+  {
+    name: "href",
+    what: "Hvor knappen fører hen.",
+    guidance: "Skal starte med / og pege på en side vi selv har, fx /register, /pricing eller /contact.",
+    required: true,
+  },
+  {
+    name: "variant",
+    what: "Knappens vægt.",
+    guidance: "\"primary\" til det ene vigtigste skridt. \"ghost\" eller \"secondary\" til alt andet.",
+    required: true,
+  },
+];
+
+const HERO_FIELDS: MarketingEditorField[] = [
+  {
+    name: "kicker",
+    what: "Den lille linje over overskriften, der siger hvem siden er til.",
+    guidance: "3-8 ord. Fx \"Video til kommuner, skoler og offentlige institutioner\".",
+    required: true,
+  },
+  {
+    name: "badge",
+    what: "Lille fremhævet linje under kickeren. Kan udelades med null.",
+    guidance: "Brug den til ét konkret løfte, ikke til et slogan.",
+    required: false,
+  },
+  {
+    name: "title",
+    what: "Sidens overskrift.",
+    guidance:
+      "Skriv hvad kunden får, ikke hvad produktet hedder. Hold den under 60 tegn, så den ikke brækker på mobil.",
+    required: true,
+  },
+  {
+    name: "body",
+    what: "Afsnittet under overskriften.",
+    guidance: "2-3 sætninger. Forklar hvad man gør, og hvad man får ud af det. Undgå fagsprog.",
+    required: true,
+  },
+  { name: "primaryCta", what: "Den vigtigste knap på siden.", required: true },
+  { name: "secondaryCta", what: "Den sekundære knap. Kan udelades med null.", required: false },
+];
 
 export const MARKETING_EDITOR_SECTIONS: Record<MarketingPageKey, readonly MarketingEditorSection[]> = {
   home: [
-    { id: "hero", label: "Hero", description: "Kicker, overskrift, body, CTA'er og hero-media." },
-    { id: "decisionSignals", label: "Signals", description: "Korte beslutningssignaler der leder videre i flowet." },
-    { id: "serviceCards", label: "Services", description: "Servicekort med summary, punkter og CTA." },
-    { id: "stories", label: "Stories", description: "Kundehistorier med impact, quote og person." },
-    { id: "trustedBy", label: "Trusted by", description: "Kort liste med brands eller kunde-navne." },
-    { id: "salesCta", label: "Sales CTA", description: "Afsluttende salgsblok med bullets og CTA'er." },
+    {
+      id: "hero",
+      label: "Hero",
+      description: "Det første besøgende ser: overskrift, brødtekst, knapper og demovideo.",
+      placement: "Øverst på forsiden, ved siden af afspilleren.",
+      purpose:
+        "Svar på tre spørgsmål inden for ti sekunder: hvad er det, hvem er det til, og hvad gør jeg nu. En besøgende fra en kommune skal kunne se sig selv i teksten med det samme.",
+      fields: [
+        ...HERO_FIELDS,
+        {
+          name: "media",
+          what: "Billede eller video i heroen. Kan udelades med null.",
+          guidance:
+            "Peger på et asset via assetKey. Selve demoafspilleren på forsiden styres af en indstilling i systemet, ikke herfra.",
+          required: false,
+        },
+      ],
+      tips: [
+        "Skriv til den, der skal købe: en kommunikationsmedarbejder eller en it-ansvarlig, ikke en udvikler.",
+        "Undgå ord som platform, løsning og synergi. Skriv hvad man konkret kan gøre.",
+        "Teksten må ikke handle om siden selv. En sætning som “Her kan du se vores services” fortæller ingenting.",
+      ],
+    },
+    {
+      id: "decisionSignals",
+      label: "Signaler",
+      description: "Tre til seks korte chips, der understøtter beslutningen.",
+      placement: "Lige under knapperne i heroen.",
+      purpose:
+        "Fjern den tvivl, der ellers stopper et køb. Her hører de hårde fakta hjemme: tilgængelighed, antal sprog, hvordan man betaler.",
+      count: { min: 3, max: 6, unit: "signaler" },
+      fields: [
+        {
+          name: "label",
+          what: "Overskriften på chippen.",
+          guidance: "1-3 ord, fx “Tilgængelighed” eller “Offentligt indkøb”.",
+          required: true,
+        },
+        {
+          name: "value",
+          what: "Selve fakta.",
+          guidance:
+            "Én kort sætning. Vær konkret: “EAN-faktura og databehandleraftale” slår “Nem opsætning”.",
+          required: true,
+        },
+      ],
+      tips: [
+        "Brug kun ting, vi kan stå inde for. Det her er de påstande, en indkøber tjekker.",
+        "Tal og lovkrav virker bedre end tillægsord.",
+      ],
+    },
+    {
+      id: "serviceCards",
+      label: "Anvendelser",
+      description: "To til seks kort, der viser hvor produktet bruges.",
+      placement: "Midt på forsiden, under heroen.",
+      purpose:
+        "Lad den besøgende genkende sin egen opgave. Skriv kortene efter situation (borgerinformation, skole, HR), ikke efter funktion.",
+      count: { min: 2, max: 6, unit: "kort" },
+      fields: [
+        {
+          name: "title",
+          what: "Situationen kortet handler om.",
+          guidance: "1-3 ord, fx “Borgerinformation” eller “Skoler og uddannelse”.",
+          required: true,
+        },
+        {
+          name: "summary",
+          what: "Hvornår det her er relevant.",
+          guidance: "Én sætning, der starter med “Når...”. Beskriv opgaven, ikke produktet.",
+          required: true,
+        },
+        {
+          name: "points",
+          what: "Liste med korte punkter om hvad man får.",
+          guidance: "2-4 punkter på hver højst en linje. Ingen punktummer til sidst.",
+          required: true,
+        },
+        { name: "cta", what: "Knappen nederst på kortet.", required: true },
+      ],
+      tips: [
+        "Ét kort må gerne have en primary-knap. Resten bør være secondary, så der er én tydelig vej videre.",
+      ],
+    },
+    {
+      id: "stories",
+      label: "Kundehistorier",
+      description: "Referencer fra rigtige kunder. Må stå tom.",
+      placement: "Under anvendelserne. Sektionen skjules helt, når listen er tom.",
+      purpose:
+        "Vise at andre offentlige organisationer allerede bruger det. Én rigtig historie er mere værd end tre opfundne.",
+      count: { min: 0, max: 6, unit: "historier" },
+      fields: [
+        {
+          name: "company",
+          what: "Organisationens rigtige navn.",
+          guidance: "Fx “Herning Kommune”. Brug kun navne, vi har fået lov til at nævne.",
+          required: true,
+        },
+        {
+          name: "impact",
+          what: "Resultatet, i én linje.",
+          guidance: "Vær konkret: “Fire sprog på samme borgerinformation” slår “Stor succes”.",
+          required: true,
+        },
+        {
+          name: "quote",
+          what: "Citat fra personen.",
+          guidance: "1-3 sætninger med personens egne ord. Skriv ikke citatet på deres vegne.",
+          required: true,
+        },
+        { name: "person", what: "Personens navn.", required: true },
+        { name: "role", what: "Personens titel.", guidance: "Fx “Kommunikationschef”.", required: true },
+      ],
+      tips: [
+        "Lad listen stå tom, indtil I har en rigtig kunde, der har sagt ja. Sektionen forsvinder af sig selv.",
+        "Opdigtede citater må ikke stå her. Offentlige indkøbere tjekker referencer, og en falsk reference koster hele salget.",
+        "Få citatet skriftligt godkendt, inklusive navn og titel, før I lægger det ind.",
+      ],
+    },
+    {
+      id: "trustedBy",
+      label: "Bruges af",
+      description: "Liste med navne på organisationer. Må stå tom.",
+      placement: "Under kundehistorierne. Skjules når listen er tom.",
+      purpose: "Vise bredden hurtigt, uden en hel historie pr. kunde.",
+      count: { min: 0, max: 12, unit: "navne" },
+      fields: [
+        {
+          name: "(liste af tekster)",
+          what: "Ét navn pr. element, højst 40 tegn.",
+          guidance: "Kun organisationer, der har givet lov til at blive nævnt.",
+          required: false,
+        },
+      ],
+      tips: ["Samme regel som kundehistorier: kun rigtige navne, kun med tilladelse."],
+    },
+    {
+      id: "salesCta",
+      label: "Afslutning",
+      description: "Den sidste opfordring nederst på siden.",
+      placement: "Nederst på forsiden.",
+      purpose:
+        "Fange den, der har læst hele siden og er klar. Gør næste skridt så lille som muligt, og fjern den sidste bekymring.",
+      fields: [
+        { name: "kicker", what: "Lille linje over overskriften.", required: true },
+        {
+          name: "title",
+          what: "Overskriften på blokken.",
+          guidance: "Skriv den som en opfordring, fx “Prøv det med jeres egen video”.",
+          required: true,
+        },
+        {
+          name: "body",
+          what: "Kort afsnit, der gør det trygt at gå i gang.",
+          guidance:
+            "Nævn hvad det koster i tid og penge. “Kræver ikke betalingskort” fjerner en reel bekymring.",
+          required: true,
+        },
+        {
+          name: "bullets",
+          what: "Punkter der lukker de sidste indvendinger.",
+          guidance: "2-4 punkter. Tag de spørgsmål, salg oftest får.",
+          required: false,
+        },
+        { name: "primaryCta", what: "Den vigtigste knap.", required: true },
+        { name: "secondaryCta", what: "Sekundær knap. Kan udelades med null.", required: false },
+      ],
+    },
   ],
   pricing: [
-    { id: "hero", label: "Hero", description: "Intro til planvalg og de vigtigste CTA'er." },
-    { id: "chooserPoints", label: "Chooser points", description: "Rådgivende punkter til planvalg." },
-    { id: "decisionSignals", label: "Signals", description: "Små chips der forklarer selvbetjening og sales-led køb." },
-    { id: "advisoryCta", label: "Advisory CTA", description: "Sektion der leder videre til FAQ eller salg." },
+    {
+      id: "hero",
+      label: "Hero",
+      description: "Intro til planvalget.",
+      placement: "Øverst på prissiden, over plankortene.",
+      purpose:
+        "Forklar hvad prisen følger, inden tallene vises. Her betaler man for mængden af video, ikke for antal brugere.",
+      fields: HERO_FIELDS,
+      tips: ["Selve priserne hentes automatisk fra Stripe. Skriv dem ikke ind her."],
+    },
+    {
+      id: "chooserPoints",
+      label: "Sådan vælger I",
+      description: "Punkter der hjælper med at vælge den rigtige plan.",
+      placement: "Ved siden af hero-teksten.",
+      purpose: "Gøre valget mellem planerne let, uden at man skal sammenligne tabeller.",
+      count: { min: 2, max: 6, unit: "punkter" },
+      fields: [
+        {
+          name: "(liste af tekster)",
+          what: "Ét punkt pr. plan.",
+          guidance: "Skriv efter mønsteret “Vælg X når ...”, så det er situationen der afgør valget.",
+          required: true,
+        },
+      ],
+    },
+    {
+      id: "decisionSignals",
+      label: "Signaler",
+      description: "Korte chips om køb og betaling.",
+      placement: "Under hero-blokken.",
+      purpose: "Svare på hvordan man betaler, inden man klikker. Særlig vigtigt for offentlige kunder.",
+      count: { min: 3, max: 6, unit: "signaler" },
+      fields: [
+        { name: "label", what: "Overskriften på chippen.", required: true },
+        { name: "value", what: "Selve fakta.", required: true },
+      ],
+    },
+    {
+      id: "advisoryCta",
+      label: "Afslutning",
+      description: "Blokken nederst, der leder videre til FAQ eller salg.",
+      placement: "Nederst på prissiden.",
+      purpose: "Fange den, der ikke kunne vælge, og give en vej til et menneske.",
+      fields: [
+        { name: "kicker", what: "Lille linje over overskriften.", required: true },
+        { name: "title", what: "Overskrift.", required: true },
+        { name: "body", what: "Kort afsnit.", required: true },
+        { name: "primaryCta", what: "Den vigtigste knap.", required: true },
+        { name: "secondaryCta", what: "Sekundær knap. Kan udelades med null.", required: false },
+      ],
+    },
   ],
   faq: [
-    { id: "hero", label: "Hero", description: "Intro til FAQ-flowet og CTA'er." },
-    { id: "guidancePoints", label: "Guidance", description: "Korte hjælpepunkter om hvornår man skal bruge FAQ, pricing eller contact." },
-    { id: "groups", label: "FAQ groups", description: "Grupper med intro og spørgsmål/svar." },
-    { id: "closingCta", label: "Closing CTA", description: "Afsluttende blok til contact eller pricing." },
+    {
+      id: "hero",
+      label: "Hero",
+      description: "Intro til FAQ-siden.",
+      placement: "Øverst på FAQ-siden.",
+      purpose: "Sætte forventningen til hvad man kan finde svar på her.",
+      fields: HERO_FIELDS,
+    },
+    {
+      id: "guidancePoints",
+      label: "Vejvisning",
+      description: "Punkter om hvornår man skal bruge FAQ, priser eller kontakt.",
+      placement: "Under introen.",
+      purpose: "Sende folk det rigtige sted hen, så de ikke læser hele FAQ'en forgæves.",
+      count: { min: 2, max: 6, unit: "punkter" },
+      fields: [{ name: "(liste af tekster)", what: "Ét kort råd pr. punkt.", required: true }],
+    },
+    {
+      id: "groups",
+      label: "Spørgsmål",
+      description: "Grupper af spørgsmål og svar.",
+      placement: "Midt på FAQ-siden.",
+      purpose:
+        "Besvare det, der reelt holder folk tilbage. Skriv spørgsmålene, som kunderne faktisk stiller dem.",
+      count: { min: 1, max: 8, unit: "grupper" },
+      fields: [
+        { name: "title", what: "Gruppens overskrift.", guidance: "Fx “Kom godt i gang”.", required: true },
+        { name: "intro", what: "Kort linje om hvad gruppen dækker.", required: true },
+        {
+          name: "items",
+          what: "Selve spørgsmålene med question og answer.",
+          guidance: "Skriv svaret først og kort. Uddyb bagefter, hvis det er nødvendigt.",
+          required: true,
+        },
+      ],
+      tips: [
+        "Tag spørgsmålene fra rigtige mails og møder, ikke fra hvad vi gerne vil fortælle.",
+        "Hvis salg bliver stillet samme spørgsmål tre gange, hører det hjemme her.",
+      ],
+    },
+    {
+      id: "closingCta",
+      label: "Afslutning",
+      description: "Blokken nederst, der leder videre til kontakt.",
+      placement: "Nederst på FAQ-siden.",
+      purpose: "Give en vej videre til dem, der ikke fandt svaret.",
+      fields: [
+        { name: "kicker", what: "Lille linje over overskriften.", required: true },
+        { name: "title", what: "Overskrift.", required: true },
+        { name: "body", what: "Kort afsnit.", required: true },
+        { name: "primaryCta", what: "Den vigtigste knap.", required: true },
+        { name: "secondaryCta", what: "Sekundær knap. Kan udelades med null.", required: false },
+      ],
+    },
   ],
   contact: [
-    { id: "hero", label: "Hero", description: "Salgsvendt intro med CTA'er." },
-    { id: "contactCards", label: "Contact cards", description: "Email, næste skridt og andre salgsnære informationskort." },
-    { id: "supportPoints", label: "Support points", description: "Punkter om typiske ting vi hjælper med." },
-    { id: "primaryActions", label: "Primary actions", description: "Knapper der leder videre til planvalg eller login." },
+    {
+      id: "hero",
+      label: "Hero",
+      description: "Intro på kontaktsiden.",
+      placement: "Øverst på kontaktsiden.",
+      purpose: "Gøre det tydeligt, hvad man kan få hjælp til, og hvor hurtigt man hører fra os.",
+      fields: HERO_FIELDS,
+    },
+    {
+      id: "contactCards",
+      label: "Kontaktkort",
+      description: "Kort med email, svartid og næste skridt.",
+      placement: "Ved siden af kontaktformularen.",
+      purpose: "Give den information, folk leder efter, inden de skriver: hvem svarer, og hvornår.",
+      count: { min: 1, max: 6, unit: "kort" },
+      fields: [
+        { name: "title", what: "Kortets overskrift.", required: true },
+        { name: "body", what: "Selve informationen.", guidance: "Vær konkret om svartid.", required: true },
+      ],
+    },
+    {
+      id: "supportPoints",
+      label: "Vi hjælper med",
+      description: "Punkter om hvad vi typisk hjælper med.",
+      placement: "Under kontaktkortene.",
+      purpose: "Vise at spørgsmålet ikke er dumt, så flere tør skrive.",
+      count: { min: 2, max: 6, unit: "punkter" },
+      fields: [{ name: "(liste af tekster)", what: "Én type henvendelse pr. punkt.", required: true }],
+    },
+    {
+      id: "primaryActions",
+      label: "Knapper",
+      description: "Knapper der leder videre til priser eller login.",
+      placement: "Nederst på kontaktsiden.",
+      purpose: "Fange dem, der egentlig bare skulle et andet sted hen.",
+      count: { min: 1, max: 4, unit: "knapper" },
+      fields: CTA_FIELDS,
+    },
   ],
 };
 

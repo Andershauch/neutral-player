@@ -74,3 +74,35 @@ Disse hændelser skal kunne spores:
 - `INTERNAL_MARKETING_PAGE_ROLLED_BACK`
 
 Hvis preview eller runtime falder tilbage til defaults, logges det som warning i server-outputtet.
+
+## Redaktoervejledning i editoren
+
+Hver sektion i `/internal/marketing` viser nu:
+
+- **Hvad sektionen skal opnaa** - formaalet, foer man begynder at skrive.
+- **Hvor paa siden den lander** - saa man kan finde den igen i browseren.
+- **Feltforklaring** - hvert felt med hvad det betyder, om det skal udfyldes, og konkret raad om laengde og tone.
+- **Husk-noter** - hvad der virker, og hvad man skal undgaa.
+
+Vejledningen ligger i `MARKETING_EDITOR_SECTIONS` i `lib/marketing-content-schema.ts`.
+Naar en sektion aendrer sig, skal vejledningen opdateres samme sted.
+
+## Regler for referencer
+
+- `stories` og `trustedBy` maa staa tomme. Sektionerne skjules automatisk paa den offentlige side.
+- Der maa **kun** staa rigtige kunder med skriftlig tilladelse, inklusive navn og titel paa den citerede person.
+- Opdigtede referencer maa aldrig publiceres. Offentlige indkoebere tjekker referencer, og en falsk reference koster hele salget.
+
+## Nulstil en side til kode-defaults
+
+Naar indholdet i databasen er blevet forældet i forhold til koden, eller noget skal hurtigt af den live side:
+
+```bash
+npm run marketing:publish-defaults -- home --dry-run   # se hvad der sker
+npm run marketing:publish-defaults -- home             # publicer
+npm run marketing:publish-defaults -- --all            # alle sider
+```
+
+Scriptet arkiverer den tidligere publicerede version i stedet for at slette den,
+saa rollback stadig virker gennem den interne konsol. Det er idempotent: koerer du
+det to gange i traek, sker der ingenting anden gang.

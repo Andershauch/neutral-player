@@ -462,21 +462,89 @@ export default function InternalMarketingConsole() {
                 </div>
               ) : null}
 
-              <div className="space-y-4">
+              <div className="space-y-6">
                 {editableSections.map((section) => (
-                  <label key={section.id} className="block space-y-2">
+                  <div key={section.id} className="rounded-[1.5rem] border border-gray-200 p-4 space-y-3">
                     <div>
-                      <p className="text-sm font-black uppercase tracking-tight text-gray-900">{section.label}</p>
+                      <div className="flex flex-wrap items-baseline justify-between gap-2">
+                        <p className="text-sm font-black uppercase tracking-tight text-gray-900">{section.label}</p>
+                        {section.count ? (
+                          <span className="rounded-full bg-gray-100 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-gray-600">
+                            {section.count.min === 0
+                              ? `0-${section.count.max} ${section.count.unit} — må stå tom`
+                              : `${section.count.min}-${section.count.max} ${section.count.unit}`}
+                          </span>
+                        ) : null}
+                      </div>
                       <p className="mt-1 text-xs text-gray-500">{section.description}</p>
+                      <p className="mt-1 text-xs text-gray-400">{section.placement}</p>
                     </div>
-                    <textarea
-                      value={sectionDrafts[section.id] ?? ""}
-                      onChange={(event) => updateSection(section.id, event.target.value)}
-                      rows={12}
-                      spellCheck={false}
-                      className="w-full rounded-[1.5rem] border border-gray-200 bg-white px-4 py-3 font-mono text-xs leading-6 text-gray-900 outline-none focus:ring-2 focus:ring-blue-400"
-                    />
-                  </label>
+
+                    <div className="rounded-xl border border-blue-100 bg-blue-50/60 px-3 py-2.5">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-blue-700">
+                        Hvad skal sektionen opnå
+                      </p>
+                      <p className="mt-1 text-xs leading-5 text-gray-700">{section.purpose}</p>
+                    </div>
+
+                    <details className="group">
+                      <summary className="cursor-pointer list-none text-[10px] font-black uppercase tracking-widest text-gray-600 hover:text-gray-900">
+                        <span className="group-open:hidden">Vis feltforklaring ({section.fields.length})</span>
+                        <span className="hidden group-open:inline">Skjul feltforklaring</span>
+                      </summary>
+
+                      <dl className="mt-3 space-y-2.5">
+                        {section.fields.map((field) => (
+                          <div key={field.name} className="rounded-lg bg-gray-50 px-3 py-2">
+                            <dt className="flex flex-wrap items-baseline gap-2">
+                              <code className="font-mono text-[11px] font-semibold text-gray-900">{field.name}</code>
+                              <span
+                                className={`text-[9px] font-bold uppercase tracking-widest ${
+                                  field.required ? "text-gray-500" : "text-gray-400"
+                                }`}
+                              >
+                                {field.required ? "Skal udfyldes" : "Valgfri"}
+                              </span>
+                            </dt>
+                            <dd className="mt-1 text-xs leading-5 text-gray-600">
+                              {field.what}
+                              {field.guidance ? (
+                                <span className="mt-1 block text-gray-500">{field.guidance}</span>
+                              ) : null}
+                            </dd>
+                          </div>
+                        ))}
+                      </dl>
+
+                      {section.tips && section.tips.length > 0 ? (
+                        <div className="mt-3 rounded-lg border border-amber-100 bg-amber-50/70 px-3 py-2.5">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-amber-800">
+                            Husk
+                          </p>
+                          <ul className="mt-1.5 space-y-1">
+                            {section.tips.map((tip) => (
+                              <li key={tip} className="text-xs leading-5 text-amber-900">
+                                {tip}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ) : null}
+                    </details>
+
+                    <label className="block space-y-1.5">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-gray-500">
+                        Indhold (JSON)
+                      </span>
+                      <textarea
+                        value={sectionDrafts[section.id] ?? ""}
+                        onChange={(event) => updateSection(section.id, event.target.value)}
+                        rows={12}
+                        spellCheck={false}
+                        className="w-full rounded-[1.25rem] border border-gray-200 bg-white px-4 py-3 font-mono text-xs leading-6 text-gray-900 outline-none focus:ring-2 focus:ring-blue-400"
+                      />
+                    </label>
+                  </div>
                 ))}
               </div>
             </div>
