@@ -60,6 +60,13 @@ Denne fil er en samlet oversigt over de eksterne tjenester, som Neutral Player b
   - `MUX_TOKEN_ID`
   - `MUX_TOKEN_SECRET`
   - `MUX_WEBHOOK_SECRET`
+- Webhook-events der skal vaere slaaet til:
+  - `video.asset.ready` (playback ID og varighed)
+  - `video.asset.deleted`
+  - `video.asset.track.ready` og `video.asset.track.errored` (undertekster)
+- Valgfri:
+  - `NEXT_PUBLIC_DEMO_PLAYBACK_IDS` til forsidens demo, fx `da:Dansk:ABC123,en:English:DEF456`.
+    Uden den viser heroen den lokale demo-video uden sprogknapper.
 - Typiske fejl:
   - Upload fejler
   - Video bliver ikke klar

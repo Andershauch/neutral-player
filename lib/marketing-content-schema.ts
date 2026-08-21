@@ -194,8 +194,10 @@ export function validateHomeMarketingContent(input: unknown): MarketingContentVa
     hero: requireHeroSection(root, "hero", errors, { allowMedia: true }),
     decisionSignals: requireSignalItems(root, "decisionSignals", errors, { min: 3, max: 6 }),
     serviceCards: requireServiceCards(root, "serviceCards", errors, { min: 2, max: 6 }),
-    stories: requireStoryCards(root, "stories", errors, { min: 1, max: 6 }),
-    trustedBy: requireStringList(root, "trustedBy", errors, { min: 1, max: 12, itemLabel: "brandnavn", maxLength: 40 }),
+    // Min 0: kundehistorier og referencer skal kunne være tomme, indtil der findes
+    // rigtige at vise. Opdigtede referencer må ikke være en forudsætning for at validere.
+    stories: requireStoryCards(root, "stories", errors, { min: 0, max: 6 }),
+    trustedBy: requireStringList(root, "trustedBy", errors, { min: 0, max: 12, itemLabel: "brandnavn", maxLength: 40 }),
     salesCta: requireCtaBlock(root, "salesCta", errors, { allowBullets: true }),
   };
 

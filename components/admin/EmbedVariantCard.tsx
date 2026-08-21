@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import NextImage from "next/image";
+import VariantSubtitlesPanel, { type SubtitleItem } from "./VariantSubtitlesPanel";
 
 const MuxVideoUploader = dynamic(() => import("./MuxUploader"), {
   loading: () => <p className="text-xs font-semibold text-gray-500">Indlæser uploader...</p>,
@@ -24,6 +25,7 @@ interface VariantItem {
   muxPlaybackId: string | null;
   posterFrameUrl: string | null;
   views: number;
+  subtitles?: SubtitleItem[];
 }
 
 interface EmbedVariantCardProps {
@@ -429,6 +431,13 @@ export default function EmbedVariantCard({ variant, languages }: EmbedVariantCar
         </div>
         {posterError ? <p className="text-xs font-semibold text-red-600">{posterError}</p> : null}
       </div>
+
+      <VariantSubtitlesPanel
+        variantId={variant.id}
+        variantLang={variant.lang}
+        hasVideo={hasVideo}
+        subtitles={variant.subtitles || []}
+      />
 
       <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-gray-100 bg-gray-50/70 px-3 py-2.5">
         <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500">{variant.lang.toUpperCase()} version</div>

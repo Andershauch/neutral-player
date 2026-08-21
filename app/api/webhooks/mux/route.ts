@@ -95,6 +95,35 @@ export async function POST(req: Request) {
       }
     }
 
+    // Auto-genererede undertekster bliver klar asynkront efter selve videoen.
+    if (eventType === "video.asset.track.ready" || eventType === "video.asset.track.errored") {
+      const trackId = typeof data.id === "string" ? data.id : null;
+      const assetId = typeof data.asset_id === "string" ? data.asset_id : null;
+      const languageCode =
+        typeof data.language_code === "string" ? data.language_code.toLowerCase() : null;
+      const trackType = typeof data.type === "string" ? data.type : null;
+
+      if (trackType === "text" && assetId && languageCode) {
+        const variant = await prisma.variant.findFirst({
+          where: { muxAssetId: assetId },
+          select: { id: true, organizationId: true },
+        });
+        resolvedOrgId = variant?.organizationId ?? resolvedOrgId;
+
+        if (variant) {
+          const isReady = eventType === "video.asset.track.ready";
+          await prisma.variantSubtitle.updateMany({
+            where: { variantId: variant.id, languageCode },
+            data: {
+              status: isReady ? "ready" : "errored",
+              muxTrackId: trackId,
+              errorMessage: isReady ? null : "Mux kunne ikke generere underteksterne.",
+            },
+          });
+        }
+      }
+    }
+
     if (eventType === "video.asset.deleted") {
       const assetId = typeof data.id === "string" ? data.id : null;
       if (assetId) {

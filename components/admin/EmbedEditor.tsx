@@ -52,6 +52,12 @@ interface EmbedEditorProps {
         muxPlaybackId: string | null;
         posterFrameUrl: string | null;
         views: number;
+        subtitles?: Array<{
+          languageCode: string;
+          name: string;
+          status: string;
+          source: string;
+        }>;
       }>;
     }>;
   };

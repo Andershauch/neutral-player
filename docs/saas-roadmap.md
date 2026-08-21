@@ -837,10 +837,26 @@
 - `PublicSiteHeader` viser nu "Til dashboard" for indloggede brugere. Det forladte `HomeHeaderActions.tsx` er slettet.
 
 ### TASK-12.4 Forside-copy og synlig produktdemo
-**Status:** `TODO`
-- Erstat designnoter med rigtig salgstekst rettet mod offentlige kunder.
-- Fjern det hvide overlay fra heroen og vis en klikbar demo med sprogskift.
-- Fremhaev WCAG 2.1 AA og undertekster, som er lovkrav for offentlige websites.
+**Status:** `DONE`
+- Designnoterne er erstattet af salgstekst rettet mod kommuner, skoler og forvaltninger.
+- Det hvide overlay er fjernet. Heroen viser nu en rigtig afspiller via `components/public/HeroPlayerDemo.tsx`,
+  hvor besoegende selv kan klikke mellem sprog naar `NEXT_PUBLIC_DEMO_PLAYBACK_IDS` er sat.
+  Uden den falder heroen tilbage til den lokale demo-video uden sprogknapper, saa der aldrig vises et falsk sprogskift.
+- Tilgaengelighed har faaet sin egen sektion: undertekster, tastaturbetjening og ingen sporing af seerne.
+- **Opdigtede kundecitater er fjernet.** De tre "kundehistorier" (Northlane Mobility, Careline Nordic, Atlas Industrial)
+  med navngivne personer var opfundne. Schemaet tillader nu tomme `stories` og `trustedBy`, og sektionerne vises
+  foerst naar der findes rigtige referencer at vise.
+
+### TASK-12.10 Undertekster og tilgaengelighed
+**Status:** `IN PROGRESS`
+- `DONE`: `VariantSubtitle`-model, API paa `/api/variants/[id]/subtitles` og UI i `VariantSubtitlesPanel`.
+- `DONE`: Undertekster genereres af Mux ud fra videoens lydspor. 12 sprog understoettes; dansk er markeret beta,
+  hvilket siges tydeligt i UI'et.
+- `DONE`: `video.asset.track.ready` og `video.asset.track.errored` opdaterer status; Mux-webhooken skal have
+  de to events slaaet til i dashboardet.
+- `TODO`: Redigering af genereret tekst. I dag kan et spor bestilles og fjernes, men ikke rettes i appen.
+- `TODO`: Upload af kundens egen VTT/SRT-fil. Kraever fillagring, som projektet ikke har i dag.
+- `TODO`: Formel WCAG 2.1 AA-gennemgang af afspilleren, saa paastanden paa forsiden er efterproevet.
 
 ### TASK-12.5 Aktiveringsmodel
 **Status:** `DONE`

@@ -27,7 +27,14 @@ export default async function AdminEmbedPage({ params }: PageProps) {
       groups: {
         orderBy: { sortOrder: "asc" },
         include: {
-          variants: true,
+          variants: {
+            include: {
+              subtitles: {
+                orderBy: { languageCode: "asc" },
+                select: { languageCode: true, name: true, status: true, source: true },
+              },
+            },
+          },
         },
       },
     },

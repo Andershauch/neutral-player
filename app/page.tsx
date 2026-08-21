@@ -1,5 +1,5 @@
 import Link from "next/link";
-import HeroMedia from "@/components/public/HeroMedia";
+import HeroPlayerDemo, { type DemoVariant } from "@/components/public/HeroPlayerDemo";
 import PublicSiteHeader from "@/components/public/PublicSiteHeader";
 import { getResolvedMarketingPageContent, type ResolvedMarketingAsset } from "@/lib/marketing-content-runtime";
 import { type HomeMarketingContent, type MarketingLinkField } from "@/lib/marketing-content-schema";
@@ -24,6 +24,7 @@ export default async function Home() {
   ]);
   const content = marketing.content;
   const heroMedia = resolveHomeHeroMedia(content, marketing.assetsByKey);
+  const demoVariants = getDemoVariants();
 
   return (
     <main className="np-default-theme np-page-shell">
@@ -72,34 +73,36 @@ export default async function Home() {
 
             <div className="space-y-4">
               <div className="np-section-card-muted overflow-hidden">
-                <div className="relative aspect-[4/3] overflow-hidden rounded-[1.75rem] border border-white/70 bg-white/70">
-                  <HeroMedia
-                    type={heroMedia.type}
-                    videoSources={heroMedia.videoSources}
+                {/* Ingen overlay: demoen er det eneste sted en besøgende ser produktet. */}
+                <div className="relative aspect-video overflow-hidden rounded-[1.75rem] border border-white/70 bg-gray-900">
+                  <HeroPlayerDemo
+                    variants={demoVariants}
                     posterSrc={heroMedia.posterSrc}
-                    imageSrc={heroMedia.imageSrc}
-                    imageAlt={heroMedia.imageAlt}
-                  />
-                  <div
-                    className="absolute inset-0 backdrop-blur-[1px]"
-                    style={{ background: "var(--np-hero-overlay, rgba(255,255,255,0.72))" }}
+                    fallbackVideoSrc={heroMedia.videoSources[heroMedia.videoSources.length - 1]?.src}
+                    fallbackAlt={heroMedia.imageAlt}
                   />
                 </div>
+                <p className="mt-3 text-xs text-gray-500">
+                  {demoVariants.length > 1
+                    ? "Klik dig mellem sprogene. Det er den samme video og det samme link."
+                    : "Sådan ser afspilleren ud på jeres egen side."}
+                </p>
               </div>
 
               <div className="grid gap-3 md:grid-cols-2">
                 <div className="np-section-card-muted">
-                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-500">Mest efterspurgt</p>
-                  <p className="mt-2 text-lg font-black uppercase tracking-tight text-gray-900">Multimarked embeds</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-500">Tilgængelighed</p>
+                  <p className="mt-2 text-lg font-black uppercase tracking-tight text-gray-900">Undertekster uden merarbejde</p>
                   <p className="mt-2 text-sm text-gray-600">
-                    Et setup der passer til marketing, support og onboarding på samme tid.
+                    Underteksterne genereres automatisk og kan rettes til. Afspilleren kan betjenes med tastatur og
+                    skærmlæser.
                   </p>
                 </div>
                 <div className="np-section-card-muted">
-                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-500">Næste skridt</p>
-                  <p className="mt-2 text-lg font-black uppercase tracking-tight text-gray-900">Vælg service eller book salg</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-500">Ét sted at rette</p>
+                  <p className="mt-2 text-lg font-black uppercase tracking-tight text-gray-900">Linket bliver det samme</p>
                   <p className="mt-2 text-sm text-gray-600">
-                    Forsiden skal lede hurtigt videre uden at miste den gode historie.
+                    Udskift videoen eller tilføj et sprog, uden at nogen skal opdatere hjemmesiden bagefter.
                   </p>
                 </div>
               </div>
@@ -110,17 +113,17 @@ export default async function Home() {
         <section className="space-y-5" id="services">
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div className="np-section-intro">
-              <p className="np-kicker text-blue-600">Vælg en service</p>
+              <p className="np-kicker text-blue-600">Hvor det bruges</p>
               <h3 className="text-3xl font-black uppercase tracking-tight text-gray-900 md:text-4xl">
-                Tre tydelige veje ind i platformen.
+                Bygget til offentlig kommunikation.
               </h3>
               <p className="np-support-copy">
-                Inspireret af store SaaS-forsider skal det være let at forstå, hvad man kan købe, hvem det er til, og
-                hvornår det giver mening at tale med salg.
+                De fleste af vores brugere står med den samme opgave: den samme information skal ud til borgere,
+                elever eller medarbejdere, der ikke alle læser dansk.
               </p>
             </div>
             <Link href="/contact" className="np-btn-ghost inline-flex px-5 py-3 text-center">
-              Book en intro
+              Book en gennemgang
             </Link>
           </div>
 
@@ -128,7 +131,7 @@ export default async function Home() {
             {content.serviceCards.map((service) => (
               <article key={service.title} className="np-section-card flex flex-col gap-5">
                 <div className="space-y-3">
-                  <p className="np-kicker text-blue-600">Service</p>
+                  <p className="np-kicker text-blue-600">Anvendelse</p>
                   <h4 className="text-2xl font-black uppercase tracking-tight text-gray-900">{service.title}</h4>
                   <p className="text-sm leading-6 text-gray-600">{service.summary}</p>
                 </div>
@@ -153,41 +156,41 @@ export default async function Home() {
           <div className="np-marketing-grid">
             <div className="space-y-6">
               <div className="np-section-intro">
-                <p className="np-kicker text-blue-600">Klar til drift</p>
+                <p className="np-kicker text-blue-600">Priser</p>
                 <h3 className="text-3xl font-black uppercase tracking-tight text-gray-900 md:text-4xl">
-                  Vælg den pakke der passer til service-niveauet.
+                  Prisen følger, hvor meget video I har.
                 </h3>
                 <p className="np-support-copy">
-                  I stedet for at vise en stor prisvæg med det samme, peger forsiden dig videre til den rigtige type
-                  setup og giver salg en tydelig plads i beslutningen.
+                  I betaler for mængden af video, I har liggende, og hvor meget den bliver set — ikke for antallet
+                  af brugere eller projekter. Alle planer har undertekster og alle sprog med.
                 </p>
               </div>
 
               <div className="np-section-card-muted space-y-4">
-                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-500">Typiske købssignaler</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-500">Sådan vælger I</p>
                 <ul className="np-check-list">
-                  <li>Starter når du vil hurtigt i gang med et enkelt serviceflow.</li>
-                  <li>Pro når marketing, support og onboarding skal dele samme platform.</li>
-                  <li>Enterprise når branding, governance og salgsdialog skal spille tættere sammen.</li>
+                  <li>Standard når én skole eller afdeling har egne videoer.</li>
+                  <li>Kommune når flere enheder skal dele det samme setup.</li>
+                  <li>Enterprise når det skal med i et udbud eller en rammeaftale.</li>
                 </ul>
               </div>
             </div>
 
             <div className="np-section-card-muted space-y-4">
-              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-500">Når salg skal med</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-500">Offentligt indkøb</p>
               <p className="text-2xl font-black uppercase tracking-tight text-gray-900">
-                Brug planen som beslutningshjælp, ikke kun som prisoversigt.
+                I kan betale med EAN-faktura.
               </p>
               <p className="text-sm leading-6 text-gray-600">
-                Pakkerne skal gøre det let at vælge mellem selvbetjening og salg, uden at brugeren mister retning i
-                flowet.
+                Send os EAN-nummer og rekvisition, så fakturerer vi gennem den vante proces. I får
+                databehandleraftale, og videoerne ligger på servere i EU.
               </p>
               <div className="flex flex-col gap-3 sm:flex-row">
                 <Link href="/pricing" className="np-btn-primary px-5 py-3 text-center">
                   Se alle planer
                 </Link>
                 <Link href="/contact" className="np-btn-ghost px-5 py-3 text-center">
-                  Tal med salg
+                  Spørg om et tilbud
                 </Link>
               </div>
             </div>
@@ -228,57 +231,83 @@ export default async function Home() {
           </div>
         </section>
 
-        <section className="space-y-5" id="stories">
-          <div className="np-section-intro">
-            <p className="np-kicker text-blue-600">Gode historier</p>
-            <h3 className="text-3xl font-black uppercase tracking-tight text-gray-900 md:text-4xl">
-              SaaS-sider virker bedre, når historier og servicevalg er vævet sammen.
-            </h3>
-            <p className="np-support-copy">
-              Her er den type kundehistorier vi skal læne os op ad: konkrete resultater, et tydeligt problem og et
-              næste skridt der naturligt leder til salg eller demo.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-            {content.stories.map((story) => (
-              <article key={story.company} className="np-story-card">
-                <div className="space-y-3">
-                  <span className="np-pill-badge">{story.company}</span>
-                  <p className="text-xl font-black uppercase tracking-tight text-gray-900">{story.impact}</p>
-                </div>
-                <p className="text-sm leading-7 text-gray-700">&ldquo;{story.quote}&rdquo;</p>
-                <div className="mt-auto border-t border-gray-200 pt-4">
-                  <p className="text-sm font-black uppercase tracking-tight text-gray-900">{story.person}</p>
-                  <p className="mt-1 text-xs font-semibold uppercase tracking-[0.18em] text-gray-500">{story.role}</p>
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="np-section-card space-y-6">
+        <section className="np-section-card space-y-6" id="tilgaengelighed">
           <div className="np-marketing-grid">
             <div className="space-y-3">
-              <p className="np-kicker text-blue-600">Trusted by service teams</p>
+              <p className="np-kicker text-blue-600">Tilgængelighed</p>
               <h3 className="text-3xl font-black uppercase tracking-tight text-gray-900 md:text-4xl">
-                Troværdighed skal også være en del af forsiden.
+                Undertekster er ikke et tilvalg.
               </h3>
             </div>
             <p className="np-support-copy">
-              Når vi kombinerer cases, serviceveje og tydelige CTA&apos;er, føles siden mindre som en generisk SaaS-side
-              og mere som en platform med en reel salgsfortælling.
+              Offentlige websites skal leve op til WCAG 2.1 AA. Derfor er undertekster en del af alle planer, ikke
+              en dyrere pakke. I bestiller dem med ét klik pr. sprogversion og kan rette dem igennem, før videoen
+              går i luften.
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-3">
-            {content.trustedBy.map((brand) => (
-              <span key={brand} className="np-pill-badge">
-                {brand}
-              </span>
-            ))}
+          <div className="grid gap-3 md:grid-cols-3">
+            <div className="np-section-card-muted">
+              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-500">Automatisk</p>
+              <p className="mt-2 text-sm text-gray-700">
+                Underteksterne genereres ud fra videoens lyd på 12 sprog og kan redigeres bagefter.
+              </p>
+            </div>
+            <div className="np-section-card-muted">
+              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-500">Betjening</p>
+              <p className="mt-2 text-sm text-gray-700">
+                Afspilleren kan styres med tastatur, og knapperne har synligt fokus for skærmlæsere.
+              </p>
+            </div>
+            <div className="np-section-card-muted">
+              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-500">Privatliv</p>
+              <p className="mt-2 text-sm text-gray-700">
+                Ingen reklamer og ingen sporing af seerne. Videoerne ligger på servere i EU.
+              </p>
+            </div>
           </div>
         </section>
+
+        {/* Referencer vises først når der findes rigtige. */}
+        {content.stories.length > 0 ? (
+          <section className="space-y-5" id="stories">
+            <div className="np-section-intro">
+              <p className="np-kicker text-blue-600">Kunder</p>
+              <h3 className="text-3xl font-black uppercase tracking-tight text-gray-900 md:text-4xl">
+                Sådan bruger andre det.
+              </h3>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+              {content.stories.map((story) => (
+                <article key={story.company} className="np-story-card">
+                  <div className="space-y-3">
+                    <span className="np-pill-badge">{story.company}</span>
+                    <p className="text-xl font-black uppercase tracking-tight text-gray-900">{story.impact}</p>
+                  </div>
+                  <p className="text-sm leading-7 text-gray-700">&ldquo;{story.quote}&rdquo;</p>
+                  <div className="mt-auto border-t border-gray-200 pt-4">
+                    <p className="text-sm font-black uppercase tracking-tight text-gray-900">{story.person}</p>
+                    <p className="mt-1 text-xs font-semibold uppercase tracking-[0.18em] text-gray-500">{story.role}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {content.trustedBy.length > 0 ? (
+          <section className="np-section-card space-y-4">
+            <p className="np-kicker text-blue-600">Bruges af</p>
+            <div className="flex flex-wrap gap-3">
+              {content.trustedBy.map((brand) => (
+                <span key={brand} className="np-pill-badge">
+                  {brand}
+                </span>
+              ))}
+            </div>
+          </section>
+        ) : null}
 
         <section className="np-section-card" id="sales">
           <div className="np-marketing-grid">
@@ -357,4 +386,23 @@ function resolveHomeHeroMedia(
   }
 
   return DEFAULT_HERO_MEDIA;
+}
+
+/// Rigtige Mux-videoer til forsidens demo, sat via env så de kan skiftes uden deploy.
+/// Format: "da:Dansk:PLAYBACK_ID,en:English:PLAYBACK_ID".
+/// Uden dem falder heroen tilbage til den lokale demo-video uden sprogknapper.
+function getDemoVariants(): DemoVariant[] {
+  const raw = process.env.NEXT_PUBLIC_DEMO_PLAYBACK_IDS;
+  if (!raw) return [];
+
+  return raw
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .map((entry) => {
+      const [lang, label, playbackId] = entry.split(":").map((part) => part.trim());
+      if (!lang || !label || !playbackId) return null;
+      return { lang, label, playbackId };
+    })
+    .filter((variant): variant is DemoVariant => variant !== null);
 }

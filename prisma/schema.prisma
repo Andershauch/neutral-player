@@ -53,6 +53,7 @@ model Organization {
   themes              OrganizationTheme[]
   usageMonths         UsageMonth[]
   invoiceRequests     InvoiceRequest[]
+  variantSubtitles    VariantSubtitle[]
   activation          OrganizationActivation?
 }
 
@@ -241,9 +242,35 @@ model Variant {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  group        Group         @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  group        Group             @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  organization Organization?     @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  subtitles    VariantSubtitle[]
+
+  @@index([organizationId])
+}
+
+/// Undertekstspor pr. sprogversion. Tilgaengelighed er lovkrav for offentlige
+/// websites (WCAG 2.1 AA), saa sporene foelger videoen hele vejen ud i embeddet.
+model VariantSubtitle {
+  id             String   @id @default(cuid())
+  variantId      String
+  organizationId String?
+  languageCode   String
+  name           String
+  /// "generated" = auto-genereret hos Mux. "uploaded" = kundens egen fil.
+  source         String   @default("generated")
+  /// requested | ready | errored
+  status         String   @default("requested")
+  muxTrackId     String?
+  errorMessage   String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  variant      Variant       @relation(fields: [variantId], references: [id], onDelete: Cascade)
   organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
 
+  @@unique([variantId, languageCode])
+  @@index([variantId])
   @@index([organizationId])
 }
 
