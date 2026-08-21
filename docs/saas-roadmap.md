@@ -807,6 +807,68 @@
 
 ---
 
+## SPRINT-12 Aktiveringsryggrad og forretningsmodel
+**Goal:** Give produktet én sammenhaengende rejse fra forside til afspillet embed, og en forretningsmodel der passer til offentlige kunder og til Mux' faktiske omkostninger.
+**Status:** `IN PROGRESS`
+**Baggrund:** Journey review 2026-08-21 fandt at produktet var samlet visuelt, men ikke tilstandsmaessigt: planvalg rejste ikke med brugeren, headeren kendte ikke session, og onboarding blev talt tre forskellige steder. Samtidig guidede onboardingen brugeren ind i en mur, fordi gratisplanen tillod upload men ikke afspilning.
+
+### Laaste beslutninger
+- **Proeveperiode:** 10 dage med vandmaerke paa afspilleren. Derefter lukkes afspilningen, og der skal vaelges plan. Indhold bevares.
+- **Planstruktur:** To niveauer plus enterprise. `Standard` (1.000 lagerminutter, 50.000 visningsminutter/md, 10 brugere) og `Kommune` (5.000 lagerminutter, 250.000 visningsminutter/md, ubegraensede brugere, branding). `Enterprise` efter aftale.
+- **Graenser maales i minutter, ikke objekter.** Mux fakturerer pr. minut lagret og leveret. De gamle graenser paa projekter/varianter havde ingen sammenhaeng med omkostningen, og `pro_monthly` var helt uden loft.
+- **Betaling:** EAN/NemHandel-faktura er et krav, fordi kommuner og skoler ikke kan betale med kort. Standard kan koebes med kort; Kommune og Enterprise gaar via faktura.
+- **Positionering:** De gamle priser (99/299 kr) er droppet. De signalerede hobbyprodukt til en kommunal indkoeber og kunne ikke daekke Mux-forbrug ved arkivmigrering.
+
+### TASK-12.1 Planvalget rejser med brugeren
+**Status:** `DONE`
+- `/register?plan=...` baerer valget gennem oprettelse til `/setup/workspace`, hvor det gemmes paa `OrganizationActivation.intendedPlan`.
+- Setup viser hvilken plan der blev valgt i stedet for at spoerge forfra.
+
+### TASK-12.2 Proeveperiode, planstruktur og forbrugsgraenser
+**Status:** `DONE`
+- 10-dages proeveperiode oprettes sammen med workspacet i `lib/org-context.ts`.
+- `lib/plan-limits.ts` haandhaever nu lagerminutter og leveringsminutter pr. maaned.
+- `Variant.durationSeconds` fanges fra Mux-webhooken; `UsageMonth` ruller leveringsforbrug op pr. maaned.
+- Embed spiller i proeveperioden med vandmaerke og lukker foerst naar perioden udloeber.
+- Aeldre plan-noegler (`starter_monthly`, `pro_monthly`, `custom_monthly`) mappes via `LEGACY_PLAN_ALIASES`, saa live abonnementer ikke braekker.
+
+### TASK-12.3 Session-bevidst public header
+**Status:** `DONE`
+- `PublicSiteHeader` viser nu "Til dashboard" for indloggede brugere. Det forladte `HomeHeaderActions.tsx` er slettet.
+
+### TASK-12.4 Forside-copy og synlig produktdemo
+**Status:** `TODO`
+- Erstat designnoter med rigtig salgstekst rettet mod offentlige kunder.
+- Fjern det hvide overlay fra heroen og vis en klikbar demo med sprogskift.
+- Fremhaev WCAG 2.1 AA og undertekster, som er lovkrav for offentlige websites.
+
+### TASK-12.5 Aktiveringsmodel
+**Status:** `DONE`
+- `lib/activation.ts` er nu eneste kilde til "hvor er organisationen henne", med egen tabel i stedet for udledning fra `AuditLog`.
+- `lib/onboarding.ts` skriver videre til revisionssporet, men fodrer nu ogsaa aktiveringstilstanden.
+
+### TASK-12.6 Én NextStep-komponent
+**Status:** `DONE`
+- `components/activation/NextStepCard.tsx` erstatter de tre uafhaengige trin-taellere.
+- Dashboardets foerste besoeg er nu ét kort med ét naeste skridt i stedet for fire visninger af nul.
+- `OnboardingChecklistCard` er slettet.
+
+### TASK-12.7 EAN/NemHandel-fakturering
+**Status:** `IN PROGRESS`
+- `DONE`: Datamodel (`InvoiceRequest`, EAN-felter paa `Organization`), validering med GS1 kontrolciffer, kundeflade paa `/admin/billing/invoice` og API med audit-log.
+- `TODO`: Intern godkendelsesflade under `/internal`, saa en `np_super_admin` kan aktivere abonnementet naar fakturaen er registreret.
+- `TODO`: Selve e-faktura-afsendelsen kraever et NemHandel access point hos en udbyder. Det er en integrationsbeslutning, ikke kode i denne app.
+
+### TASK-12.8 Bloedere overgang ved login
+**Status:** `TODO`
+- Skiftet fra public top-header til admin-sidebar sker stadig abrupt.
+
+### TASK-12.9 Afstemning af leveringsforbrug mod Mux Data
+**Status:** `TODO`
+- Leveringsminutter er i dag et konservativt estimat (afspilningsstart x varighed). Skal afstemmes mod Mux Data for rigtig fakturering.
+
+---
+
 ## Deployment Checklist (Vercel)
 1. Confirm `DATABASE_URL` is set in Vercel environment variables.
 2. Commit all Prisma migrations in `prisma/migrations/*`.

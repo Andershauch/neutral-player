@@ -3,19 +3,7 @@ import HeroMedia from "@/components/public/HeroMedia";
 import PublicSiteHeader from "@/components/public/PublicSiteHeader";
 import { getResolvedMarketingPageContent, type ResolvedMarketingAsset } from "@/lib/marketing-content-runtime";
 import { type HomeMarketingContent, type MarketingLinkField } from "@/lib/marketing-content-schema";
-import { getBillingPlansForDisplay, type BillingPlanKey } from "@/lib/plans";
-
-type HomePlanMeta = {
-  highlighted: boolean;
-  badge: string | null;
-};
-
-const PLAN_META: Record<BillingPlanKey, HomePlanMeta> = {
-  starter_monthly: { highlighted: false, badge: "Kom hurtigt i gang" },
-  pro_monthly: { highlighted: true, badge: "Mest valgt" },
-  enterprise_monthly: { highlighted: false, badge: "Tal med salg" },
-  custom_monthly: { highlighted: false, badge: "Designet til specialbehov" },
-};
+import { getBillingPlansForDisplay } from "@/lib/plans";
 
 const DEFAULT_HERO_MEDIA = {
   type: "video" as const,
@@ -207,18 +195,17 @@ export default async function Home() {
 
           <div className="mt-8 grid grid-cols-1 gap-4 xl:grid-cols-4">
             {plans.map((plan) => {
-              const meta = PLAN_META[plan.key];
-              const ctaHref = plan.checkoutEnabled ? "/pricing" : "/contact";
-              const ctaLabel = plan.checkoutEnabled ? "Se planen" : "Kontakt salg";
+              const ctaHref = plan.purchaseMode === "sales" ? "/contact" : "/pricing";
+              const ctaLabel = plan.purchaseMode === "sales" ? "Kontakt salg" : "Se planen";
 
               return (
                 <article
                   key={plan.key}
-                  className={`np-section-card-muted flex flex-col gap-4 ${meta.highlighted ? "ring-2 ring-blue-200" : ""}`}
+                  className={`np-section-card-muted flex flex-col gap-4 ${plan.highlighted ? "ring-2 ring-blue-200" : ""}`}
                 >
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gray-500">{plan.name}</p>
-                    {meta.badge ? <span className="np-pill-badge">{meta.badge}</span> : null}
+                    {plan.badge ? <span className="np-pill-badge">{plan.badge}</span> : null}
                   </div>
                   <p className="text-2xl font-black text-gray-900">{plan.priceLabel}</p>
                   <p className="text-sm text-gray-600">{plan.description}</p>
@@ -230,7 +217,7 @@ export default async function Home() {
                   <div className="mt-auto pt-2">
                     <Link
                       href={ctaHref}
-                      className={`inline-flex w-full justify-center px-4 py-3 text-center ${meta.highlighted ? "np-btn-primary" : "np-btn-ghost"}`}
+                      className={`inline-flex w-full justify-center px-4 py-3 text-center ${plan.highlighted ? "np-btn-primary" : "np-btn-ghost"}`}
                     >
                       {ctaLabel}
                     </Link>

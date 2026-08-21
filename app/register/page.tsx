@@ -12,7 +12,13 @@ function RegisterContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const invite = searchParams.get("invite");
-  const callbackUrl = invite ? `/invite/${encodeURIComponent(invite)}` : "/setup/workspace";
+  const plan = searchParams.get("plan");
+  // Planvalget følger med til setup, så kunden ikke skal vælge igen.
+  const callbackUrl = invite
+    ? `/invite/${encodeURIComponent(invite)}`
+    : plan
+      ? `/setup/workspace?plan=${encodeURIComponent(plan)}`
+      : "/setup/workspace";
 
   const [formData, setFormData] = useState({
     name: "",

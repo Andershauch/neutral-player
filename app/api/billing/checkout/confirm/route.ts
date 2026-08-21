@@ -60,7 +60,7 @@ export async function POST(req: Request) {
       typeof stripeSession.subscription === "string" ? stripeSession.subscription : null;
     const stripeCustomerId = typeof stripeSession.customer === "string" ? stripeSession.customer : null;
 
-    let planKey = stripeSession.metadata?.planKey || "starter_monthly";
+    let planKey = stripeSession.metadata?.planKey || "standard_monthly";
     let status = "active";
     let currentPeriodEnd: Date | null = null;
 

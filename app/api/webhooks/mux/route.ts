@@ -68,6 +68,13 @@ export async function POST(req: Request) {
         : [];
       const playbackId = playbackIds.length > 0 && typeof playbackIds[0]?.id === "string" ? playbackIds[0].id : null;
 
+      // Varighed er grundlaget for lager- og leveringsgrænser, da Mux fakturerer pr. minut.
+      const rawDuration = typeof data.duration === "number" ? data.duration : null;
+      const durationSeconds =
+        rawDuration !== null && Number.isFinite(rawDuration) && rawDuration > 0
+          ? Math.round(rawDuration)
+          : null;
+
       if (uploadId && playbackId) {
         const variant = await prisma.variant.findFirst({
           where: { muxUploadId: uploadId },
@@ -80,6 +87,7 @@ export async function POST(req: Request) {
           data: {
             muxPlaybackId: playbackId,
             muxAssetId: assetId,
+            ...(durationSeconds !== null ? { durationSeconds } : {}),
           },
         });
       } else {
@@ -102,6 +110,8 @@ export async function POST(req: Request) {
             muxPlaybackId: null,
             muxAssetId: null,
             muxUploadId: null,
+            // Nulstil varigheden, så lagerforbruget følger det Mux faktisk opbevarer.
+            durationSeconds: null,
           },
         });
       } else {

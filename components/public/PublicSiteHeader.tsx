@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { Providers } from "@/components/Providers";
+import PublicSiteHeaderActions from "@/components/public/PublicSiteHeaderActions";
 
 export default function PublicSiteHeader({
   activePath,
@@ -37,26 +39,9 @@ export default function PublicSiteHeader({
         })}
       </nav>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <Link
-          href="/login"
-          className="px-4 py-2 rounded-xl border border-gray-200 text-[10px] font-black uppercase tracking-widest text-gray-700 hover:bg-white"
-        >
-          Log ind
-        </Link>
-        <Link
-          href="/register"
-          className="px-4 py-2 rounded-xl border border-gray-200 text-[10px] font-black uppercase tracking-widest text-gray-700 hover:bg-white"
-        >
-          Opret konto
-        </Link>
-        <Link
-          href="/pricing"
-          className="px-4 py-2 rounded-xl bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-700"
-        >
-          Se planer
-        </Link>
-      </div>
+      <Providers>
+        <PublicSiteHeaderActions />
+      </Providers>
     </header>
   );
 }

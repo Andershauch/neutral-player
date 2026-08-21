@@ -8,12 +8,19 @@ interface WorkspaceSetupCardProps {
   initialName: string;
   email: string;
   emailVerified: boolean;
+  /// Planen kunden valgte på pricing, båret hertil så valget ikke skal træffes igen.
+  planKey?: string | null;
+  planName?: string | null;
+  planRequiresInvoice?: boolean;
 }
 
 export default function WorkspaceSetupCard({
   initialName,
   email,
   emailVerified,
+  planKey = null,
+  planName = null,
+  planRequiresInvoice = false,
 }: WorkspaceSetupCardProps) {
   const router = useRouter();
   const [name, setName] = useState(initialName);
@@ -99,7 +106,7 @@ export default function WorkspaceSetupCard({
     void sendVerification({ automatic: true });
   }, [emailVerified, sendVerification]);
 
-  const saveAndGo = async (target: "/pricing" | "/admin/dashboard") => {
+  const saveAndGo = async (target: string) => {
     if (!emailVerified) {
       setError("Bekræft din email før du fortsætter.");
       return;
@@ -109,6 +116,11 @@ export default function WorkspaceSetupCard({
     router.push(target);
     router.refresh();
   };
+
+  // Ét anbefalet næste skridt. Prøveperioden kører allerede, så vejen går ind i
+  // produktet — ikke tilbage til et planvalg kunden måske allerede har truffet.
+  const primaryTarget = "/admin/dashboard";
+  const primaryLabel = "Kom i gang";
 
   return (
     <div className="np-form-layout">
@@ -202,28 +214,40 @@ export default function WorkspaceSetupCard({
           />
         </div>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {planName ? (
+          <div className="rounded-2xl border border-blue-100 bg-blue-50/70 p-4">
+            <p className="text-[10px] font-black uppercase tracking-widest text-blue-700">Jeres valg</p>
+            <p className="mt-2 text-sm text-gray-700">
+              I valgte <span className="font-bold">{planName}</span>.{" "}
+              {planRequiresInvoice
+                ? "Vi har gemt valget. I kan anmode om faktura under Plan, når I er kommet i gang."
+                : "Vi har gemt valget, så I kan gennemføre betalingen under Plan, når I er klar."}
+            </p>
+          </div>
+        ) : null}
+
+        <div className="rounded-2xl border border-gray-100 p-4">
+          <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Trin 3: Kom i gang</p>
+          <p className="mt-2 text-sm text-gray-600">
+            Jeres prøveperiode er allerede aktiv, så I kan uploade og teste med det samme. Afspilleren viser et
+            vandmærke, indtil I vælger en plan.
+          </p>
           <button
             type="button"
-            onClick={() => saveAndGo("/pricing")}
+            onClick={() => saveAndGo(primaryTarget)}
             disabled={saving}
-            className="np-btn-primary px-4 py-3 disabled:opacity-50"
+            className="np-btn-primary mt-4 w-full px-4 py-3 disabled:opacity-50"
           >
-            {saving ? "Gemmer..." : "Vælg plan"}
-          </button>
-          <button
-            type="button"
-            onClick={() => saveAndGo("/admin/dashboard")}
-            disabled={saving}
-            className="np-btn-ghost px-4 py-3 disabled:opacity-50"
-          >
-            {saving ? "Gemmer..." : "Fortsæt til dashboard"}
+            {saving ? "Gemmer..." : primaryLabel}
           </button>
         </div>
 
         <div className="text-center">
-          <Link href="/pricing" className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-gray-600">
-            Spring over for nu
+          <Link
+            href="/pricing"
+            className="text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-gray-600"
+          >
+            {planKey ? "Se planerne igen" : "Se planerne først"}
           </Link>
         </div>
 

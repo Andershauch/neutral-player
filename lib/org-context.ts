@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getTrialEndDate } from "@/lib/plan-limits";
 
 export type OrgRole = "owner" | "admin" | "editor" | "viewer";
 
@@ -53,6 +54,20 @@ export async function getCurrentOrgContext(): Promise<OrgContext | null> {
             name: workspaceName,
           },
           select: { id: true },
+        });
+
+        // Prøveperioden starter når workspacet oprettes, så embeds spiller fra dag ét.
+        await tx.subscription.create({
+          data: {
+            organizationId: org.id,
+            plan: "trial",
+            status: "trialing",
+            trialEndsAt: getTrialEndDate(),
+          },
+        });
+
+        await tx.organizationActivation.create({
+          data: { organizationId: org.id },
         });
 
         const orgUser = await tx.organizationUser.create({

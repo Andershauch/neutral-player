@@ -38,9 +38,16 @@ interface MuxPlayerClientProps {
   initialVariant: Variant;
   allVariants: Variant[];
   embedName: string;
+  /// Vises i prøveperioden, indtil organisationen vælger en plan.
+  showWatermark?: boolean;
 }
 
-export default function MuxPlayerClient({ initialVariant, allVariants, embedName }: MuxPlayerClientProps) {
+export default function MuxPlayerClient({
+  initialVariant,
+  allVariants,
+  embedName,
+  showWatermark = false,
+}: MuxPlayerClientProps) {
   const [activeVariant, setActiveVariant] = useState(initialVariant);
   const [showControls, setShowControls] = useState(true);
   const [playerError, setPlayerError] = useState<string | null>(null);
@@ -175,6 +182,14 @@ export default function MuxPlayerClient({ initialVariant, allVariants, embedName
           className="np-mux-play-skin w-full h-full object-contain"
           style={{ height: "100%", width: "100%" }}
         />
+      )}
+
+      {showWatermark && !playerError && (
+        <div className="pointer-events-none absolute bottom-4 left-4 z-20 select-none">
+          <span className="rounded-md bg-black/55 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-white/85 backdrop-blur-sm">
+            Neutralplayer prøveperiode
+          </span>
+        </div>
       )}
 
       {!playerError && isVariantLoading && (

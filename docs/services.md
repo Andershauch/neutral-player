@@ -37,12 +37,14 @@ Denne fil er en samlet oversigt over de eksterne tjenester, som Neutral Player b
   - Webhooks til synk af subscription-status
 - Kraever:
   - `STRIPE_SECRET_KEY`
-  - `STRIPE_PRICE_STARTER_MONTHLY`
-  - `STRIPE_PRICE_PRO_MONTHLY`
-  - `STRIPE_PRICE_ENTERPRISE_MONTHLY`
+  - `STRIPE_PRICE_STANDARD_MONTHLY`
   - `STRIPE_WEBHOOK_SECRET`
+- Valgfri:
+  - `STRIPE_PRICE_KOMMUNE_MONTHLY` (kun til prisvisning; Kommune koebes via EAN-faktura, ikke checkout)
 - Vigtigt:
   - Stripe key og price IDs skal vaere fra samme mode (test eller live)
+  - Kun `Standard` koebes med kort. `Kommune` og `Enterprise` gaar gennem EAN-fakturaflowet paa `/admin/billing/invoice`.
+  - De gamle variabler `STRIPE_PRICE_STARTER_MONTHLY` og `STRIPE_PRICE_PRO_MONTHLY` bruges ikke laengere efter SPRINT-12.
 - Typiske fejl:
   - Checkout starter ikke
   - Forkerte priser i UI

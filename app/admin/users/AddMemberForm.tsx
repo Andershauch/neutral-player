@@ -63,7 +63,7 @@ export default function AddMemberForm({ canAssignOwner }: AddMemberFormProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          plan: "pro_monthly",
+          plan: "standard_monthly",
           returnTo: "/admin/dashboard",
           cancelReturnTo: "/admin/dashboard",
         }),

@@ -1,25 +1,17 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import dynamicImport from "next/dynamic";
 import { prisma } from "@/lib/prisma";
 import CreateProjectButton from "@/components/admin/CreateProjectButton";
 import AppPageHeader from "@/components/navigation/AppPageHeader";
 import { getOrgContextForContentEdit } from "@/lib/authz";
 import { getMessages } from "@/lib/i18n/messages";
-import { getOnboardingStatus } from "@/lib/onboarding";
+import { getActivationState } from "@/lib/activation";
+import NextStepCard from "@/components/activation/NextStepCard";
 
 const ProjectListClient = dynamicImport(() => import("@/components/admin/ProjectListClient"), {
   loading: () => (
     <div className="np-card p-8">
       <p className="text-xs font-semibold text-gray-500">Indlæser projekter...</p>
-    </div>
-  ),
-});
-
-const OnboardingChecklistCard = dynamicImport(() => import("@/components/admin/OnboardingChecklistCard"), {
-  loading: () => (
-    <div className="np-card p-5 md:p-8">
-      <p className="text-xs font-semibold text-gray-500">Indlæser onboarding...</p>
     </div>
   ),
 });
@@ -38,7 +30,12 @@ export default async function DashboardPage({
     redirect("/unauthorized");
   }
 
-  const [projects, onboarding, variantStats] = await Promise.all([
+  const user = await prisma.user.findUnique({
+    where: { id: orgCtx.userId },
+    select: { emailVerified: true },
+  });
+
+  const [projects, activation, variantStats] = await Promise.all([
     prisma.embed.findMany({
       where: { organizationId: orgCtx.orgId },
       orderBy: { createdAt: "desc" },
@@ -60,28 +57,20 @@ export default async function DashboardPage({
         },
       },
     }),
-    getOnboardingStatus(orgCtx.orgId),
+    getActivationState({ orgId: orgCtx.orgId, emailVerified: Boolean(user?.emailVerified) }),
     prisma.variant.aggregate({
       where: { organizationId: orgCtx.orgId },
       _count: { _all: true },
-      _sum: { views: true },
+      _sum: { views: true, durationSeconds: true },
     }),
   ]);
 
   const totalProjects = projects.length;
   const totalVariants = variantStats._count._all || 0;
   const totalViews = variantStats._sum.views || 0;
+  const storageMinutes = Math.ceil((variantStats._sum.durationSeconds || 0) / 60).toLocaleString("da-DK");
 
-  const completedOnboardingSteps = [
-    onboarding.hasProject,
-    onboarding.hasUploadedVariant,
-    onboarding.hasCopiedEmbed,
-    onboarding.isCompleted,
-  ].filter(Boolean).length;
-
-  const onboardingProgress = Math.round((completedOnboardingSteps / 4) * 100);
-  const showOnboarding = resolvedSearchParams.onboarding === "1";
-  const shouldShowOnboardingOnDashboard = !onboarding.isCompleted;
+  const isFirstRun = projects.length === 0;
 
   return (
     <div className="space-y-6 md:space-y-7">
@@ -89,29 +78,20 @@ export default async function DashboardPage({
         kicker="Dashboard"
         title={t.dashboard.title}
         description={t.dashboard.subtitle}
-        actions={
-          <>
-            {shouldShowOnboardingOnDashboard ? (
-              <Link
-                href={showOnboarding ? "/admin/dashboard" : "/admin/dashboard?onboarding=1"}
-                className="np-btn-ghost inline-flex items-center justify-center px-4 py-3"
-              >
-                {showOnboarding ? "Skjul onboarding" : "Vis onboarding"}
-              </Link>
-            ) : null}
-            <CreateProjectButton />
-          </>
-        }
+        actions={<CreateProjectButton />}
       />
 
-      <section className="np-card np-card-pad rounded-2xl border-gray-200/90 shadow-[0_8px_24px_rgba(15,23,42,0.08)] bg-gradient-to-br from-white via-white to-blue-50/40">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-          <StatCard label="Projekter" value={totalProjects.toString()} />
-          <StatCard label="Varianter" value={totalVariants.toString()} />
-          <StatCard label="Visninger" value={totalViews.toLocaleString("da-DK")} />
-          <StatCard label="Onboarding" value={`${onboardingProgress}%`} />
-        </div>
-      </section>
+      {/* Første besøg er en invitation, ikke et dashboard af nuller. */}
+      {!isFirstRun && (
+        <section className="np-card np-card-pad rounded-2xl border-gray-200/90 shadow-[0_8px_24px_rgba(15,23,42,0.08)] bg-gradient-to-br from-white via-white to-blue-50/40">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+            <StatCard label="Projekter" value={totalProjects.toString()} />
+            <StatCard label="Sprogversioner" value={totalVariants.toString()} />
+            <StatCard label="Visninger" value={totalViews.toLocaleString("da-DK")} />
+            <StatCard label="Video på lager" value={`${storageMinutes} min`} />
+          </div>
+        </section>
+      )}
 
       {resolvedSearchParams.billing === "success" && (
         <div
@@ -136,46 +116,11 @@ export default async function DashboardPage({
       )}
 
       <div className="space-y-6">
-        {shouldShowOnboardingOnDashboard && (
-          <section className="np-card rounded-2xl border-gray-200/90 shadow-[0_8px_24px_rgba(15,23,42,0.08)] p-5 md:p-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div>
-                <h2 className="text-sm font-bold text-gray-900 uppercase tracking-widest">Næste skridt</h2>
-                <p className="text-xs text-gray-500 mt-1">
-                  Onboarding: {completedOnboardingSteps}/4 trin ({onboardingProgress}%)
-                </p>
-              </div>
-              <Link
-                href={onboarding.hasProject && projects[0]?.id ? `/admin/embed/${projects[0].id}` : "/admin/projects"}
-                className="np-btn-primary inline-flex px-4 py-3"
-              >
-                {onboarding.hasProject ? "Fortsæt onboarding" : "Opret første projekt"}
-              </Link>
-            </div>
-          </section>
+        {!activation.isComplete && !activation.isDismissed && (
+          <NextStepCard activation={activation} variant={isFirstRun ? "full" : "compact"} />
         )}
 
-        {shouldShowOnboardingOnDashboard && (
-          <OnboardingChecklistCard
-            hasProject={onboarding.hasProject}
-            hasUploadedVariant={onboarding.hasUploadedVariant}
-            hasCopiedEmbed={onboarding.hasCopiedEmbed}
-            isCompleted={onboarding.isCompleted}
-            firstProjectId={projects[0]?.id ?? null}
-            forceExpanded={showOnboarding}
-          />
-        )}
-
-        <div className="w-full">
-          {projects.length > 0 ? (
-            <ProjectListClient initialProjects={projects} />
-          ) : (
-            <div className="text-center py-20 bg-white border-2 border-dashed border-gray-200 rounded-2xl shadow-[0_8px_24px_rgba(15,23,42,0.08)]">
-              <p className="text-gray-400 font-bold uppercase text-xs tracking-widest">{t.dashboard.noProjects}</p>
-              <p className="text-gray-400 text-sm mt-1">{t.dashboard.noProjectsSubtitle}</p>
-            </div>
-          )}
-        </div>
+        {projects.length > 0 ? <ProjectListClient initialProjects={projects} /> : null}
       </div>
     </div>
   );

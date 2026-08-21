@@ -5,14 +5,14 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import BillingPlansCard from "@/components/admin/BillingPlansCard";
 import UsageLimitsCard from "@/components/admin/UsageLimitsCard";
-import OnboardingChecklistCard from "@/components/admin/OnboardingChecklistCard";
+import NextStepCard from "@/components/activation/NextStepCard";
 import ProfileAvatarCard from "@/components/admin/ProfileAvatarCard";
 import AppPageHeader from "@/components/navigation/AppPageHeader";
 import { canManageBillingRole, canManageBrandingRole } from "@/lib/authz";
 import { getCurrentOrgContext } from "@/lib/org-context";
-import { getBillingPlansForDisplay } from "@/lib/plans";
+import { getBillingPlansForDisplay, getPlanDisplayName } from "@/lib/plans";
 import { getOrgUsageSummary } from "@/lib/plan-limits";
-import { getOnboardingStatus } from "@/lib/onboarding";
+import { getActivationState } from "@/lib/activation";
 import { getOrgPlanAndCapabilities } from "@/lib/plan-capabilities";
 
 export const dynamic = "force-dynamic";
@@ -23,7 +23,12 @@ export default async function ProfilePage() {
     redirect("/login");
   }
 
-  const [plans, usageSummary, activeSubscription, onboarding, firstProject, planCapabilities] = await Promise.all([
+  const currentUser = await prisma.user.findUnique({
+    where: { id: orgCtx.userId },
+    select: { emailVerified: true },
+  });
+
+  const [plans, usageSummary, activeSubscription, activation, planCapabilities] = await Promise.all([
     getBillingPlansForDisplay(),
     getOrgUsageSummary(orgCtx.orgId),
     prisma.subscription.findFirst({
@@ -35,19 +40,15 @@ export default async function ProfilePage() {
         stripeCustomerId: true,
       },
     }),
-    getOnboardingStatus(orgCtx.orgId),
-    prisma.embed.findFirst({
-      where: { organizationId: orgCtx.orgId },
-      orderBy: { createdAt: "asc" },
-      select: { id: true },
-    }),
+    getActivationState({ orgId: orgCtx.orgId, emailVerified: Boolean(currentUser?.emailVerified) }),
     getOrgPlanAndCapabilities(orgCtx.orgId),
   ]);
 
   const canManageBilling = canManageBillingRole(orgCtx.role);
   const canManageBranding = canManageBrandingRole(orgCtx.role);
   const isAuditAdmin = orgCtx.role === "admin";
-  const currentPlan = activeSubscription?.plan || "free";
+  // Vis den tilstand appen faktisk håndhæver (prøve/udløbet/betalt), ikke råfeltet.
+  const currentPlan = usageSummary.plan;
   const currentStatus = activeSubscription?.status || "inactive";
 
   return (
@@ -83,7 +84,7 @@ export default async function ProfilePage() {
       <section className="np-card p-5 md:p-6">
         <p className="np-kicker text-blue-600">Nuværende abonnement</p>
         <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
-          <ProfileStat label="Plan" value={toPlanLabel(currentPlan)} />
+          <ProfileStat label="Plan" value={getPlanDisplayName(currentPlan)} />
           <ProfileStat label="Status" value={toStatusLabel(currentStatus)} />
         </div>
       </section>
@@ -101,17 +102,10 @@ export default async function ProfilePage() {
         </section>
       )}
 
-      {onboarding.isCompleted && (
+      {!activation.isComplete && (
         <section className="space-y-3">
-          <p className="np-kicker text-blue-600">Onboarding</p>
-          <OnboardingChecklistCard
-            hasProject={onboarding.hasProject}
-            hasUploadedVariant={onboarding.hasUploadedVariant}
-            hasCopiedEmbed={onboarding.hasCopiedEmbed}
-            isCompleted={onboarding.isCompleted}
-            firstProjectId={firstProject?.id ?? null}
-            forceExpanded
-          />
+          <p className="np-kicker text-blue-600">Kom i gang</p>
+          <NextStepCard activation={activation} />
         </section>
       )}
 
@@ -159,13 +153,6 @@ function ProfileStat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function toPlanLabel(plan: string) {
-  if (plan === "starter_monthly") return "Starter";
-  if (plan === "pro_monthly") return "Pro";
-  if (plan === "enterprise_monthly") return "Enterprise";
-  if (plan === "custom_monthly") return "Custom";
-  return "Free";
-}
 
 function toStatusLabel(status: string) {
   if (status === "active") return "Aktiv";

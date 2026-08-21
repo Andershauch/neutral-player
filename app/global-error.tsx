@@ -65,6 +65,9 @@ export default function GlobalError({
           <p style={{ margin: "0 0 24px", fontSize: "14px", lineHeight: 1.6, color: "#6b7280" }}>
             Fejlen er registreret, og vi kigger på den. Prøv at genindlæse siden eller gå tilbage til forsiden.
           </p>
+          {/* Fuld sideindlæsning er med vilje: global-error betyder at React-træet er brudt,
+              så en klientnavigation kan ikke stoles på til at komme videre. */}
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
           <a
             href="/"
             style={{

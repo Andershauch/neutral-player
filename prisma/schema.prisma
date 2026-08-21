@@ -33,6 +33,14 @@ model Organization {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Offentlige kunder betaler via EAN/NemHandel-faktura frem for kort.
+  billingMethod       String  @default("card") // "card" | "invoice"
+  eanNumber           String?
+  cvrNumber           String?
+  billingContactName  String?
+  billingContactEmail String?
+  billingReference    String? // rekvisitions-/PO-nummer krævet af mange kommuner
+
   users               OrganizationUser[]
   invites             Invite[]
   subscriptions       Subscription[]
@@ -43,6 +51,68 @@ model Organization {
   variants            Variant[]
   auditLogs           AuditLog[]
   themes              OrganizationTheme[]
+  usageMonths         UsageMonth[]
+  invoiceRequests     InvoiceRequest[]
+  activation          OrganizationActivation?
+}
+
+/// Aktiveringsryggraden: én kilde til hvor organisationen er i sin rejse.
+/// Erstatter udledning fra AuditLog, så tilstand kan bære "sprunget over" og valgt plan.
+model OrganizationActivation {
+  id             String    @id @default(cuid())
+  organizationId String    @unique
+  intendedPlan   String? // plan valgt før betaling, båret gennem register -> setup -> checkout
+  projectCreated DateTime?
+  variantUploaded DateTime?
+  embedCopied    DateTime?
+  dismissedAt    DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+/// Månedlig forbrugsrollup. Leveringsminutter er et estimat (afspilningsstart x varighed)
+/// indtil Mux Data-afstemning er koblet på.
+model UsageMonth {
+  id              String   @id @default(cuid())
+  organizationId  String
+  yearMonth       String // "2026-08"
+  playStarts      Int      @default(0)
+  deliveryMinutes Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, yearMonth])
+  @@index([organizationId])
+}
+
+/// Fakturaanmodning for offentlige kunder (EAN/NemHandel).
+/// Abonnementet aktiveres af intern admin når fakturaen er godkendt.
+model InvoiceRequest {
+  id                  String    @id @default(cuid())
+  organizationId      String
+  plan                String
+  status              String    @default("pending") // pending | approved | rejected
+  eanNumber           String
+  cvrNumber           String?
+  billingContactName  String?
+  billingContactEmail String
+  billingReference    String?
+  note                String?
+  requestedByUserId   String?
+  handledByUserId     String?
+  handledAt           DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([status])
 }
 
 model Invite {
@@ -89,6 +159,7 @@ model Subscription {
   stripeCustomerId     String?   @unique
   stripeSubscriptionId String?   @unique
   currentPeriodEnd     DateTime?
+  trialEndsAt          DateTime?
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 
@@ -162,6 +233,8 @@ model Variant {
   muxAssetId     String?
   posterFrameUrl String?
   dreamBrokerUrl String?
+  // Varighed fra Mux. Grundlaget for lager- og leveringsgrænser, da Mux fakturerer pr. minut.
+  durationSeconds Int?
   views          Int      @default(0)
   groupId        String
   organizationId String?

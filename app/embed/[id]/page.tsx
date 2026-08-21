@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { resolveThemeForOrganization } from "@/lib/theme";
 import { buildThemeCssVars } from "@/lib/theme-css";
 import { DEFAULT_THEME_TOKENS } from "@/lib/theme-schema";
+import { getOrgPlanState } from "@/lib/plan-limits";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -38,7 +39,8 @@ export default async function EmbedPage({ params }: PageProps) {
   const source = getSourceHost(reqHeaders);
   const ownHosts = getOwnHosts(reqHeaders);
   const allowedRules = parseAllowedRules(embed.allowedDomains);
-  const hasActivePaidAccess = await hasActivePaidSubscription(embed.organizationId ?? null);
+  const planState = embed.organizationId ? await getOrgPlanState(embed.organizationId) : null;
+  const canPlay = Boolean(planState?.canPlayEmbeds);
 
   const isDomainAllowed =
     allowedRules.includes("*") ||
@@ -46,8 +48,8 @@ export default async function EmbedPage({ params }: PageProps) {
     matchesAllowedRules(source, allowedRules) ||
     allowMissingSource(reqHeaders, source);
 
-  if (!hasActivePaidAccess || !isDomainAllowed) {
-    const blockedBySubscription = !hasActivePaidAccess;
+  if (!canPlay || !isDomainAllowed) {
+    const blockedBySubscription = !canPlay;
     await createEmbedBlockAudit({
       organizationId: embed.organizationId ?? null,
       embedId: embed.id,
@@ -59,7 +61,7 @@ export default async function EmbedPage({ params }: PageProps) {
       <div className="flex items-center justify-center w-screen h-screen bg-black text-white font-sans p-6 text-center">
         <p className="opacity-80 text-sm">
           {blockedBySubscription
-            ? "Embed er deaktiveret: abonnement er ikke aktivt."
+            ? "Prøveperioden er udløbet. Videoen er tilgængelig igen, når organisationen vælger en plan."
             : "Afspilning er ikke tilladt fra dette domæne."}
         </p>
       </div>
@@ -88,7 +90,12 @@ export default async function EmbedPage({ params }: PageProps) {
 
   return (
     <main className="np-themed w-screen h-screen bg-black overflow-hidden m-0 p-0" style={buildThemeCssVars(resolvedTheme.tokens)}>
-      <MuxPlayerClient initialVariant={readyVariants[0]} allVariants={readyVariants} embedName={embed.name} />
+      <MuxPlayerClient
+        initialVariant={readyVariants[0]}
+        allVariants={readyVariants}
+        embedName={embed.name}
+        showWatermark={Boolean(planState?.requiresWatermark)}
+      />
     </main>
   );
 }
@@ -182,21 +189,6 @@ function allowMissingSource(reqHeaders: Headers, source: SourceHost | null): boo
   if (source) return false;
   const fetchSite = (reqHeaders.get("sec-fetch-site") || "").toLowerCase();
   return fetchSite === "" || fetchSite === "same-origin" || fetchSite === "same-site" || fetchSite === "none";
-}
-
-async function hasActivePaidSubscription(organizationId: string | null): Promise<boolean> {
-  if (!organizationId) return false;
-
-  const subscription = await prisma.subscription.findFirst({
-    where: { organizationId },
-    orderBy: { updatedAt: "desc" },
-    select: { status: true, plan: true },
-  });
-
-  if (!subscription) return false;
-  if (subscription.status !== "active") return false;
-  if (!subscription.plan || subscription.plan === "free") return false;
-  return true;
 }
 
 async function createEmbedBlockAudit(input: {

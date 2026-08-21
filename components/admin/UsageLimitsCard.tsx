@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { LimitUsageItem } from "@/lib/plan-limits";
+import { getPlanDisplayName } from "@/lib/plans";
 
 interface UsageLimitsCardProps {
   plan: string;
@@ -26,7 +27,7 @@ export default function UsageLimitsCard({ plan, items, canManageBilling }: Usage
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          plan: "pro_monthly",
+          plan: "standard_monthly",
           returnTo: "/admin/dashboard",
           cancelReturnTo: "/admin/dashboard",
         }),
@@ -48,7 +49,7 @@ export default function UsageLimitsCard({ plan, items, canManageBilling }: Usage
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h2 className="text-sm font-bold text-gray-900 uppercase tracking-widest">Forbrug og plan-grænser</h2>
-          <p className="text-xs text-gray-500 mt-1">Aktuel plan: {toPlanName(plan)}</p>
+          <p className="text-xs text-gray-500 mt-1">Aktuel plan: {getPlanDisplayName(plan)}</p>
         </div>
         {hasLimitedResourceAtLimit && canManageBilling && (
           <button
@@ -66,7 +67,10 @@ export default function UsageLimitsCard({ plan, items, canManageBilling }: Usage
         {items.map((item) => {
           const label = getResourceLabel(item.resource);
           const ratio = item.limit === null ? 0 : Math.min(100, Math.round((item.used / item.limit) * 100));
-          const limitText = item.limit === null ? "Ubegrænset" : `${item.used} / ${item.limit}`;
+          const limitText =
+            item.limit === null
+              ? "Ubegrænset"
+              : `${item.used.toLocaleString("da-DK")} / ${item.limit.toLocaleString("da-DK")}`;
           const nearLimit = item.limit !== null && item.used >= Math.floor(item.limit * 0.8);
           const overLimit = item.limit !== null && item.used >= item.limit;
 
@@ -107,15 +111,10 @@ export default function UsageLimitsCard({ plan, items, canManageBilling }: Usage
 }
 
 function getResourceLabel(resource: LimitUsageItem["resource"]): string {
+  if (resource === "storageMinutes") return "Video på lager (minutter)";
+  if (resource === "deliveryMinutes") return "Visningsminutter denne måned";
   if (resource === "projects") return "Projekter";
-  if (resource === "variants") return "Varianter";
-  return "Seats (medlemmer + invitationer)";
+  if (resource === "variants") return "Sprogversioner";
+  return "Brugere (medlemmer + invitationer)";
 }
 
-function toPlanName(plan: string): string {
-  if (plan === "starter_monthly") return "Starter";
-  if (plan === "pro_monthly") return "Pro";
-  if (plan === "enterprise_monthly") return "Enterprise";
-  if (plan === "custom_monthly") return "Custom";
-  return "Free";
-}

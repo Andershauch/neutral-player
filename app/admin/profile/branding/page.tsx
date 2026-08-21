@@ -5,6 +5,7 @@ import AppPageHeader from "@/components/navigation/AppPageHeader";
 import { canManageBrandingRole } from "@/lib/authz";
 import { getCurrentOrgContext } from "@/lib/org-context";
 import { getOrgPlanAndCapabilities } from "@/lib/plan-capabilities";
+import { getPlanDisplayName } from "@/lib/plans";
 
 export const dynamic = "force-dynamic";
 
@@ -37,17 +38,10 @@ export default async function BrandingProfilePage() {
       <BrandingSettingsCard
         canManageBranding={canManageBranding}
         canUseEnterpriseBranding={planCapabilities.capabilities.enterpriseBrandingEnabled}
-        currentPlanLabel={toPlanLabel(planCapabilities.plan)}
+        currentPlanLabel={getPlanDisplayName(planCapabilities.plan)}
         editorMode="customer_limited"
       />
     </div>
   );
 }
 
-function toPlanLabel(plan: string): string {
-  if (plan === "starter_monthly") return "Starter";
-  if (plan === "pro_monthly") return "Pro";
-  if (plan === "enterprise_monthly") return "Enterprise";
-  if (plan === "custom_monthly") return "Custom";
-  return "Free";
-}

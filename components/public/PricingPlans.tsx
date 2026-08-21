@@ -13,33 +13,6 @@ interface PricingPlansProps {
   stripeSessionId?: string | null;
 }
 
-const PLAN_META: Partial<
-  Record<
-    BillingPlanKey,
-    {
-      badge?: string;
-      audience: string;
-    }
-  >
-> = {
-  starter_monthly: {
-    badge: "Kom hurtigt i gang",
-    audience: "Til mindre teams der vil have en enkel vej fra planvalg til første embed.",
-  },
-  pro_monthly: {
-    badge: "Mest valgt",
-    audience: "Til teams der vil kombinere marketing, onboarding og support i samme setup.",
-  },
-  enterprise_monthly: {
-    badge: "Kontakt salg",
-    audience: "Til organisationer der vil have branding, governance og tæt rollout-sparring.",
-  },
-  custom_monthly: {
-    badge: "Special setup",
-    audience: "Til behov der kræver et mere skræddersyet service- og supportforløb.",
-  },
-};
-
 export default function PricingPlans({ plans, billingState, stripeSessionId }: PricingPlansProps) {
   const { status } = useSession();
   const router = useRouter();
@@ -131,8 +104,7 @@ export default function PricingPlans({ plans, billingState, stripeSessionId }: P
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
         {plans.map((plan) => {
           const isLoading = loadingPlan === plan.key;
-          const meta = PLAN_META[plan.key];
-          const isHighlighted = plan.key === "pro_monthly";
+          const isHighlighted = plan.highlighted;
 
           return (
             <div key={plan.key} className={`np-section-card flex flex-col gap-5 ${isHighlighted ? "ring-2 ring-blue-200" : ""}`}>
@@ -141,12 +113,12 @@ export default function PricingPlans({ plans, billingState, stripeSessionId }: P
                   <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">{plan.name}</p>
                   <p className="text-2xl font-black text-gray-900">{plan.priceLabel}</p>
                 </div>
-                {meta?.badge ? <span className="np-pill-badge">{meta.badge}</span> : null}
+                {plan.badge ? <span className="np-pill-badge">{plan.badge}</span> : null}
               </div>
 
               <div className="space-y-3">
                 <p className="text-sm font-semibold text-gray-700">{plan.description}</p>
-                {meta?.audience ? <p className="text-sm leading-6 text-gray-600">{meta.audience}</p> : null}
+                {plan.audience ? <p className="text-sm leading-6 text-gray-600">{plan.audience}</p> : null}
               </div>
 
               <ul className="np-check-list">
@@ -167,10 +139,25 @@ export default function PricingPlans({ plans, billingState, stripeSessionId }: P
                       {isLoading ? t.pricing.openCheckoutLoading : t.pricing.choosePlan}
                     </button>
                   ) : (
-                    <Link href="/register" className="np-btn-primary inline-flex w-full justify-center px-5 py-3">
+                    // Planvalget bæres med, så beslutningen ikke skal træffes igen efter oprettelse.
+                    <Link
+                      href={`/register?plan=${encodeURIComponent(plan.key)}`}
+                      className="np-btn-primary inline-flex w-full justify-center px-5 py-3"
+                    >
                       {t.pricing.registerAndChoose}
                     </Link>
                   )
+                ) : plan.purchaseMode === "invoice" ? (
+                  <Link
+                    href={
+                      status === "authenticated"
+                        ? `/admin/billing/invoice?plan=${encodeURIComponent(plan.key)}`
+                        : `/register?plan=${encodeURIComponent(plan.key)}`
+                    }
+                    className="np-btn-primary inline-flex w-full justify-center px-5 py-3"
+                  >
+                    Anmod om tilbud og faktura
+                  </Link>
                 ) : (
                   <Link href="/contact" className="np-btn-ghost inline-flex w-full justify-center px-5 py-3">
                     Kontakt salg

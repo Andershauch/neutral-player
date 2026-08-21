@@ -1,6 +1,14 @@
 import { prisma } from "@/lib/prisma";
+import { markActivationStep } from "@/lib/activation";
 
 export type OnboardingStep = "project_created" | "variant_uploaded" | "copied_embed" | "completed";
+
+const ACTIVATION_STEP_BY_ONBOARDING_STEP = {
+  project_created: "project_created",
+  variant_uploaded: "variant_uploaded",
+  copied_embed: "embed_copied",
+  completed: "completed",
+} as const;
 
 export const ONBOARDING_ACTION_BY_STEP: Record<OnboardingStep, string> = {
   project_created: "ONBOARDING_PROJECT_CREATED",
@@ -15,6 +23,9 @@ export async function markOnboardingStep(input: {
   userName: string | null;
   step: OnboardingStep;
 }) {
+  // Aktiveringstilstanden er kilden appen læser fra; revisionssporet bevares som historik.
+  await markActivationStep(input.orgId, ACTIVATION_STEP_BY_ONBOARDING_STEP[input.step]);
+
   const action = ONBOARDING_ACTION_BY_STEP[input.step];
   const existing = await prisma.auditLog.findFirst({
     where: {

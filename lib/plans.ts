@@ -1,14 +1,25 @@
 import { cache } from "react";
 
-export type BillingPlanKey = "starter_monthly" | "pro_monthly" | "enterprise_monthly" | "custom_monthly";
+export type BillingPlanKey =
+  | "standard_monthly"
+  | "kommune_monthly"
+  | "enterprise_monthly";
+
+/// Hvordan en plan købes. Offentlige kunder kan sjældent betale med kort,
+/// så alt over Standard går via EAN/NemHandel-faktura.
+export type PlanPurchaseMode = "checkout" | "invoice" | "sales";
 
 export interface BillingPlanDefinition {
   key: BillingPlanKey;
   name: string;
   priceLabel: string;
   description: string;
+  audience: string;
+  badge: string | null;
+  highlighted: boolean;
   features: string[];
   stripePriceEnv: string | null;
+  purchaseMode: PlanPurchaseMode;
   checkoutEnabled: boolean;
 }
 
@@ -22,47 +33,102 @@ interface StripePriceResponse {
 
 const STRIPE_PRICE_CACHE_SECONDS = 300;
 
+export const TRIAL_DAYS = 10;
+
 export const BILLING_PLANS: BillingPlanDefinition[] = [
   {
-    key: "starter_monthly",
-    name: "Starter",
-    priceLabel: "99 DKK / måned",
-    description: "Til mindre teams, der vil i gang med flersprogede videoer.",
-    features: ["Grundlæggende upload og embed", "Adgang til team", "Standard support"],
-    stripePriceEnv: "STRIPE_PRICE_STARTER_MONTHLY",
+    key: "standard_monthly",
+    name: "Standard",
+    priceLabel: "2.495 DKK / måned",
+    description: "Til den enkelte institution, skole eller afdeling med et afgrænset videobehov.",
+    audience: "Passer til én organisatorisk enhed med egne videoer og et mindre redaktionsteam.",
+    badge: "Kom hurtigt i gang",
+    highlighted: false,
+    features: [
+      "1.000 minutter video på lager",
+      "50.000 visningsminutter pr. måned",
+      "10 brugere",
+      "Ubegrænsede projekter og sprogversioner",
+      "Undertekster og tilgængelig afspiller",
+    ],
+    stripePriceEnv: "STRIPE_PRICE_STANDARD_MONTHLY",
+    purchaseMode: "checkout",
     checkoutEnabled: true,
   },
   {
-    key: "pro_monthly",
-    name: "Pro",
-    priceLabel: "299 DKK / måned",
-    description: "Til teams med højere volumen og mere avancerede behov.",
-    features: ["Flere projekter og varianter", "Prioriteret support", "Klar til skalering"],
-    stripePriceEnv: "STRIPE_PRICE_PRO_MONTHLY",
-    checkoutEnabled: true,
+    key: "kommune_monthly",
+    name: "Kommune",
+    priceLabel: "5.995 DKK / måned",
+    description: "Til kommuner og større forvaltninger med flere enheder på samme platform.",
+    audience: "Passer når flere skoler, afdelinger eller forvaltninger deler ét setup.",
+    badge: "Mest valgt i det offentlige",
+    highlighted: true,
+    features: [
+      "5.000 minutter video på lager",
+      "250.000 visningsminutter pr. måned",
+      "Ubegrænsede brugere",
+      "Egen branding på afspiller og flader",
+      "EAN-fakturering og databehandleraftale",
+    ],
+    stripePriceEnv: "STRIPE_PRICE_KOMMUNE_MONTHLY",
+    purchaseMode: "invoice",
+    checkoutEnabled: false,
   },
   {
     key: "enterprise_monthly",
     name: "Enterprise",
-    priceLabel: "Kontakt os",
-    description: "Til organisationer med avancerede krav til governance og kontrol.",
-    features: ["Sikkerheds- og compliance-flow", "Udvidet onboarding", "Enterprise support"],
+    priceLabel: "Efter aftale",
+    description: "Til organisationer med krav om særskilt volumen, drift eller rammeaftale.",
+    audience: "Passer til udbud, rammeaftaler og setups der falder uden for de faste niveauer.",
+    badge: "Efter aftale",
+    highlighted: false,
+    features: [
+      "Volumen og grænser efter aftale",
+      "Rammeaftale og udbudsdokumentation",
+      "Prioriteret support og driftsaftale",
+      "Dedikeret onboarding",
+    ],
     stripePriceEnv: null,
-    checkoutEnabled: false,
-  },
-  {
-    key: "custom_monthly",
-    name: "Custom",
-    priceLabel: "Skræddersyet",
-    description: "Til specialbehov med tilpasset setup, integration og leverance.",
-    features: ["Tilpasset plan", "Teknisk sparring", "Løsning efter behov"],
-    stripePriceEnv: null,
+    purchaseMode: "sales",
     checkoutEnabled: false,
   },
 ];
 
+/// Ældre plan-nøgler fra før SPRINT-12. Beholdt så eksisterende abonnementer
+/// stadig kan slå op i grænser og capabilities uden migrering af live data.
+export const LEGACY_PLAN_ALIASES: Record<string, BillingPlanKey> = {
+  starter_monthly: "standard_monthly",
+  pro_monthly: "standard_monthly",
+  custom_monthly: "enterprise_monthly",
+};
+
+export function resolvePlanKey(plan: string): BillingPlanKey | null {
+  if (BILLING_PLANS.some((p) => p.key === plan)) {
+    return plan as BillingPlanKey;
+  }
+  return LEGACY_PLAN_ALIASES[plan] ?? null;
+}
+
+/// Ét sted at oversætte en plan-nøgle til noget en bruger kan læse.
+/// Dækker også prøve-/udløbstilstande og ældre nøgler.
+export function getPlanDisplayName(plan: string): string {
+  if (plan === "trial") return "Prøveperiode";
+  if (plan === "expired") return "Prøveperiode udløbet";
+
+  const resolved = resolvePlanKey(plan);
+  if (!resolved) return plan;
+
+  const definition = BILLING_PLANS.find((p) => p.key === resolved);
+  if (!definition) return plan;
+
+  // Gør det synligt når et abonnement stadig kører på en gammel nøgle.
+  return resolved === plan ? definition.name : `${definition.name} (tidligere plan)`;
+}
+
 export function getBillingPlanByKey(key: string): BillingPlanDefinition | null {
-  return BILLING_PLANS.find((plan) => plan.key === key) ?? null;
+  const resolved = resolvePlanKey(key);
+  if (!resolved) return null;
+  return BILLING_PLANS.find((plan) => plan.key === resolved) ?? null;
 }
 
 export function getBillingPlanByStripePriceId(priceId: string): BillingPlanDefinition | null {
@@ -83,7 +149,7 @@ export const getBillingPlansForDisplay = cache(async (): Promise<BillingPlanDefi
 
   const plans = await Promise.all(
     BILLING_PLANS.map(async (plan) => {
-      if (!plan.checkoutEnabled || !plan.stripePriceEnv) return plan;
+      if (!plan.stripePriceEnv) return plan;
 
       const priceId = process.env[plan.stripePriceEnv];
       if (!priceId) return plan;

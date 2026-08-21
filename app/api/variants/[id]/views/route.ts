@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getCurrentYearMonth } from "@/lib/plan-limits";
 
 export async function POST(
   req: Request,
@@ -8,14 +9,41 @@ export async function POST(
   try {
     const { id } = await params;
 
-    await prisma.variant.update({
+    const variant = await prisma.variant.update({
       where: { id },
       data: {
         views: {
           increment: 1,
         },
       },
+      select: { organizationId: true, durationSeconds: true },
     });
+
+    // Leveringsminutter er et estimat: én afspilningsstart regnes som hele varigheden.
+    // Det er et konservativt overslag indtil Mux Data-afstemning er koblet på.
+    if (variant.organizationId) {
+      const estimatedMinutes = Math.ceil((variant.durationSeconds || 0) / 60);
+      const yearMonth = getCurrentYearMonth();
+
+      await prisma.usageMonth.upsert({
+        where: {
+          organizationId_yearMonth: {
+            organizationId: variant.organizationId,
+            yearMonth,
+          },
+        },
+        create: {
+          organizationId: variant.organizationId,
+          yearMonth,
+          playStarts: 1,
+          deliveryMinutes: estimatedMinutes,
+        },
+        update: {
+          playStarts: { increment: 1 },
+          deliveryMinutes: { increment: estimatedMinutes },
+        },
+      });
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

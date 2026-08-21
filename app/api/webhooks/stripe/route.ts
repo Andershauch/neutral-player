@@ -166,7 +166,7 @@ async function handleCheckoutCompleted(
   const subscriptionId = typeof sessionObj.subscription === "string" ? sessionObj.subscription : null;
   const customerId = typeof sessionObj.customer === "string" ? sessionObj.customer : null;
 
-  let planKey = sessionObj.metadata?.planKey || "starter_monthly";
+  let planKey = sessionObj.metadata?.planKey || "standard_monthly";
   let status = "active";
   let currentPeriodEnd: Date | null = null;
 
@@ -224,7 +224,7 @@ async function handleSubscriptionUpdated(
 
   const priceId = subscriptionObj.items?.data?.[0]?.price?.id || "";
   const planFromPrice = getBillingPlanByStripePriceId(priceId);
-  const fallbackPlan = subscriptionObj.metadata?.planKey || "starter_monthly";
+  const fallbackPlan = subscriptionObj.metadata?.planKey || "standard_monthly";
   const plan = planFromPrice?.key || fallbackPlan;
   const status = subscriptionObj.status || "active";
   const currentPeriodEnd = subscriptionObj.current_period_end

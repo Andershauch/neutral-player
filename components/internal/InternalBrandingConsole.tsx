@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import BrandingSettingsCard from "@/components/admin/BrandingSettingsCard";
+import { getPlanDisplayName } from "@/lib/plans";
 
 type InternalOrg = {
   id: string;
@@ -117,7 +118,7 @@ export default function InternalBrandingConsole() {
             >
               {organizations.map((organization) => (
                 <option key={organization.id} value={organization.id}>
-                  {organization.name} ({toPlanLabel(organization.plan)})
+                  {organization.name} ({planLabel(organization.plan)})
                 </option>
               ))}
             </select>
@@ -150,11 +151,11 @@ export default function InternalBrandingConsole() {
           <BrandingSettingsCard
             canManageBranding={canManageBranding}
             canUseEnterpriseBranding={selectedOrganization.capabilities.enterpriseBrandingEnabled}
-            currentPlanLabel={toPlanLabel(selectedOrganization.plan)}
+            currentPlanLabel={planLabel(selectedOrganization.plan)}
             endpoint={`/api/internal/branding/theme?scope=organization&organizationId=${selectedOrganization.id}`}
             sectionKicker="Organisation"
             sectionTitle={`Kunde-theme: ${selectedOrganization.name}`}
-            sectionSubtitle={`Plan: ${toPlanLabel(selectedOrganization.plan)}. Bruges paa post-login sider og embed for denne kunde.`}
+            sectionSubtitle={`Plan: ${planLabel(selectedOrganization.plan)}. Bruges paa post-login sider og embed for denne kunde.`}
             refreshKey={refreshKey}
             onChanged={triggerRefresh}
           />
@@ -280,11 +281,8 @@ function InternalThemeHistoryCard({
   );
 }
 
-function toPlanLabel(plan: string): string {
-  if (plan === "starter_monthly") return "Starter";
-  if (plan === "pro_monthly") return "Pro";
-  if (plan === "enterprise_monthly") return "Enterprise";
-  if (plan === "custom_monthly") return "Custom";
+
+function planLabel(plan: string): string {
   if (plan === "global_default") return "Global";
-  return "Free";
+  return getPlanDisplayName(plan);
 }
