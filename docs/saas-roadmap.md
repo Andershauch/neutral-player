@@ -1,7 +1,7 @@
 # SaaS Roadmap (Source of Truth)
 ## Document Version
 - Current release: v0.3.0
-- Last updated: 2026-04-07
+- Last updated: 2026-08-21
 
 
 ## Status legend
@@ -847,17 +847,6 @@
   med navngivne personer var opfundne. Schemaet tillader nu tomme `stories` og `trustedBy`, og sektionerne vises
   foerst naar der findes rigtige referencer at vise.
 
-### TASK-12.10 Undertekster og tilgaengelighed
-**Status:** `IN PROGRESS`
-- `DONE`: `VariantSubtitle`-model, API paa `/api/variants/[id]/subtitles` og UI i `VariantSubtitlesPanel`.
-- `DONE`: Undertekster genereres af Mux ud fra videoens lydspor. 12 sprog understoettes; dansk er markeret beta,
-  hvilket siges tydeligt i UI'et.
-- `DONE`: `video.asset.track.ready` og `video.asset.track.errored` opdaterer status; Mux-webhooken skal have
-  de to events slaaet til i dashboardet.
-- `TODO`: Redigering af genereret tekst. I dag kan et spor bestilles og fjernes, men ikke rettes i appen.
-- `TODO`: Upload af kundens egen VTT/SRT-fil. Kraever fillagring, som projektet ikke har i dag.
-- `TODO`: Formel WCAG 2.1 AA-gennemgang af afspilleren, saa paastanden paa forsiden er efterproevet.
-
 ### TASK-12.5 Aktiveringsmodel
 **Status:** `DONE`
 - `lib/activation.ts` er nu eneste kilde til "hvor er organisationen henne", med egen tabel i stedet for udledning fra `AuditLog`.
@@ -875,6 +864,17 @@
 - `TODO`: Intern godkendelsesflade under `/internal`, saa en `np_super_admin` kan aktivere abonnementet naar fakturaen er registreret.
 - `TODO`: Selve e-faktura-afsendelsen kraever et NemHandel access point hos en udbyder. Det er en integrationsbeslutning, ikke kode i denne app.
 
+### TASK-12.10 Undertekster og tilgaengelighed
+**Status:** `IN PROGRESS`
+- `DONE`: `VariantSubtitle`-model, API paa `/api/variants/[id]/subtitles` og UI i `VariantSubtitlesPanel`.
+- `DONE`: Undertekster genereres af Mux ud fra videoens lydspor. 12 sprog understoettes; dansk er markeret beta,
+  hvilket siges tydeligt i UI'et.
+- `DONE`: `video.asset.track.ready` og `video.asset.track.errored` opdaterer status; Mux-webhooken skal have
+  de to events slaaet til i dashboardet.
+- `TODO`: Redigering af genereret tekst. I dag kan et spor bestilles og fjernes, men ikke rettes i appen.
+- `TODO`: Upload af kundens egen VTT/SRT-fil. Kraever fillagring, som projektet ikke har i dag.
+- `TODO`: Formel WCAG 2.1 AA-gennemgang af afspilleren, saa paastanden paa forsiden er efterproevet.
+
 ### TASK-12.8 Bloedere overgang ved login
 **Status:** `TODO`
 - Skiftet fra public top-header til admin-sidebar sker stadig abrupt.
@@ -882,6 +882,29 @@
 ### TASK-12.9 Afstemning af leveringsforbrug mod Mux Data
 **Status:** `TODO`
 - Leveringsminutter er i dag et konservativt estimat (afspilningsstart x varighed). Skal afstemmes mod Mux Data for rigtig fakturering.
+
+
+### Start her naeste gang
+1. `TASK-12.11` Formularfelter i marketing-editoren. Vejledningen pr. sektion ligger
+   allerede i `MARKETING_EDITOR_SECTIONS` med feltnavne og krav, saa formularerne kan
+   bygges oven paa den kontrakt.
+2. `TASK-12.7` Intern godkendelsesflade til fakturaanmodninger under `/internal`.
+3. Vaelg NemHandel access point-udbyder. Det er en indkoebsbeslutning, ikke kode.
+
+### Foer Stripe saettes i live-mode
+- Opret live-pris og saet `STRIPE_PRICE_STANDARD_MONTHLY`. De gamle
+  `STRIPE_PRICE_STARTER_MONTHLY` og `STRIPE_PRICE_PRO_MONTHLY` bruges ikke laengere.
+- Slaa webhook-events `video.asset.track.ready` og `video.asset.track.errored` til hos Mux,
+  ellers bliver undertekster genereret uden at appen faar det at vide.
+- Aktivér Stripe Customer Portal i live mode.
+- Faa lavet en formel WCAG 2.1 AA-gennemgang af afspilleren, saa paastanden paa forsiden
+  er efterproevet foer den bruges i salg.
+
+### TASK-12.11 Formularfelter i marketing-editoren
+**Status:** `TODO`
+- Erstat de raa JSON-tekstfelter i `/internal/marketing` med rigtige felter pr. sektion.
+- I dag kan en redaktoer uden teknisk baggrund oedelaegge en hel sektion med et manglende komma.
+- Feltkontrakten findes allerede i `MARKETING_EDITOR_SECTIONS` (navn, paakraevet, vejledning).
 
 ---
 
