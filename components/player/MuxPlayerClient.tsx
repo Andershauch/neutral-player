@@ -189,10 +189,10 @@ export default function MuxPlayerClient({ initialVariant, allVariants, embedName
         <div
           className={`
           absolute z-10 transition-all duration-500 ease-in-out pointer-events-none
-          md:right-4 md:top-1/2 md:-translate-y-1/2 md:flex-col md:gap-3 md:bottom-auto
+          md:left-auto md:right-4 md:top-1/2 md:-translate-y-1/2 md:flex-col md:gap-3 md:bottom-auto md:px-0
           top-4 left-0 right-0 flex justify-center gap-2 px-4 overflow-x-auto no-scrollbar
-          ${showControls ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4 pointer-events-none"}
-          md:group-hover/player:opacity-100 md:group-hover/player:translate-y-0 md:group-hover/player:pointer-events-auto
+          ${showControls ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"}
+          md:group-hover/player:opacity-100 md:group-hover/player:translate-y-0
         `}
         >
           <p className="hidden md:block text-[9px] text-white/40 font-black uppercase tracking-widest vertical-text mb-2 text-center select-none">
@@ -200,7 +200,12 @@ export default function MuxPlayerClient({ initialVariant, allVariants, embedName
           </p>
 
           {allVariants.map((v) => (
-            <div key={v.id} className="relative flex items-center justify-end group/btn shrink-0 pointer-events-auto">
+            <div
+              key={v.id}
+              className={`relative flex items-center justify-end group/btn shrink-0 ${
+                showControls ? "pointer-events-auto" : "pointer-events-none"
+              } md:group-hover/player:pointer-events-auto`}
+            >
               <span className="hidden md:block absolute right-12 px-3 py-1 bg-white text-black text-[10px] font-bold rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-xl">
                 {LANGUAGE_NAMES[v.lang] || v.title || v.lang.toUpperCase()}
               </span>

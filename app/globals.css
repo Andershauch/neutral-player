@@ -638,16 +638,11 @@ h6 {
     --media-tooltip-background: color-mix(in srgb, var(--foreground) 92%, transparent);
     --media-tooltip-color: #ffffff;
     --media-tooltip-border-radius: 0.75rem;
-    --controls-backdrop-color: color-mix(in srgb, var(--foreground) 38%, transparent);
   }
 
   .np-mux-play-skin::part(controller) {
     --media-control-background: color-mix(in srgb, var(--foreground) 68%, transparent);
     --media-control-hover-background: color-mix(in srgb, var(--primary) 78%, transparent);
-  }
-
-  .np-mux-play-skin::part(vertical-layer) {
-    background-color: var(--controls-backdrop-color);
   }
 
   .np-mux-play-skin::part(bottom),
@@ -692,26 +687,6 @@ h6 {
   .np-mux-play-skin::part(audio-track):hover,
   .np-mux-play-skin::part(playback-rate):hover {
     background: var(--media-control-hover-background);
-  }
-
-  .np-center-play-btn {
-    height: 78px;
-    width: 78px;
-    border-radius: 9999px;
-    border: 2px solid var(--np-player-play-border);
-    background: var(--np-player-play-bg);
-    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
-    color: #ffffff;
-    transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.12s ease;
-  }
-
-  .np-center-play-btn:hover {
-    background: var(--np-player-play-hover-bg);
-    border-color: var(--np-player-play-hover-border);
-  }
-
-  .np-center-play-btn:active {
-    transform: scale(0.98);
   }
 
   /* Bridge existing Tailwind blue utilities to tenant theme tokens inside themed surfaces. */
