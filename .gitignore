@@ -30,6 +30,10 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
+# local dev-tool logs and audit scratch files
+.codex-dev.log
+PROJECT_DASHBOARD.md
+
 # env files (can opt-in for committing if needed)
 .env*
 

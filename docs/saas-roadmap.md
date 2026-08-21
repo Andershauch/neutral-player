@@ -388,7 +388,7 @@
 
 ## SPRINT-8 General Default Layout and Look and Feel
 **Goal:** Loefte marketing-sider, standard-sider og default layout til et mere sammenhaengende, bevidst og professionelt look and feel.
-**Status:** `IN PROGRESS`
+**Status:** `DONE`
 **Scope:** Offentlige marketing-sider, auth/default sider og andre ikke-theme-overstyrede standardflader.
 **Princip:** Bevar implementationen enkel og genbrug eksisterende primitives, men vaer mere konsekvent i layout, spacing, typografi, farver og visuel retning.
 
@@ -415,7 +415,7 @@
   - `DONE`: Hoeste prioriterede huller er nu tydeligt afgraenset til shared shell, CTA-hierarki, header-familie, card-system, typografi og copy/encoding sweep.
 
 ### TASK-8.2 Shared default layout primitives
-**Status:** `IN PROGRESS`
+**Status:** `DONE`
 - Definer eller stram et lille default UI-lag for ikke-enterprise flader:
   - page shell
   - section rhythm
@@ -429,10 +429,10 @@
   - `DONE`: Default public look er nu flyttet over i et lille token-lag via `np-default-theme`, saa senere redesigns kan ske med mindre strukturelt churn.
   - `DONE`: Pricing, FAQ og Contact bruger nu samme public header, section cards og CTA-baseline.
   - `DONE`: Login, Register og Workspace setup bruger nu samme default form-shell og kortfamilie.
-  - `IN PROGRESS`: Landing og oevrige default/system flader mangler stadig sidste harmonisering mod samme baseline.
+  - `DONE` (2026-08-21): Landing bruger nu samme shared shell (np-page-shell, np-section-card, np-btn-*) som resten af public-fladerne, og system-fladerne er lukket med en custom 404 (`app/not-found.tsx`) og et brandet `app/global-error.tsx` i samme familie.
 
 ### TASK-8.3 Marketing polish sprint
-**Status:** `IN PROGRESS`
+**Status:** `DONE`
 - Opdater Landing, Pricing, FAQ og Contact til en tydelig faelles visuel retning.
 - Fokus:
   - staerkere hero-komposition
@@ -444,10 +444,10 @@
 - Progress note:
   - `DONE`: Landing prioriterer nu servicevalg, sales-led CTA'er og kundehistorier som primaer marketing-retning.
   - `DONE`: Pricing, FAQ og Contact deler nu samme marketing-familie med section-intros, data-strips, form-primitives og tydeligere beslutningshjaelp.
-  - `IN PROGRESS`: Der mangler stadig en sidste visuel harmonisering mellem marketing-siderne og auth/system-siderne.
+  - `DONE` (2026-08-21): Marketing-, auth- og system-sider (inkl. verify, invite, unauthorized, 404) bruger samme np-default-theme shell, header og komponentfamilie. Encoding-sweep bestaaet via `npm run encoding:check`.
 
 ### TASK-8.4 Default auth og system pages polish
-**Status:** `IN PROGRESS`
+**Status:** `DONE`
 - Opdater Login, Register, Verify og Setup-sider, saa de matcher marketingens baseline.
 - Fokus:
   - tydeligere informationshierarki
@@ -458,7 +458,7 @@
 - Progress note:
   - `DONE`: Login og Register bruger nu samme guided system-page familie med venstrestillet kontekst og roligere formularflade.
   - `DONE`: Verify, Workspace setup, Invite og Unauthorized matcher nu samme default shell, status-bannere og system-side rytme.
-  - `IN PROGRESS`: Der mangler stadig sidste finish paa tvungen copy/guardrails-dokumentation i `TASK-8.5`.
+  - `DONE` (2026-08-21): Guardrails-dokumentationen i `TASK-8.5` er afsluttet, og system-fladerne er suppleret med custom 404 og global-error i samme visuelle familie.
 
 ### TASK-8.5 Default design rules og guardrails
 **Status:** `DONE`
@@ -820,6 +820,8 @@
 ---
 
 ## Recently delivered outside roadmap IDs
+- `DONE` (2026-08-21): Player-fix i embed-afspilleren: den statiske dim-baggrund paa kontrol-laget er fjernet (overlay forsvandt aldrig), og sprogvaelger-overlayet blokerer ikke laengere klik paa center-playknappen paa desktop.
+- `DONE` (2026-08-21): Repo-hygiejne: `archive/legacy/` (inkl. 429 MB utracket node_modules) er slettet, og lokale dev-logs/audit-filer er gitignoret. Mux thumbnail-404 i dev-loggen bekraeftet som ren e2e-fixture-data (`test-playback-id`).
 - `DONE`: Observability baseline med request-correlation ID og structured logs paa kritiske API-ruter.
 - `DONE`: Sentry integration i Next.js med guide i `docs/sentry-setup.md`.
 - `DONE`: Webhook hardening for Stripe og Mux, inkl. signaturvalidering og idempotency.
@@ -842,4 +844,5 @@
   - `DONE`: On-demand media-aktivering i `EmbedVariantCard`.
   - `DONE`: Hero media fallback med `HeroMedia` og dedikeret poster.
   - `MEASURED`: Bundle-budget holdes inden for nuvaerende CI-graenser.
-  - `NEXT`: Fortsaet fase 4 med hero-video varianter, poster fallback og yderligere LCP-forbedringer.
+  - `DONE` (2026-08-21): Fase 4 hero-video varianter leveret: 1280px (~212 KB) og 854px (~109 KB) H.264-varianter erstatter den gamle 9 MB testvideo paa landing, med media-query source-valg og rigtig poster-frame (`/images/hero-poster.jpg`, ~65 KB) som LCP-venlig fallback. Originalen `hero_video_test.mp4` beholdes kun som upload-fixture til den gatede eksterne e2e.
+  - `NEXT`: Yderligere LCP-maaling i produktion via web vitals foer flere optimeringer prioriteres.

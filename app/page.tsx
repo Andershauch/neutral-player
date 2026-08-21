@@ -19,9 +19,13 @@ const PLAN_META: Record<BillingPlanKey, HomePlanMeta> = {
 
 const DEFAULT_HERO_MEDIA = {
   type: "video" as const,
-  videoSources: [{ src: "/images/hero_video_test.mp4", type: "video/mp4" }],
-  posterSrc: "/images/hero-product-demo.svg",
-  imageSrc: "/images/hero-product-demo.svg",
+  // Mindste variant først: browsere uden media-attribut-støtte vælger første afspilbare source.
+  videoSources: [
+    { src: "/images/hero_video_854.mp4", type: "video/mp4", media: "(max-width: 767px)" },
+    { src: "/images/hero_video_1280.mp4", type: "video/mp4" },
+  ],
+  posterSrc: "/images/hero-poster.jpg",
+  imageSrc: "/images/hero-poster.jpg",
   imageAlt: "NeutralPlayer produktdemo med projekter, embeds og varianter",
 };
 
