@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
-import { buildMuxSubtitleUrl } from "@/lib/subtitles";
 
 const MuxPlayer = dynamic(() => import("@mux/mux-player-react"), { ssr: false });
 
@@ -31,7 +30,6 @@ interface VariantSubtitleTrack {
   languageCode: string;
   name: string;
   source: string;
-  muxTrackId: string | null;
 }
 
 interface Variant {
@@ -41,18 +39,6 @@ interface Variant {
   muxPlaybackId: string | null;
   posterFrameUrl?: string | null;
   subtitles?: VariantSubtitleTrack[];
-}
-
-/// Bygger den offentlige URL for et undertekstspor, saa <track> kan pege paa
-/// den uanset om sporet er auto-genereret hos Mux eller kundens egen upload.
-function resolveSubtitleTrackSrc(variant: Variant, subtitle: VariantSubtitleTrack): string | null {
-  if (subtitle.source === "uploaded") {
-    return `/api/variants/${variant.id}/subtitles/${subtitle.languageCode}`;
-  }
-  if (subtitle.muxTrackId && variant.muxPlaybackId) {
-    return buildMuxSubtitleUrl(variant.muxPlaybackId, subtitle.muxTrackId);
-  }
-  return null;
 }
 
 interface MuxPlayerClientProps {
@@ -204,19 +190,22 @@ export default function MuxPlayerClient({
           className="np-mux-play-skin w-full h-full object-contain"
           style={{ height: "100%", width: "100%" }}
         >
-          {(activeVariant.subtitles || []).map((subtitle) => {
-            const src = resolveSubtitleTrackSrc(activeVariant, subtitle);
-            if (!src) return null;
-            return (
+          {/* Mux-genererede spor er allerede bagt ind i HLS-manifestet og
+              dukker selv op i CC-menuen — de skal ikke gentages her, ellers
+              risikerer vi to spor med samme sprogkode, der kolliderer i
+              menuen. Kun kundens egen upload findes ikke i manifestet og
+              skal derfor tilføjes eksplicit. */}
+          {(activeVariant.subtitles || [])
+            .filter((subtitle) => subtitle.source === "uploaded")
+            .map((subtitle) => (
               <track
                 key={subtitle.languageCode}
                 kind="subtitles"
                 srcLang={subtitle.languageCode}
                 label={subtitle.name}
-                src={src}
+                src={`/api/variants/${activeVariant.id}/subtitles/${subtitle.languageCode}`}
               />
-            );
-          })}
+            ))}
         </MuxPlayer>
       )}
 

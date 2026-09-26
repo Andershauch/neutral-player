@@ -29,8 +29,11 @@ export default async function EmbedPage({ params }: PageProps) {
             orderBy: { sortOrder: "asc" },
             include: {
               subtitles: {
-                where: { status: "ready", enabled: true },
-                select: { languageCode: true, name: true, source: true, muxTrackId: true },
+                // Mux-genererede spor er allerede en del af HLS-manifestet og
+                // surfacer selv i afspillerens CC-menu — kun kundens egen
+                // upload skal hentes her og gives videre som <track>.
+                where: { status: "ready", enabled: true, source: "uploaded" },
+                select: { languageCode: true, name: true, source: true },
               },
             },
           },

@@ -383,8 +383,21 @@ export default function EmbedVariantCard({ variant, languages }: EmbedVariantCar
             className="np-mux-play-skin h-full w-full object-contain"
             primaryColor="var(--primary)"
             secondaryColor="var(--foreground)"
+            crossOrigin="anonymous"
             onPlay={trackView}
-          />
+          >
+            {(variant.subtitles || [])
+              .filter((s) => s.status === "ready" && s.enabled && s.source === "uploaded")
+              .map((s) => (
+                <track
+                  key={s.languageCode}
+                  kind="subtitles"
+                  srcLang={s.languageCode}
+                  label={s.name}
+                  src={`/api/variants/${variant.id}/subtitles/${s.languageCode}`}
+                />
+              ))}
+          </MuxPlayer>
         ) : (
           <div className="flex h-full w-full flex-col items-center justify-center gap-4 bg-gradient-to-br from-gray-100 via-white to-blue-50 p-5 text-center">
             <div className="max-w-sm space-y-2">
