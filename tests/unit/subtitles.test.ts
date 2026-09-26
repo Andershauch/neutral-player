@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildMuxSubtitleUrl,
   buildSubtitleTrackName,
   GENERATED_SUBTITLE_LANGUAGES,
   getSubtitleLanguage,
   getSubtitleStatusLabel,
   isSupportedSubtitleLanguage,
+  isValidCustomSubtitleLanguageCode,
+  looksLikeWebVtt,
 } from "@/lib/subtitles";
 
 describe("subtitle languages", () => {
@@ -40,5 +43,33 @@ describe("subtitle languages", () => {
     expect(getSubtitleStatusLabel("ready")).toBe("Klar");
     expect(getSubtitleStatusLabel("errored")).toBe("Fejlede");
     expect(getSubtitleStatusLabel("requested")).toBe("Behandles");
+  });
+
+  it("builds Mux's fixed VTT URL pattern for a generated track", () => {
+    expect(buildMuxSubtitleUrl("abc123", "trk456")).toBe(
+      "https://stream.mux.com/abc123/text/trk456.vtt"
+    );
+  });
+
+  it("accepts plain and regional language codes for uploaded subtitles", () => {
+    expect(isValidCustomSubtitleLanguageCode("da")).toBe(true);
+    expect(isValidCustomSubtitleLanguageCode("da-dtv")).toBe(true);
+    expect(isValidCustomSubtitleLanguageCode("EN")).toBe(true);
+  });
+
+  it("rejects malformed language codes for uploaded subtitles", () => {
+    expect(isValidCustomSubtitleLanguageCode("")).toBe(false);
+    expect(isValidCustomSubtitleLanguageCode("danish")).toBe(false);
+    expect(isValidCustomSubtitleLanguageCode("<script>")).toBe(false);
+  });
+
+  it("recognizes a valid WebVTT file, including with a leading BOM", () => {
+    expect(looksLikeWebVtt("WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nHej")).toBe(true);
+    expect(looksLikeWebVtt("﻿WEBVTT\n\n1\n00:00:00.000 --> 00:00:01.000\nHej")).toBe(true);
+  });
+
+  it("rejects files that are not WebVTT, since kunder kan uploade forkerte filtyper ved en fejl", () => {
+    expect(looksLikeWebVtt("1\n00:00:00,000 --> 00:00:01,000\nHej")).toBe(false); // SRT
+    expect(looksLikeWebVtt("")).toBe(false);
   });
 });

@@ -129,6 +129,50 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   }
 }
 
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const requestId = getRequestIdFromRequest(req);
+  try {
+    const orgCtx = await getOrgContextForContentEdit();
+    if (!orgCtx) {
+      return NextResponse.json({ error: "Ingen adgang." }, { status: 403 });
+    }
+
+    const { id: variantId } = await params;
+    const body = (await req.json()) as { languageCode?: string; enabled?: boolean };
+    const languageCode = (body.languageCode || "").trim().toLowerCase();
+    if (typeof body.enabled !== "boolean") {
+      return NextResponse.json({ error: "Mangler 'enabled'." }, { status: 400 });
+    }
+
+    const subtitle = await prisma.variantSubtitle.findUnique({
+      where: { variantId_languageCode: { variantId, languageCode } },
+      select: { id: true, organizationId: true },
+    });
+
+    if (!subtitle || subtitle.organizationId !== orgCtx.orgId) {
+      return NextResponse.json({ error: "Underteksterne blev ikke fundet." }, { status: 404 });
+    }
+
+    const record = await prisma.variantSubtitle.update({
+      where: { id: subtitle.id },
+      data: { enabled: body.enabled },
+    });
+
+    logApiInfo(req, "Subtitles toggled", {
+      orgId: orgCtx.orgId,
+      variantId,
+      languageCode,
+      enabled: body.enabled,
+    });
+
+    return NextResponse.json({ ok: true, subtitle: record });
+  } catch (error) {
+    logApiError(req, "Subtitle toggle failed", error);
+    const message = error instanceof Error ? error.message : "Ukendt fejl";
+    return NextResponse.json({ error: message, requestId }, { status: 500 });
+  }
+}
+
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const requestId = getRequestIdFromRequest(req);
   try {

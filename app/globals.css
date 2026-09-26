@@ -40,6 +40,13 @@
   --np-player-play-hover-bg: #ff5ca8;
   --np-player-play-hover-border: #ff5ca8;
   --np-player-play-shadow: 0 8px 24px rgba(255, 92, 168, 0.35);
+  /* Lysere udgave af tenantens primærfarve, kun til brug inde i afspilleren.
+     Den raa --primary er valgt til at staa paa hvid baggrund i resten af
+     app'en og kan vaere for moerk til at ses tydeligt oven paa sort video
+     (progress-bar, fokusring, hover). Her laases den op i lyshed, uanset
+     hvor moerk tenantens brandfarve er. */
+  --np-player-accent: color-mix(in srgb, var(--primary) 55%, white);
+  --np-player-accent-strong: color-mix(in srgb, var(--primary) 80%, white);
 }
 
 @theme inline {
@@ -649,24 +656,24 @@ h6 {
   }
 
   .np-mux-play-skin {
-    --media-primary-color: var(--primary);
+    --media-primary-color: var(--np-player-accent);
     --media-secondary-color: color-mix(in srgb, var(--foreground) 82%, transparent);
-    --media-accent-color: var(--primary-strong);
+    --media-accent-color: var(--np-player-accent-strong);
     --media-text-color: #ffffff;
     --media-control-background: color-mix(in srgb, var(--foreground) 68%, transparent);
-    --media-control-hover-background: color-mix(in srgb, var(--primary) 78%, transparent);
+    --media-control-hover-background: color-mix(in srgb, var(--np-player-accent) 55%, transparent);
     --media-control-height: 42px;
     --media-control-padding: 10px;
     --media-control-border-radius: 9999px;
     --media-control-box-shadow: 0 8px 24px color-mix(in srgb, var(--foreground) 24%, transparent);
     --media-button-icon-width: 18px;
     --media-button-icon-height: 18px;
-    --media-focus-box-shadow: 0 0 0 2px #ffffff, 0 0 0 5px color-mix(in srgb, var(--primary) 72%, transparent);
-    --media-range-bar-color: var(--primary-strong);
+    --media-focus-box-shadow: 0 0 0 2px #ffffff, 0 0 0 5px color-mix(in srgb, var(--np-player-accent) 72%, transparent);
+    --media-range-bar-color: var(--np-player-accent);
     --media-range-track-background: color-mix(in srgb, #ffffff 24%, transparent);
     --media-range-thumb-background: #ffffff;
-    --media-range-thumb-border: 2px solid var(--primary);
-    --media-range-thumb-box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 30%, transparent);
+    --media-range-thumb-border: 2px solid var(--np-player-accent-strong);
+    --media-range-thumb-box-shadow: 0 0 0 2px color-mix(in srgb, var(--np-player-accent) 30%, transparent);
     --media-tooltip-background: color-mix(in srgb, var(--foreground) 92%, transparent);
     --media-tooltip-color: #ffffff;
     --media-tooltip-border-radius: 0.75rem;
@@ -674,7 +681,7 @@ h6 {
 
   .np-mux-play-skin::part(controller) {
     --media-control-background: color-mix(in srgb, var(--foreground) 68%, transparent);
-    --media-control-hover-background: color-mix(in srgb, var(--primary) 78%, transparent);
+    --media-control-hover-background: color-mix(in srgb, var(--np-player-accent) 55%, transparent);
   }
 
   .np-mux-play-skin::part(bottom),
@@ -720,6 +727,7 @@ h6 {
   .np-mux-play-skin::part(playback-rate):hover {
     background: var(--media-control-hover-background);
   }
+
 
   /* Bridge existing Tailwind blue utilities to tenant theme tokens inside themed surfaces. */
   .np-themed .bg-blue-600 {

@@ -261,6 +261,12 @@ model VariantSubtitle {
   source         String   @default("generated")
   /// requested | ready | errored
   status         String   @default("requested")
+  /// Lader redaktøren slå et spor fra uden at slette det (og dermed undgå at
+  /// skulle betale for en ny Mux-generering, hvis de fortryder).
+  enabled        Boolean  @default(true)
+  /// Raat WebVTT-indhold for source="uploaded". Mux-genererede spor bruger i
+  /// stedet muxTrackId til at bygge URL'en hos Mux.
+  vttContent     String?  @db.Text
   muxTrackId     String?
   errorMessage   String?
   createdAt      DateTime @default(now())

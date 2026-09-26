@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
+import { buildMuxSubtitleUrl } from "@/lib/subtitles";
 
 const MuxPlayer = dynamic(() => import("@mux/mux-player-react"), { ssr: false });
 
@@ -26,12 +27,32 @@ const LANGUAGE_NAMES: Record<string, string> = {
   gl: "Kalaallisut",
 };
 
+interface VariantSubtitleTrack {
+  languageCode: string;
+  name: string;
+  source: string;
+  muxTrackId: string | null;
+}
+
 interface Variant {
   id: string;
   lang: string;
   title: string | null;
   muxPlaybackId: string | null;
   posterFrameUrl?: string | null;
+  subtitles?: VariantSubtitleTrack[];
+}
+
+/// Bygger den offentlige URL for et undertekstspor, saa <track> kan pege paa
+/// den uanset om sporet er auto-genereret hos Mux eller kundens egen upload.
+function resolveSubtitleTrackSrc(variant: Variant, subtitle: VariantSubtitleTrack): string | null {
+  if (subtitle.source === "uploaded") {
+    return `/api/variants/${variant.id}/subtitles/${subtitle.languageCode}`;
+  }
+  if (subtitle.muxTrackId && variant.muxPlaybackId) {
+    return buildMuxSubtitleUrl(variant.muxPlaybackId, subtitle.muxTrackId);
+  }
+  return null;
 }
 
 interface MuxPlayerClientProps {
@@ -179,9 +200,24 @@ export default function MuxPlayerClient({
           primaryColor="var(--primary)"
           secondaryColor="var(--foreground)"
           accentColor="var(--primary-strong)"
+          crossOrigin="anonymous"
           className="np-mux-play-skin w-full h-full object-contain"
           style={{ height: "100%", width: "100%" }}
-        />
+        >
+          {(activeVariant.subtitles || []).map((subtitle) => {
+            const src = resolveSubtitleTrackSrc(activeVariant, subtitle);
+            if (!src) return null;
+            return (
+              <track
+                key={subtitle.languageCode}
+                kind="subtitles"
+                srcLang={subtitle.languageCode}
+                label={subtitle.name}
+                src={src}
+              />
+            );
+          })}
+        </MuxPlayer>
       )}
 
       {showWatermark && !playerError && (

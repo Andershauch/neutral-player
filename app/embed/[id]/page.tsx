@@ -27,6 +27,12 @@ export default async function EmbedPage({ params }: PageProps) {
         include: {
           variants: {
             orderBy: { sortOrder: "asc" },
+            include: {
+              subtitles: {
+                where: { status: "ready", enabled: true },
+                select: { languageCode: true, name: true, source: true, muxTrackId: true },
+              },
+            },
           },
         },
       },

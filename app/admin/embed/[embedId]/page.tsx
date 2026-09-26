@@ -31,7 +31,7 @@ export default async function AdminEmbedPage({ params }: PageProps) {
             include: {
               subtitles: {
                 orderBy: { languageCode: "asc" },
-                select: { languageCode: true, name: true, status: true, source: true },
+                select: { languageCode: true, name: true, status: true, source: true, enabled: true },
               },
             },
           },

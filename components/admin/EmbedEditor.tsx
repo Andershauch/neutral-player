@@ -57,6 +57,7 @@ interface EmbedEditorProps {
           name: string;
           status: string;
           source: string;
+          enabled: boolean;
         }>;
       }>;
     }>;
