@@ -11,20 +11,11 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // TEMP: midlertidig timing-log til at diagnosticere langsom admin-navigation
-  // i produktion. Fjernes igen naar aarsagen er fundet. Dette er en Server
-  // Component, der koerer praecis en gang pr. request paa serveren, saa
-  // "purity"-reglen (skrevet til client-render) er ikke relevant her.
-  /* eslint-disable react-hooks/purity */
-  const layoutStart = Date.now();
-
   const orgCtx = await getCurrentOrgContext();
-  console.log(`[TIMING] admin/layout getCurrentOrgContext: ${Date.now() - layoutStart}ms`);
   if (!orgCtx) {
     redirect("/login");
   }
 
-  const waveStart = Date.now();
   const [subscription, resolvedTheme] = await Promise.all([
     prisma.subscription.findFirst({
       where: { organizationId: orgCtx.orgId },
@@ -33,9 +24,6 @@ export default async function AdminLayout({
     }),
     resolveThemeForOrganization(orgCtx.orgId),
   ]);
-  console.log(`[TIMING] admin/layout subscription+theme: ${Date.now() - waveStart}ms`);
-  console.log(`[TIMING] admin/layout TOTAL: ${Date.now() - layoutStart}ms`);
-  /* eslint-enable react-hooks/purity */
 
   const hasAdminAccess =
     subscription?.status === "active" ||
