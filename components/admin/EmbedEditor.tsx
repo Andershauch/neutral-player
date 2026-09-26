@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
+import { useAsyncAction } from "@/hooks/useAsyncAction";
+import StatTile from "@/components/ui/StatTile";
 
 const EmbedCodeGenerator = dynamic(() => import("./EmbedCodeGenerator"), {
   loading: () => <p className="text-xs font-semibold text-gray-500">Indlæser embed-kode...</p>,
@@ -69,28 +71,28 @@ export default function EmbedEditor({ embed }: EmbedEditorProps) {
   const [projectName, setProjectName] = useState(embed.name);
   const [nameDraft, setNameDraft] = useState(embed.name);
   const [isEditingName, setIsEditingName] = useState(false);
-  const [savingName, setSavingName] = useState(false);
-  const [nameError, setNameError] = useState<string | null>(null);
 
-  const [isAdding, setIsAdding] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newLang, setNewLang] = useState("da");
-  const [addVariantError, setAddVariantError] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [variantLimitError, setVariantLimitError] = useState<string | null>(null);
-  const [upgrading, setUpgrading] = useState(false);
   const [domainsInput, setDomainsInput] = useState(embed.allowedDomains || "*");
-  const [domainSaveError, setDomainSaveError] = useState<string | null>(null);
-  const [savingDomains, setSavingDomains] = useState(false);
 
-  useEffect(() => {
+  // Genopfrisker de lokale drafts naar en ny embed-prop ankommer (fx efter
+  // router.refresh()) — justeret under render i stedet for i en effect, jf.
+  // Reacts eget moenster for "adjusting state when a prop changes".
+  const [syncedName, setSyncedName] = useState(embed.name);
+  if (embed.name !== syncedName) {
+    setSyncedName(embed.name);
     setProjectName(embed.name);
     setNameDraft(embed.name);
-  }, [embed.name]);
+  }
 
-  useEffect(() => {
+  const [syncedAllowedDomains, setSyncedAllowedDomains] = useState(embed.allowedDomains);
+  if (embed.allowedDomains !== syncedAllowedDomains) {
+    setSyncedAllowedDomains(embed.allowedDomains);
     setDomainsInput(embed.allowedDomains || "*");
-  }, [embed.allowedDomains]);
+  }
 
   const variants = useMemo(
     () => (embed.groups || []).flatMap((group) => group.variants || []),
@@ -99,143 +101,158 @@ export default function EmbedEditor({ embed }: EmbedEditorProps) {
   const totalVariants = variants.length;
   const readyVariantCount = variants.filter((variant) => Boolean(variant.muxPlaybackId)).length;
   const domainsValue = (embed.allowedDomains || "*").trim();
-  const nextActionHref = totalVariants === 0 ? "#variant-create" : readyVariantCount === 0 ? "#variant-library" : "#share-project";
+  const nextActionTargetId =
+    totalVariants === 0 ? "variant-create" : readyVariantCount === 0 ? "variant-library" : "share-project";
   const nextActionLabel = totalVariants === 0 ? "Opret første version" : readyVariantCount === 0 ? "Upload første video" : "Gå til deling";
   const journeySteps = [
     {
       number: "1",
       title: "Projektinfo",
-      href: "#project-basics",
+      targetId: "project-basics-details",
       done: Boolean(projectName.trim()),
       detail: "Navngiv projektet og beslut hvem der ejer det.",
     },
     {
       number: "2",
       title: "Versioner",
-      href: "#variant-create",
+      targetId: "variant-create",
       done: totalVariants > 0,
       detail: totalVariants > 0 ? `${totalVariants} versioner oprettet` : "Opret første sprogversion",
     },
     {
       number: "3",
       title: "Upload og preview",
-      href: "#variant-library",
+      targetId: "variant-library",
       done: readyVariantCount > 0,
       detail: readyVariantCount > 0 ? `${readyVariantCount} versioner er klar` : "Upload mindst én video",
     },
     {
       number: "4",
       title: "Del projektet",
-      href: "#share-project",
+      targetId: "share-project",
       done: readyVariantCount > 0,
       detail: readyVariantCount > 0 ? "Embed-kode er klar til kopiering" : "Deling åbner, når en video er klar",
     },
   ];
 
-  const addVariant = async () => {
-    const trimmedTitle = newTitle.trim();
-    if (!trimmedTitle) return;
-    setIsAdding(true);
-    setVariantLimitError(null);
-    setAddVariantError(null);
-    try {
-      const res = await fetch("/api/variants", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ embedId: embed.id, lang: newLang, title: trimmedTitle }),
-      });
+  // Kun ét ekstra afsnit ud over den altid synlige variant-library-sektion
+  // holdes udfoldet ad gangen, saa fladen ikke igen ender med 5 samtidigt
+  // synlige bokse (jf. audit i docs/saas-roadmap.md TASK-11.1/11.5).
+  // Beregnes kun ved foerste render — brugerens egne klik styrer resten.
+  const [openSection, setOpenSection] = useState<string | null>(() => {
+    if (totalVariants === 0) return "variant-create";
+    if (readyVariantCount === 0) return null;
+    return "share-project";
+  });
 
-      if (res.ok) {
+  const toggleSection = (targetId: string) => {
+    setOpenSection((current) => (current === targetId ? null : targetId));
+  };
+
+  const goToSection = (targetId: string) => {
+    if (targetId !== "variant-library") {
+      setOpenSection(targetId);
+    }
+    document.getElementById(targetId)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const addVariantAction = useAsyncAction(async () => {
+    const res = await fetch("/api/variants", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ embedId: embed.id, lang: newLang, title: newTitle.trim() }),
+    });
+    if (res.ok) {
+      return { ok: true as const };
+    }
+    const data = (await res.json()) as { error?: string; code?: string };
+    if (data.code === "UPGRADE_REQUIRED") {
+      return { ok: false as const, limitError: data.error || "Plangrænsen er nået." };
+    }
+    throw new Error(data.error || "Kunne ikke oprette sprogversionen.");
+  }, {
+    onSuccess: (result) => {
+      if (result.ok) {
         setNewTitle("");
+        setVariantLimitError(null);
         router.refresh();
       } else {
-        const data = (await res.json()) as { error?: string; code?: string };
-        if (data.code === "UPGRADE_REQUIRED") {
-          setVariantLimitError(data.error || "Plangrænsen er nået.");
-        } else {
-          setAddVariantError(data.error || "Kunne ikke oprette sprogversionen.");
-        }
+        setVariantLimitError(result.limitError);
       }
-    } finally {
-      setIsAdding(false);
-    }
+    },
+  });
+
+  const handleAddVariant = () => {
+    if (!newTitle.trim()) return;
+    setVariantLimitError(null);
+    addVariantAction.run();
   };
 
-  const startUpgrade = async () => {
-    setUpgrading(true);
-    try {
-      const res = await fetch("/api/billing/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          plan: "standard_monthly",
-          returnTo: "/admin/dashboard",
-          cancelReturnTo: "/admin/dashboard",
-        }),
-      });
-      const data = (await res.json()) as { url?: string; error?: string };
-      if (!res.ok || !data.url) {
-        throw new Error(data.error || "Kunne ikke starte checkout.");
-      }
-      window.location.assign(data.url);
-    } catch (e) {
-      const message = e instanceof Error ? e.message : "Ukendt fejl";
-      alert(message);
-      setUpgrading(false);
+  const upgradeAction = useAsyncAction(async () => {
+    const res = await fetch("/api/billing/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        plan: "standard_monthly",
+        returnTo: "/admin/dashboard",
+        cancelReturnTo: "/admin/dashboard",
+      }),
+    });
+    const data = (await res.json()) as { url?: string; error?: string };
+    if (!res.ok || !data.url) {
+      throw new Error(data.error || "Kunne ikke starte checkout.");
     }
-  };
+    window.location.assign(data.url);
+  }, {
+    onError: (error) => alert(error.message),
+  });
 
-  const saveDomains = async () => {
-    setSavingDomains(true);
-    setDomainSaveError(null);
-    try {
-      const res = await fetch(`/api/embeds/${embed.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ allowedDomains: domainsInput }),
-      });
-      const data = (await res.json()) as { error?: string; allowedDomains?: string };
-      if (!res.ok) {
-        throw new Error(data.error || "Kunne ikke gemme domæner.");
-      }
-      setDomainsInput(data.allowedDomains || "*");
+  const domainsAction = useAsyncAction(async () => {
+    const res = await fetch(`/api/embeds/${embed.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ allowedDomains: domainsInput }),
+    });
+    const data = (await res.json()) as { error?: string; allowedDomains?: string };
+    if (!res.ok) {
+      throw new Error(data.error || "Kunne ikke gemme domæner.");
+    }
+    return data.allowedDomains;
+  }, {
+    onSuccess: (allowedDomains) => {
+      setDomainsInput(allowedDomains || "*");
       router.refresh();
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Ukendt fejl";
-      setDomainSaveError(message);
-    } finally {
-      setSavingDomains(false);
-    }
-  };
+    },
+  });
 
-  const saveProjectName = async () => {
+  const nameAction = useAsyncAction(async () => {
     const trimmed = nameDraft.trim();
-    if (!trimmed) {
-      setNameError("Projektnavn må ikke være tomt.");
-      return;
+    const res = await fetch(`/api/embeds/${embed.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: trimmed }),
+    });
+    const data = (await res.json()) as { error?: string; name?: string };
+    if (!res.ok) {
+      throw new Error(data.error || "Kunne ikke opdatere projektnavn.");
     }
-    setSavingName(true);
-    setNameError(null);
-    try {
-      const res = await fetch(`/api/embeds/${embed.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: trimmed }),
-      });
-      const data = (await res.json()) as { error?: string; name?: string };
-      if (!res.ok) {
-        throw new Error(data.error || "Kunne ikke opdatere projektnavn.");
-      }
-      setProjectName(data.name || trimmed);
-      setNameDraft(data.name || trimmed);
+    return data.name || trimmed;
+  }, {
+    onSuccess: (name) => {
+      setProjectName(name);
+      setNameDraft(name);
       setIsEditingName(false);
       router.refresh();
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Ukendt fejl";
-      setNameError(message);
-    } finally {
-      setSavingName(false);
+    },
+  });
+
+  const handleSaveProjectName = () => {
+    const trimmed = nameDraft.trim();
+    if (!trimmed) {
+      nameAction.setError("Projektnavn må ikke være tomt.");
+      return;
     }
+    nameAction.run();
   };
 
   return (
@@ -251,9 +268,13 @@ export default function EmbedEditor({ embed }: EmbedEditorProps) {
           </div>
 
           <div className="flex flex-col gap-2 sm:flex-row">
-            <a href={nextActionHref} className="np-btn-primary inline-flex items-center justify-center px-4 py-3">
+            <button
+              type="button"
+              onClick={() => goToSection(nextActionTargetId)}
+              className="np-btn-primary inline-flex items-center justify-center px-4 py-3"
+            >
               {nextActionLabel}
-            </a>
+            </button>
             <button
               onClick={() => setShowPreview(true)}
               className="np-btn-ghost inline-flex items-center justify-center px-4 py-3"
@@ -267,17 +288,18 @@ export default function EmbedEditor({ embed }: EmbedEditorProps) {
         </div>
 
         <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-          <JourneyStat label="Versioner" value={totalVariants.toString()} detail={totalVariants > 0 ? "Oprettede sprogversioner" : "Ingen versioner endnu"} />
-          <JourneyStat label="Video klar" value={readyVariantCount.toString()} detail={readyVariantCount > 0 ? "Kan bruges i preview og embed" : "Upload mangler stadig"} />
-          <JourneyStat label="Domæner" value={domainsValue === "*" ? "Alle" : "Begrænset"} detail={domainsValue === "*" ? "Embed må bruges overalt" : "Projektet er låst til udvalgte domæner"} />
+          <StatTile label="Versioner" value={totalVariants.toString()} detail={totalVariants > 0 ? "Oprettede sprogversioner" : "Ingen versioner endnu"} />
+          <StatTile label="Video klar" value={readyVariantCount.toString()} detail={readyVariantCount > 0 ? "Kan bruges i preview og embed" : "Upload mangler stadig"} />
+          <StatTile label="Domæner" value={domainsValue === "*" ? "Alle" : "Begrænset"} detail={domainsValue === "*" ? "Embed må bruges overalt" : "Projektet er låst til udvalgte domæner"} />
         </div>
 
         <div className="grid grid-cols-1 gap-3 xl:grid-cols-4">
           {journeySteps.map((step) => (
-            <a
+            <button
               key={step.number}
-              href={step.href}
-              className={`rounded-2xl border px-4 py-4 transition hover:border-blue-200 hover:bg-blue-50/30 ${
+              type="button"
+              onClick={() => goToSection(step.targetId)}
+              className={`rounded-2xl border px-4 py-4 text-left transition hover:border-blue-200 hover:bg-blue-50/30 ${
                 step.done ? "border-emerald-100 bg-emerald-50/70" : "border-gray-200 bg-white"
               }`}
             >
@@ -291,78 +313,85 @@ export default function EmbedEditor({ embed }: EmbedEditorProps) {
               </div>
               <h3 className="mt-3 text-sm font-black uppercase tracking-widest text-gray-900">{step.title}</h3>
               <p className="mt-2 text-sm text-gray-600">{step.detail}</p>
-            </a>
+            </button>
           ))}
-        </div>
-
-        <div className="rounded-2xl border border-gray-100 bg-white/90 p-4">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div className="flex-1 space-y-2">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Projektinfo</p>
-              {isEditingName ? (
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                  <input
-                    value={nameDraft}
-                    onChange={(e) => setNameDraft(e.target.value)}
-                    className="w-full max-w-xl rounded-xl border border-gray-200 px-4 py-3 text-lg font-black text-gray-900 outline-none focus:ring-2 focus:ring-blue-400"
-                    placeholder="Projektnavn"
-                    disabled={savingName}
-                  />
-                  <div className="flex gap-2">
-                    <button type="button" onClick={saveProjectName} disabled={savingName} className="np-btn-primary px-4 py-3 disabled:opacity-50">
-                      {savingName ? "Gemmer..." : "Gem"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsEditingName(false);
-                        setNameDraft(projectName);
-                        setNameError(null);
-                      }}
-                      disabled={savingName}
-                      className="np-btn-ghost px-4 py-3 disabled:opacity-50"
-                    >
-                      Annuller
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex flex-wrap items-center gap-3">
-                  <p className="text-lg font-black text-gray-900">{projectName}</p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setNameDraft(projectName);
-                      setIsEditingName(true);
-                      setNameError(null);
-                    }}
-                    className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-700 transition-colors hover:bg-gray-50"
-                  >
-                    Rediger navn
-                  </button>
-                </div>
-              )}
-              {nameError ? <p className="text-xs font-semibold text-red-600">{nameError}</p> : null}
-            </div>
-
-            <div className="rounded-2xl border border-gray-100 bg-gray-50/80 px-4 py-3 lg:max-w-sm">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Anbefalet rækkefølge</p>
-              <p className="mt-2 text-sm text-gray-600">
-                Opret først versioner, upload derefter video, og kopier først embed-koden, når mindst én version er klar.
-              </p>
-            </div>
-          </div>
         </div>
       </section>
 
-      <section id="variant-create" className="space-y-4 rounded-[2rem] border border-blue-100 bg-gradient-to-br from-blue-50 to-blue-100/40 p-5 shadow-[0_8px_24px_rgba(15,23,42,0.08)] md:p-6">
-        <div className="space-y-2">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-500">Trin 2</p>
-          <h3 className="text-xl font-black uppercase tracking-tight text-gray-900">Opret ny sprogversion</h3>
-          <p className="text-sm text-gray-600">
-            Start med de versioner, du vil tilbyde. Hver version kan få sin egen video, titel og posterframe.
-          </p>
+      <CollapsibleSection
+        id="project-basics-details"
+        kicker="Trin 1"
+        title="Projektinfo"
+        expanded={openSection === "project-basics-details"}
+        onToggle={() => toggleSection("project-basics-details")}
+      >
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="flex-1 space-y-2">
+            {isEditingName ? (
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <input
+                  value={nameDraft}
+                  onChange={(e) => setNameDraft(e.target.value)}
+                  className="w-full max-w-xl rounded-xl border border-gray-200 px-4 py-3 text-lg font-black text-gray-900 outline-none focus:ring-2 focus:ring-blue-400"
+                  placeholder="Projektnavn"
+                  disabled={nameAction.isPending}
+                />
+                <div className="flex gap-2">
+                  <button type="button" onClick={handleSaveProjectName} disabled={nameAction.isPending} className="np-btn-primary px-4 py-3 disabled:opacity-50">
+                    {nameAction.isPending ? "Gemmer..." : "Gem"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsEditingName(false);
+                      setNameDraft(projectName);
+                      nameAction.setError(null);
+                    }}
+                    disabled={nameAction.isPending}
+                    className="np-btn-ghost px-4 py-3 disabled:opacity-50"
+                  >
+                    Annuller
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-center gap-3">
+                <p className="text-lg font-black text-gray-900">{projectName}</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNameDraft(projectName);
+                    setIsEditingName(true);
+                    nameAction.setError(null);
+                  }}
+                  className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-700 transition-colors hover:bg-gray-50"
+                >
+                  Rediger navn
+                </button>
+              </div>
+            )}
+            {nameAction.error ? <p className="text-xs font-semibold text-red-600">{nameAction.error}</p> : null}
+          </div>
+
+          <div className="rounded-2xl border border-gray-100 bg-gray-50/80 px-4 py-3 lg:max-w-sm">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Anbefalet rækkefølge</p>
+            <p className="mt-2 text-sm text-gray-600">
+              Opret først versioner, upload derefter video, og kopier først embed-koden, når mindst én version er klar.
+            </p>
+          </div>
         </div>
+      </CollapsibleSection>
+
+      <CollapsibleSection
+        id="variant-create"
+        kicker="Trin 2"
+        title="Opret ny sprogversion"
+        expanded={openSection === "variant-create"}
+        onToggle={() => toggleSection("variant-create")}
+      >
+        <p className="text-sm text-gray-600">
+          Start med de versioner, du vil tilbyde. Hver version kan få sin egen video, titel og posterframe.
+        </p>
         <div className="flex flex-col gap-4 md:max-w-5xl md:flex-row md:items-end md:gap-5">
           <div className="flex w-full flex-col gap-2 md:w-[220px]">
             <label className="ml-1 text-[10px] font-black uppercase tracking-widest text-gray-400">Vælg sprog</label>
@@ -390,29 +419,29 @@ export default function EmbedEditor({ embed }: EmbedEditorProps) {
           </div>
           <div className="flex w-full items-end md:w-auto">
             <button
-              onClick={addVariant}
-              disabled={isAdding || !newTitle.trim()}
+              onClick={handleAddVariant}
+              disabled={addVariantAction.isPending || !newTitle.trim()}
               className="w-full rounded-2xl bg-blue-600 px-10 py-3.5 text-[10px] font-black uppercase tracking-widest text-white shadow-lg transition hover:bg-blue-700 disabled:opacity-40 active:scale-[0.98] md:w-auto"
             >
-              {isAdding ? "Opretter..." : "Opret version"}
+              {addVariantAction.isPending ? "Opretter..." : "Opret version"}
             </button>
           </div>
         </div>
-        {addVariantError ? <p className="text-xs font-semibold text-red-600">{addVariantError}</p> : null}
+        {addVariantAction.error ? <p className="text-xs font-semibold text-red-600">{addVariantAction.error}</p> : null}
         {variantLimitError ? (
           <div className="mt-4 space-y-2 rounded-xl border border-amber-200 bg-amber-50 p-3">
             <p className="text-xs font-semibold text-amber-800">{variantLimitError}</p>
             <button
               type="button"
-              onClick={startUpgrade}
-              disabled={upgrading}
+              onClick={() => upgradeAction.run()}
+              disabled={upgradeAction.isPending}
               className="rounded-lg bg-blue-600 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-white transition-all hover:bg-blue-700 disabled:opacity-50"
             >
-              {upgrading ? "Åbner checkout..." : "Opgrader nu"}
+              {upgradeAction.isPending ? "Åbner checkout..." : "Opgrader nu"}
             </button>
           </div>
         ) : null}
-      </section>
+      </CollapsibleSection>
 
       <section id="variant-library" className="space-y-5">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
@@ -460,14 +489,16 @@ export default function EmbedEditor({ embed }: EmbedEditorProps) {
         )}
       </section>
 
-      <section id="domain-settings" className="space-y-3 rounded-[2rem] border border-gray-200 bg-white p-5 shadow-[0_8px_24px_rgba(15,23,42,0.08)] md:p-6">
-        <div className="space-y-2">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Trin 4a</p>
-          <h3 className="text-lg font-black uppercase tracking-tight text-gray-900">Tilladte domæner</h3>
-          <p className="text-sm text-gray-600">
-            Bestem hvor embed må bruges. Brug <span className="font-mono">*</span> for at tillade alle domæner, eller begræns projektet til udvalgte sites.
-          </p>
-        </div>
+      <CollapsibleSection
+        id="domain-settings"
+        kicker="Trin 4a"
+        title="Tilladte domæner"
+        expanded={openSection === "domain-settings"}
+        onToggle={() => toggleSection("domain-settings")}
+      >
+        <p className="text-sm text-gray-600">
+          Bestem hvor embed må bruges. Brug <span className="font-mono">*</span> for at tillade alle domæner, eller begræns projektet til udvalgte sites.
+        </p>
         <textarea
           value={domainsInput}
           onChange={(e) => setDomainsInput(e.target.value)}
@@ -476,23 +507,25 @@ export default function EmbedEditor({ embed }: EmbedEditorProps) {
           className="w-full rounded-2xl border border-gray-200 px-4 py-3 text-sm font-medium outline-none focus:ring-2 focus:ring-blue-400"
         />
         <div className="flex flex-wrap items-center gap-3">
-          <button type="button" onClick={saveDomains} disabled={savingDomains} className="np-btn-primary px-4 py-3 disabled:opacity-50">
-            {savingDomains ? "Gemmer..." : "Gem domæner"}
+          <button type="button" onClick={() => domainsAction.run()} disabled={domainsAction.isPending} className="np-btn-primary px-4 py-3 disabled:opacity-50">
+            {domainsAction.isPending ? "Gemmer..." : "Gem domæner"}
           </button>
           <p className="text-xs text-gray-500">Brug komma eller linjeskift mellem hvert domæne.</p>
         </div>
-        {domainSaveError ? <p className="text-xs font-semibold text-red-600">{domainSaveError}</p> : null}
-      </section>
+        {domainsAction.error ? <p className="text-xs font-semibold text-red-600">{domainsAction.error}</p> : null}
+      </CollapsibleSection>
 
-      <section id="share-project" className="space-y-4 rounded-[2rem] border border-gray-200 bg-white p-5 shadow-[0_8px_24px_rgba(15,23,42,0.08)] md:p-6">
+      <CollapsibleSection
+        id="share-project"
+        kicker="Trin 4b"
+        title="Del dette projekt"
+        expanded={openSection === "share-project"}
+        onToggle={() => toggleSection("share-project")}
+      >
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Trin 4b</p>
-            <h3 className="text-lg font-black uppercase tracking-tight text-gray-900">Del dette projekt</h3>
-            <p className="text-sm text-gray-600">
-              Når mindst én video er klar, kan du kopiere embed-koden og indsætte den på dit site.
-            </p>
-          </div>
+          <p className="text-sm text-gray-600">
+            Når mindst én video er klar, kan du kopiere embed-koden og indsætte den på dit site.
+          </p>
           {readyVariantCount > 0 ? (
             <button type="button" onClick={() => setShowPreview(true)} className="np-btn-ghost px-4 py-3">
               Åbn preview
@@ -506,27 +539,45 @@ export default function EmbedEditor({ embed }: EmbedEditorProps) {
           disabled={readyVariantCount === 0}
           disabledReason="Upload mindst én video, før du kopierer embed-koden."
         />
-      </section>
+      </CollapsibleSection>
 
       {showPreview ? <EmbedPreviewModal embedId={embed.id} onClose={() => setShowPreview(false)} /> : null}
     </div>
   );
 }
 
-function JourneyStat({
-  label,
-  value,
-  detail,
+function CollapsibleSection({
+  id,
+  kicker,
+  title,
+  expanded,
+  onToggle,
+  children,
 }: {
-  label: string;
-  value: string;
-  detail: string;
+  id: string;
+  kicker: string;
+  title: string;
+  expanded: boolean;
+  onToggle: () => void;
+  children: ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white/90 px-4 py-4 shadow-[0_4px_14px_rgba(15,23,42,0.05)]">
-      <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">{label}</p>
-      <p className="mt-1 text-2xl font-black tracking-tight text-gray-900">{value}</p>
-      <p className="mt-1 text-xs text-gray-500">{detail}</p>
-    </div>
+    <section id={id} className="rounded-[2rem] border border-gray-200 bg-white shadow-[0_8px_24px_rgba(15,23,42,0.08)]">
+      <button type="button" onClick={onToggle} aria-expanded={expanded} className="flex w-full items-center justify-between gap-3 p-5 text-left md:p-6">
+        <div className="space-y-1">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-500">{kicker}</p>
+          <h3 className="text-lg font-black uppercase tracking-tight text-gray-900 md:text-xl">{title}</h3>
+        </div>
+        <span aria-hidden="true" className={`shrink-0 text-gray-400 transition-transform ${expanded ? "rotate-180" : ""}`}>
+          ▾
+        </span>
+      </button>
+      {/* hidden (ikke betinget rendering) holder DOM-strukturen stabil, uanset
+          om afsnittet er foldet ud — bl.a. saa antallet af <textarea>-elementer
+          paa siden ikke skifter afhaengigt af hvilket afsnit der er aabent. */}
+      <div hidden={!expanded} className="space-y-4 px-5 pb-5 md:px-6 md:pb-6">
+        {children}
+      </div>
+    </section>
   );
 }
