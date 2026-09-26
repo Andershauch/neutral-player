@@ -291,10 +291,14 @@ const CustomMuxPlayer = forwardRef<CustomMuxPlayerHandle, CustomMuxPlayerProps>(
 
     const style = document.createElement("style");
     style.setAttribute("data-np-caption-lift", "");
+    // Loeftet styres af --np-caption-lift, som vi opdaterer imperativt naar
+    // showControls skifter (se effekten nedenfor) — saa undertekster kun
+    // rykker op, mens kontrolbjaelken rent faktisk er synlig, og falder
+    // tilbage til deres normale plads, naar den skjules af inaktivitet.
     style.textContent = `
       video::-webkit-media-text-track-container {
-        transform: translateY(-64px);
-        transition: transform 0.15s ease;
+        transform: translateY(var(--np-caption-lift, 0px));
+        transition: transform 0.2s ease;
       }
       video::cue {
         background: rgba(0, 0, 0, 0.75);
@@ -302,6 +306,16 @@ const CustomMuxPlayer = forwardRef<CustomMuxPlayerHandle, CustomMuxPlayerProps>(
     `;
     shadowRoot.appendChild(style);
   }, [mounted]);
+
+  // Flytter undertekster op over kontrolbjaelken, naar den er synlig, og ned
+  // paa plads igen, naar den skjules — ellers svaever teksten upaabegrundet
+  // midt i billedet, naar der ikke er nogen kontrolbjaelke at give plads til.
+  useEffect(() => {
+    if (!mounted) return;
+    const video = videoRef.current;
+    if (!video) return;
+    video.style.setProperty("--np-caption-lift", showControls ? "-64px" : "0px");
+  }, [mounted, showControls]);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
