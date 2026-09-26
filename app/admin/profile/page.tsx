@@ -23,12 +23,11 @@ export default async function ProfilePage() {
     redirect("/login");
   }
 
-  const currentUser = await prisma.user.findUnique({
-    where: { id: orgCtx.userId },
-    select: { emailVerified: true },
-  });
-
-  const [plans, usageSummary, activeSubscription, activation, planCapabilities] = await Promise.all([
+  const [currentUser, plans, usageSummary, activeSubscription, planCapabilities] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: orgCtx.userId },
+      select: { emailVerified: true },
+    }),
     getBillingPlansForDisplay(),
     getOrgUsageSummary(orgCtx.orgId),
     prisma.subscription.findFirst({
@@ -40,9 +39,15 @@ export default async function ProfilePage() {
         stripeCustomerId: true,
       },
     }),
-    getActivationState({ orgId: orgCtx.orgId, emailVerified: Boolean(currentUser?.emailVerified) }),
     getOrgPlanAndCapabilities(orgCtx.orgId),
   ]);
+
+  // Afhaenger af currentUser fra ovenstaaende, saa den kan ikke koeres
+  // parallelt med de fire uafhaengige forespoergsler ovenfor.
+  const activation = await getActivationState({
+    orgId: orgCtx.orgId,
+    emailVerified: Boolean(currentUser?.emailVerified),
+  });
 
   const canManageBilling = canManageBillingRole(orgCtx.role);
   const canManageBranding = canManageBrandingRole(orgCtx.role);
