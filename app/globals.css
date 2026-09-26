@@ -623,6 +623,8 @@ h6 {
     border-radius: 9999px;
     border: 2px solid var(--np-player-play-border);
     background: var(--np-player-play-bg);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
     cursor: pointer;
     pointer-events: auto;
     touch-action: manipulation;
@@ -660,12 +662,18 @@ h6 {
     --media-secondary-color: color-mix(in srgb, var(--foreground) 82%, transparent);
     --media-accent-color: var(--np-player-accent-strong);
     --media-text-color: #ffffff;
-    --media-control-background: color-mix(in srgb, var(--foreground) 68%, transparent);
-    --media-control-hover-background: color-mix(in srgb, var(--np-player-accent) 55%, transparent);
+    /* Knapperne skal laese tydeligt uanset hvad der er i videoen bag dem
+       (lys eller moerk scene). --foreground er en blaa-graa slate-farve, saa
+       en gennemsigtig udgave af den ser ud som "moerkeblaa knapper" — det var
+       den konkrete tilbagemelding. Neutral sort (uden farvetone) + en tydelig
+       hvid kant giver et fast, letgenkendeligt "chip", der ikke smelter sammen
+       med hverken sort eller lys baggrund. */
+    --media-control-background: color-mix(in srgb, black 55%, transparent);
+    --media-control-hover-background: color-mix(in srgb, var(--np-player-accent) 60%, transparent);
     --media-control-height: 42px;
     --media-control-padding: 10px;
     --media-control-border-radius: 9999px;
-    --media-control-box-shadow: 0 8px 24px color-mix(in srgb, var(--foreground) 24%, transparent);
+    --media-control-box-shadow: 0 8px 24px color-mix(in srgb, black 35%, transparent);
     --media-button-icon-width: 18px;
     --media-button-icon-height: 18px;
     --media-focus-box-shadow: 0 0 0 2px #ffffff, 0 0 0 5px color-mix(in srgb, var(--np-player-accent) 72%, transparent);
@@ -680,8 +688,8 @@ h6 {
   }
 
   .np-mux-play-skin::part(controller) {
-    --media-control-background: color-mix(in srgb, var(--foreground) 68%, transparent);
-    --media-control-hover-background: color-mix(in srgb, var(--np-player-accent) 55%, transparent);
+    --media-control-background: color-mix(in srgb, black 55%, transparent);
+    --media-control-hover-background: color-mix(in srgb, var(--np-player-accent) 60%, transparent);
   }
 
   .np-mux-play-skin::part(bottom),
@@ -702,6 +710,9 @@ h6 {
     background: var(--media-control-background);
     color: #ffffff;
     box-shadow: var(--media-control-box-shadow);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
   }
 
   .np-mux-play-skin::part(time),
