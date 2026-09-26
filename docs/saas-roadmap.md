@@ -697,12 +697,13 @@
 **Princip:** Et delt grundsystem foerst. Kundetemaer og enterprise-branding maa farve oven paa systemet, men ikke bryde layout, komponenthierarki eller navigation.
 
 ### TASK-11.1 Visual audit og system map
-**Status:** `TODO`
+**Status:** `DONE` (2026-09-26, customer admin + internal admin fokus — public/auth allerede daekket af `default-design-rules.md`)
 - Kortlaeg nuvaerende visuelle familier i public, guided/auth, customer admin, embed/editor og internal admin.
 - Identificer hvad der allerede er shared, og hvad der stadig er one-off.
 - **Acceptance criteria:**
   - Der findes en konkret liste over hvilke UI-lag der skal samles.
   - Vi har et tydeligt billede af hvilke komponenter og overflader der divergerer i dag.
+- **Audit-fund (2026-09-26):** Ingen `components/ui/`-mappe findes. 12 filer definerer hver deres lokale `*Card` (bl.a. `NextStepCard`, `StatCard`/`Stat` i dashboard, `InternalThemeHistoryCard`), 4 filer deres egen `*Stat` (`JourneyStat`, `ProfileStat`), 3 deres egen `*Field` (`ColorField`, `TokenTextField`) — ingen delt `Badge`. Raw Tailwind-kicker-strengen som `.np-kicker` skal daekke findes stadig haandkodet 135 gange paa tvaers af 44 filer; label/input-moenstret bag en manglende `FormField` gaar igen 10 gange. ~25 filer haandruller samme "kald API, hold styr paa saving/error, kald onSuccess"-moenster uden en delt hook. Vaerste enkeltfil: `components/admin/EmbedEditor.tsx` (532 linjer, 5 altid-synlige stablede sektions-kort + 4 naesten-identiske gem-handlers). Fuld komponent-for-komponent liste og faseinddelt plan findes i den aktive refactor-plan (se `CLAUDE.md`).
 
 ### TASK-11.2 Design token hierarchy
 **Status:** `TODO`
@@ -730,7 +731,7 @@
   - Overgangen fra foer login til efter login foeles naturlig.
 
 ### TASK-11.4 Shared component primitives
-**Status:** `TODO`
+**Status:** `IN PROGRESS` (2026-09-26)
 - Saml og ryd op i de mest brugte primitives:
   - buttons
   - pills/badges
@@ -743,9 +744,10 @@
 - **Acceptance criteria:**
   - Samme komponenttype ser ud og opfoerer sig ens paa tvaers af appen.
   - Nye sider kan bygges hurtigere uden nye lokale style-familier.
+- **Delvist leveret (2026-09-26):** `components/ui/{Card,SectionHeader,StatTile,FormField,Badge}.tsx` bygget oven paa eksisterende `.np-*`-klasser, plus `hooks/useAsyncAction.ts` der formaliserer det ~25 steder haandrullede "kald API, hold styr paa saving/error"-moenster. `StatTile`/`FormField` er taget i brug (EmbedEditor, BrandingSettingsCard); `Card`/`SectionHeader`/`Badge` er bygget men endnu ikke adopteret nogen steder — naeste session kan rydde flere `np-card`-forekomster op til at bruge dem. `useAsyncAction` er adopteret i 6 komponenter (se TASK-11.5-note).
 
 ### TASK-11.5 Customer admin visual uplift
-**Status:** `TODO`
+**Status:** `IN PROGRESS` (2026-09-26)
 - Harmoniser customer admin:
   - dashboard
   - projects
@@ -758,6 +760,7 @@
 - **Acceptance criteria:**
   - Customer admin foeles som en sammenhaengende arbejdsflade.
   - Embed/editoren foeles som en del af samme system som resten af admin.
+- **Delvist leveret (2026-09-26):** `EmbedEditor.tsx`, `EmbedVariantCard.tsx`, `BrandingSettingsCard.tsx`, `VariantSubtitlesPanel.tsx` samt de interne `InternalBrandingConsole.tsx`/`InternalMarketingConsole.tsx` migreret til `useAsyncAction`. `EmbedEditor` har desuden faaet et accordion-lag (kun ét ekstra afsnit ad gangen udfoldet ud over den altid synlige upload-sektion, i stedet for 5 samtidigt synlige bokse) — verificeret direkte mod databasen at standard-aabne afsnit raemmer korrekt for baade nyt og faerdigt projekt. Bevidst fravalgt denne omgang: at gruppere `BrandingSettingsCard`s 6+ felt-grids under faner (som TASK-11.4/11.5 ellers laegger op til) — droppet for ikke at risikere `branding-flows.spec.ts`, som er den eneste automatiserede daekning af Enterprise-branding. Tilbage: dashboard/projects/billing/team/profile/audit er ikke rørt endnu.
 
 ### TASK-11.6 Internal admin visual uplift
 **Status:** `TODO`
