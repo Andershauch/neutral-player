@@ -146,11 +146,26 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
     const subtitle = await prisma.variantSubtitle.findUnique({
       where: { variantId_languageCode: { variantId, languageCode } },
-      select: { id: true, organizationId: true },
+      select: { id: true, organizationId: true, source: true },
     });
 
     if (!subtitle || subtitle.organizationId !== orgCtx.orgId) {
       return NextResponse.json({ error: "Underteksterne blev ikke fundet." }, { status: 404 });
+    }
+
+    // Mux baker et auto-genereret spor direkte ind i videoens HLS-manifest.
+    // At slaa "enabled" fra i vores database aendrer intet ved det: sporet
+    // vil stadig staa i afspillerens CC-menu, fordi det ligger hos Mux, ikke
+    // hos os. Den eneste rigtige "fra"-knap for auto-genererede spor er
+    // derfor at fjerne dem helt (DELETE), som ogsaa fjerner dem hos Mux.
+    if (subtitle.source === "generated") {
+      return NextResponse.json(
+        {
+          error:
+            "Auto-genererede undertekster kan ikke skjules midlertidigt, da de er bagt ind i selve videoen hos Mux. Fjern dem i stedet, hvis de ikke skal vises.",
+        },
+        { status: 409 }
+      );
     }
 
     const record = await prisma.variantSubtitle.update({

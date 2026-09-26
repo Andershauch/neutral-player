@@ -677,6 +677,12 @@ h6 {
     --media-tooltip-background: color-mix(in srgb, var(--foreground) 92%, transparent);
     --media-tooltip-color: #ffffff;
     --media-tooltip-border-radius: 0.75rem;
+    /* Vores kontrolbjælke er en overlay, ikke browserens native video-
+       controls, saa browseren ved ikke automatisk, at den skal loefte
+       undertekster op over den. Uden dette laegger cue-teksten sig oven i
+       afspil-/tidslinjen og bliver ulaeselig. */
+    --media-webkit-text-track-transform: translateY(-3.75em);
+    --media-webkit-text-track-transition: transform 0.15s ease;
   }
 
   .np-mux-play-skin::part(controller) {

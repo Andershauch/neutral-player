@@ -207,9 +207,14 @@ export default function VariantSubtitlesPanel({
                     {isReady && !isErrored && !subtitle.enabled ? " — vises ikke i afspilleren" : ""}
                     {!isReady && !isErrored ? " — kan tage et par minutter" : ""}
                   </p>
+                  {subtitle.source === "generated" && isReady ? (
+                    <p className="mt-1 text-[10px] text-gray-400">
+                      Bagt ind i videoen hos Mux — kan kun slås fra ved at fjerne den helt.
+                    </p>
+                  ) : null}
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
-                  {isReady ? (
+                  {isReady && subtitle.source === "uploaded" ? (
                     <button
                       type="button"
                       onClick={() => toggleEnabled(subtitle.languageCode, !subtitle.enabled)}

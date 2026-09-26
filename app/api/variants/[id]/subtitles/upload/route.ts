@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import Mux from "@mux/mux-node";
 import { prisma } from "@/lib/prisma";
 import { getOrgContextForContentEdit } from "@/lib/authz";
 import { buildRateLimitKey, checkRateLimit, rateLimitExceededResponse } from "@/lib/rate-limit";
@@ -7,7 +8,12 @@ import {
   looksLikeWebVtt,
   MAX_UPLOADED_VTT_BYTES,
 } from "@/lib/subtitles";
-import { getRequestIdFromRequest, logApiError, logApiInfo } from "@/lib/observability";
+import { getRequestIdFromRequest, logApiError, logApiInfo, logApiWarn } from "@/lib/observability";
+
+const muxClient = new Mux({
+  tokenId: process.env.MUX_TOKEN_ID!,
+  tokenSecret: process.env.MUX_TOKEN_SECRET!,
+});
 
 /// Kundens egen .vtt-fil. Ingen Mux-behandling er nødvendig, saa sporet er
 /// "ready" med det samme, i modsætning til de auto-genererede spor.
@@ -63,22 +69,42 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     const variant = await prisma.variant.findFirst({
       where: { id: variantId, organizationId: orgCtx.orgId },
-      select: { id: true },
+      select: { id: true, muxAssetId: true },
     });
 
     if (!variant) {
       return NextResponse.json({ error: "Sprogversionen blev ikke fundet." }, { status: 404 });
     }
 
+    // I modsætning til generér-flowet blokerer vi ikke, hvis der allerede
+    // findes undertekster på sproget: at uploade sin egen fil er en bevidst
+    // "erstat"-handling, uanset om det, der ligger der, er auto-genereret
+    // eller en tidligere upload.
     const existing = await prisma.variantSubtitle.findUnique({
       where: { variantId_languageCode: { variantId, languageCode } },
-      select: { id: true, status: true },
+      select: { source: true, muxTrackId: true },
     });
-    if (existing && existing.status !== "errored") {
-      return NextResponse.json(
-        { error: "Der findes allerede undertekster på det sprog." },
-        { status: 409 }
-      );
+
+    // Mux baker et auto-genereret spor direkte ind i asset'ets HLS-manifest,
+    // saa afspilleren bliver ved med at vise det, selvom vi skifter kilden i
+    // vores egen database. Det rigtige spor skal fjernes hos Mux, ellers
+    // "vinder" det gamle auto-sporet altid over den uploadede fil i CC-menuen.
+    if (variant.muxAssetId) {
+      try {
+        const trackIdFromDb = existing?.source === "generated" ? existing.muxTrackId : null;
+        const trackId =
+          trackIdFromDb ??
+          (await findMuxTextTrackId(variant.muxAssetId, languageCode));
+        if (trackId) {
+          await muxClient.video.assets.deleteTrack(variant.muxAssetId, trackId);
+        }
+      } catch (error) {
+        logApiWarn(req, "Could not remove stale generated Mux track before upload", {
+          variantId,
+          languageCode,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
     }
 
     const record = await prisma.variantSubtitle.upsert({
@@ -131,4 +157,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const message = error instanceof Error ? error.message : "Ukendt fejl";
     return NextResponse.json({ error: message, requestId }, { status: 500 });
   }
+}
+
+/// Slaar direkte op hos Mux efter et tekstspor paa det givne sprog. Bruges som
+/// sikkerhedsnet, hvis vores egen database ikke laengere kender track-id'et
+/// (f.eks. hvis en tidligere sletning kun ramte vores raekke og ikke Mux).
+async function findMuxTextTrackId(muxAssetId: string, languageCode: string): Promise<string | null> {
+  const asset = await muxClient.video.assets.retrieve(muxAssetId);
+  const track = asset.tracks?.find(
+    (t) => t.type === "text" && t.language_code === languageCode
+  );
+  return track?.id ?? null;
 }
