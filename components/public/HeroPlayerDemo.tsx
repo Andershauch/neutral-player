@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import NextImage from "next/image";
 import { useState } from "react";
 
 const MuxPlayer = dynamic(() => import("@mux/mux-player-react"), {
@@ -49,8 +50,7 @@ export default function HeroPlayerDemo({
             <source src={fallbackVideoSrc} type="video/mp4" />
           </video>
         ) : (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={posterSrc} alt={fallbackAlt} className="h-full w-full object-cover" />
+          <NextImage src={posterSrc} alt={fallbackAlt} fill priority sizes="100vw" className="object-cover" />
         )}
       </div>
     );

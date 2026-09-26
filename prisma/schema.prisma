@@ -222,6 +222,7 @@ model Group {
   variants     Variant[]
 
   @@index([organizationId])
+  @@index([embedId])
 }
 
 model Variant {
@@ -247,6 +248,7 @@ model Variant {
   subtitles    VariantSubtitle[]
 
   @@index([organizationId])
+  @@index([groupId])
 }
 
 /// Undertekstspor pr. sprogversion. Tilgaengelighed er lovkrav for offentlige

@@ -30,12 +30,11 @@ export default async function DashboardPage({
     redirect("/unauthorized");
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: orgCtx.userId },
-    select: { emailVerified: true },
-  });
-
-  const [projects, activation, variantStats] = await Promise.all([
+  const [user, projects, variantStats] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: orgCtx.userId },
+      select: { emailVerified: true },
+    }),
     prisma.embed.findMany({
       where: { organizationId: orgCtx.orgId },
       orderBy: { createdAt: "desc" },
@@ -57,13 +56,19 @@ export default async function DashboardPage({
         },
       },
     }),
-    getActivationState({ orgId: orgCtx.orgId, emailVerified: Boolean(user?.emailVerified) }),
     prisma.variant.aggregate({
       where: { organizationId: orgCtx.orgId },
       _count: { _all: true },
       _sum: { views: true, durationSeconds: true },
     }),
   ]);
+
+  // Afhaenger af user.emailVerified fra ovenstaaende, saa den kan ikke
+  // koeres parallelt med de tre uafhaengige forespoergsler ovenfor.
+  const activation = await getActivationState({
+    orgId: orgCtx.orgId,
+    emailVerified: Boolean(user?.emailVerified),
+  });
 
   const totalProjects = projects.length;
   const totalVariants = variantStats._count._all || 0;

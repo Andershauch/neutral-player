@@ -22,12 +22,21 @@ export default async function EmbedPage({ params }: PageProps) {
 
   const embed = await prisma.embed.findUnique({
     where: { id: embedId },
-    include: {
+    select: {
+      id: true,
+      name: true,
+      organizationId: true,
+      allowedDomains: true,
       groups: {
-        include: {
+        select: {
           variants: {
             orderBy: { sortOrder: "asc" },
-            include: {
+            select: {
+              id: true,
+              lang: true,
+              title: true,
+              muxPlaybackId: true,
+              posterFrameUrl: true,
               subtitles: {
                 // Mux-genererede spor er allerede en del af HLS-manifestet og
                 // surfacer selv i afspillerens CC-menu — kun kundens egen
@@ -48,7 +57,25 @@ export default async function EmbedPage({ params }: PageProps) {
   const source = getSourceHost(reqHeaders);
   const ownHosts = getOwnHosts(reqHeaders);
   const allowedRules = parseAllowedRules(embed.allowedDomains);
-  const planState = embed.organizationId ? await getOrgPlanState(embed.organizationId) : null;
+
+  // getOrgPlanState og resolveThemeForOrganization afhaenger begge kun af
+  // embed.organizationId, ikke af hinanden — kør dem parallelt frem for
+  // sekventielt, saa vi ikke laegger to ekstra runde-trip-ventetider oveni
+  // hinanden foer foerste byte paa den absolut mest trafikerede side.
+  const [planState, resolvedTheme] = embed.organizationId
+    ? await Promise.all([
+        getOrgPlanState(embed.organizationId),
+        resolveThemeForOrganization(embed.organizationId),
+      ])
+    : ([
+        null,
+        {
+          tokens: DEFAULT_THEME_TOKENS,
+          source: "default" as const,
+          plan: "free",
+          enterpriseBrandingEnabled: false,
+        },
+      ] as const);
   const canPlay = Boolean(planState?.canPlayEmbeds);
 
   const isDomainAllowed =
@@ -87,15 +114,6 @@ export default async function EmbedPage({ params }: PageProps) {
       </div>
     );
   }
-
-  const resolvedTheme = embed.organizationId
-    ? await resolveThemeForOrganization(embed.organizationId)
-    : {
-        tokens: DEFAULT_THEME_TOKENS,
-        source: "default" as const,
-        plan: "free",
-        enterpriseBrandingEnabled: false,
-      };
 
   return (
     <main className="np-themed w-screen h-screen bg-black overflow-hidden m-0 p-0" style={buildThemeCssVars(resolvedTheme.tokens)}>

@@ -23,12 +23,23 @@ export default async function AdminEmbedPage({ params }: PageProps) {
       id: embedId,
       organizationId: orgCtx.orgId,
     },
-    include: {
+    select: {
+      id: true,
+      name: true,
+      allowedDomains: true,
       groups: {
         orderBy: { sortOrder: "asc" },
-        include: {
+        select: {
+          id: true,
+          name: true,
           variants: {
-            include: {
+            select: {
+              id: true,
+              title: true,
+              lang: true,
+              muxPlaybackId: true,
+              posterFrameUrl: true,
+              views: true,
               subtitles: {
                 orderBy: { languageCode: "asc" },
                 select: { languageCode: true, name: true, status: true, source: true, enabled: true },
