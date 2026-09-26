@@ -534,6 +534,29 @@ h6 {
     white-space: nowrap;
   }
 
+  .np-pill-badge-success {
+    border-color: #bbf7d0;
+    background: #f0fdf4;
+    color: #15803d;
+  }
+
+  .np-pill-badge-info {
+    border-color: #bfdbfe;
+    background: #eff6ff;
+    color: #1d4ed8;
+  }
+
+  .np-pill-badge-warning {
+    border-color: #fde68a;
+    background: #fffbeb;
+    color: #b45309;
+  }
+
+  .np-card-muted {
+    background: color-mix(in srgb, var(--surface) 92%, #f1f5f9);
+    border: 1px solid color-mix(in srgb, var(--line) 82%, #ffffff);
+  }
+
   .np-default-theme .text-blue-600 {
     color: var(--primary) !important;
   }
