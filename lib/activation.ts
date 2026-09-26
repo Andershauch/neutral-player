@@ -43,7 +43,7 @@ interface ActivationInput {
 }
 
 export async function getActivationState({ orgId, emailVerified }: ActivationInput): Promise<ActivationState> {
-  const [record, planState, projectCount, readyVariantCount, firstProject] = await Promise.all([
+  const [record, planState, projectCount, readyVariantCount, firstProject, organization] = await Promise.all([
     prisma.organizationActivation.findUnique({
       where: { organizationId: orgId },
     }),
@@ -57,12 +57,11 @@ export async function getActivationState({ orgId, emailVerified }: ActivationInp
       orderBy: { createdAt: "asc" },
       select: { id: true },
     }),
+    prisma.organization.findUnique({
+      where: { id: orgId },
+      select: { name: true },
+    }),
   ]);
-
-  const organization = await prisma.organization.findUnique({
-    where: { id: orgId },
-    select: { name: true },
-  });
 
   const hasProject = projectCount > 0 || Boolean(record?.projectCreated);
   const hasUpload = readyVariantCount > 0 || Boolean(record?.variantUploaded);

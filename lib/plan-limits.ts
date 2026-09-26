@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { prisma } from "@/lib/prisma";
 import { resolvePlanKey, TRIAL_DAYS } from "@/lib/plans";
 
@@ -77,7 +78,7 @@ export interface OrgPlanState {
   requiresWatermark: boolean;
 }
 
-export async function getOrgPlanState(orgId: string): Promise<OrgPlanState> {
+async function getOrgPlanStateUncached(orgId: string): Promise<OrgPlanState> {
   const subscription = await prisma.subscription.findFirst({
     where: { organizationId: orgId },
     orderBy: { updatedAt: "desc" },
@@ -129,6 +130,11 @@ export async function getOrgPlanState(orgId: string): Promise<OrgPlanState> {
     requiresWatermark: false,
   };
 }
+
+// Kaldes bl.a. baade fra tema-opslaget i admin-layoutet og fra
+// getActivationState paa dashboardet i samme request — uden memoization
+// koerer subscription-opslaget flere gange for hver navigation.
+export const getOrgPlanState = cache(getOrgPlanStateUncached);
 
 export async function getOrgCurrentPlan(orgId: string): Promise<string> {
   const state = await getOrgPlanState(orgId);

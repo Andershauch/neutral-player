@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -15,7 +16,7 @@ function isOrgRole(value: string): value is OrgRole {
   return value === "owner" || value === "admin" || value === "editor" || value === "viewer";
 }
 
-export async function getCurrentOrgContext(): Promise<OrgContext | null> {
+async function getCurrentOrgContextUncached(): Promise<OrgContext | null> {
   const session = await getServerSession(authOptions);
   if (!session?.user?.email) {
     return null;
@@ -107,3 +108,9 @@ export async function getCurrentOrgContext(): Promise<OrgContext | null> {
     userId,
   };
 }
+
+// Hver admin-side kalder en getOrgContextFor*-helper oven i at layoutet selv
+// slaar op — uden request-scoped memoization koerer session+DB-opslaget
+// derfor to gange for hver eneste navigation. React sin cache() gendeler
+// resultatet paa tvaers af alle kald inden for samme request.
+export const getCurrentOrgContext = cache(getCurrentOrgContextUncached);
