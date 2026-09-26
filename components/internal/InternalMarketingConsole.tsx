@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import NextImage from "next/image";
 import { useEffect, useState } from "react";
 import MarketingPagePreview from "@/components/internal/MarketingPagePreview";
 import {
@@ -11,6 +12,7 @@ import {
 } from "@/lib/marketing-content-schema";
 import { type MarketingPageKey } from "@/lib/marketing-pages";
 import { getMarketingPublicPath } from "@/lib/marketing-routes";
+import { useAsyncAction } from "@/hooks/useAsyncAction";
 
 type MarketingPageSummary = {
   key: MarketingPageKey;
@@ -62,11 +64,6 @@ type MarketingContentResponse = {
 };
 
 export default function InternalMarketingConsole() {
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [publishing, setPublishing] = useState(false);
-  const [uploadingAsset, setUploadingAsset] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [selectedPageKey, setSelectedPageKey] = useState<MarketingPageKey>("home");
   const [pages, setPages] = useState<MarketingPageSummary[]>([]);
@@ -90,28 +87,15 @@ export default function InternalMarketingConsole() {
     height: null,
   });
 
-  useEffect(() => {
-    void loadPage(selectedPageKey);
-  }, [selectedPageKey]);
-
-  useEffect(() => {
-    return () => {
-      if (assetPreviewUrl) {
-        URL.revokeObjectURL(assetPreviewUrl);
-      }
-    };
-  }, [assetPreviewUrl]);
-
-  async function loadPage(pageKey: MarketingPageKey) {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/internal/marketing/content?pageKey=${pageKey}`, { cache: "no-store" });
-      const data = (await res.json()) as MarketingContentResponse;
-      if (!res.ok) {
-        throw new Error(data.error || "Kunne ikke hente marketing-indhold.");
-      }
-
+  const loadAction = useAsyncAction(async (pageKey: MarketingPageKey) => {
+    const res = await fetch(`/api/internal/marketing/content?pageKey=${pageKey}`, { cache: "no-store" });
+    const data = (await res.json()) as MarketingContentResponse;
+    if (!res.ok) {
+      throw new Error(data.error || "Kunne ikke hente marketing-indhold.");
+    }
+    return data;
+  }, {
+    onSuccess: (data) => {
       setPages(data.pages);
       setPage(data.page);
       setEditableSections(data.editableSections);
@@ -123,13 +107,22 @@ export default function InternalMarketingConsole() {
       setSectionDrafts(buildSectionDrafts(data.currentContent, data.editableSections));
       setPreviewContent(data.currentContent);
       setValidationErrors([]);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Ukendt fejl";
-      setError(message);
-    } finally {
-      setLoading(false);
-    }
-  }
+    },
+  });
+
+  useEffect(() => {
+    loadAction.run(selectedPageKey);
+    // Skal kun genkoere naar den valgte side skifter.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPageKey]);
+
+  useEffect(() => {
+    return () => {
+      if (assetPreviewUrl) {
+        URL.revokeObjectURL(assetPreviewUrl);
+      }
+    };
+  }, [assetPreviewUrl]);
 
   function updateSection(sectionId: string, nextValue: string) {
     setSectionDrafts((current) => ({
@@ -165,7 +158,7 @@ export default function InternalMarketingConsole() {
     return { ok: true as const, errors: [] as string[], value: validated.value };
   }
 
-  async function handlePreview() {
+  function handlePreview() {
     setStatus(null);
     const draft = buildValidatedDraft();
     setValidationErrors(draft.errors);
@@ -176,106 +169,88 @@ export default function InternalMarketingConsole() {
     setPreviewContent(draft.value);
   }
 
-  async function handleSaveDraft() {
+  const saveDraftAction = useAsyncAction(async (content: MarketingPageContent) => {
+    const res = await fetch("/api/internal/marketing/content", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        pageKey: selectedPageKey,
+        content,
+        changeSummary,
+      }),
+    });
+    const data = (await res.json()) as { error?: string };
+    if (!res.ok) {
+      throw new Error(data.error || "Kunne ikke gemme draft.");
+    }
+  }, {
+    onSuccess: () => {
+      setStatus("Draft gemt.");
+      setChangeSummary("");
+      loadAction.run(selectedPageKey);
+    },
+  });
+
+  // Gemmer draften og returnerer om det lykkedes, saa publish kan afgoere
+  // om den maa fortsaette (samme sekventielle afhaengighed som foer).
+  async function handleSaveDraft(): Promise<boolean> {
     const draft = buildValidatedDraft();
     setValidationErrors(draft.errors);
     if (!draft.ok || !draft.value) {
       return false;
     }
-
-    setSaving(true);
-    setError(null);
     setStatus(null);
-    try {
-      const res = await fetch("/api/internal/marketing/content", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          pageKey: selectedPageKey,
-          content: draft.value,
-          changeSummary,
-        }),
-      });
-      const data = (await res.json()) as { error?: string };
-      if (!res.ok) {
-        throw new Error(data.error || "Kunne ikke gemme draft.");
-      }
-
-      setStatus("Draft gemt.");
-      setChangeSummary("");
-      await loadPage(selectedPageKey);
-      return true;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Ukendt fejl";
-      setError(message);
-      return false;
-    } finally {
-      setSaving(false);
-    }
+    const result = await saveDraftAction.run(draft.value);
+    return result !== undefined;
   }
+
+  const publishAction = useAsyncAction(async () => {
+    const res = await fetch("/api/internal/marketing/content", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        pageKey: selectedPageKey,
+        action: "publish",
+      }),
+    });
+    const data = (await res.json()) as { error?: string };
+    if (!res.ok) {
+      throw new Error(data.error || "Publish fejlede.");
+    }
+  }, {
+    onSuccess: () => {
+      setStatus("Draft gemt og version publiceret.");
+      loadAction.run(selectedPageKey);
+    },
+  });
 
   async function handlePublish() {
-    setError(null);
     setStatus(null);
-
     const saved = await handleSaveDraft();
-    if (!saved) {
-      return;
-    }
-
-    setPublishing(true);
-    try {
-      const res = await fetch("/api/internal/marketing/content", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          pageKey: selectedPageKey,
-          action: "publish",
-        }),
-      });
-      const data = (await res.json()) as { error?: string };
-      if (!res.ok) {
-        throw new Error(data.error || "Publish fejlede.");
-      }
-
-      setStatus("Draft gemt og version publiceret.");
-      await loadPage(selectedPageKey);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Ukendt fejl";
-      setError(message);
-    } finally {
-      setPublishing(false);
-    }
+    if (!saved) return;
+    await publishAction.run();
   }
 
-  async function handleRollback(versionId: string) {
-    setPublishing(true);
-    setError(null);
-    setStatus(null);
-    try {
-      const res = await fetch("/api/internal/marketing/content", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          pageKey: selectedPageKey,
-          action: "rollback",
-          versionId,
-        }),
-      });
-      const data = (await res.json()) as { error?: string };
-      if (!res.ok) {
-        throw new Error(data.error || "Rollback fejlede.");
-      }
-
+  const rollbackAction = useAsyncAction(async (versionId: string) => {
+    const res = await fetch("/api/internal/marketing/content", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        pageKey: selectedPageKey,
+        action: "rollback",
+        versionId,
+      }),
+    });
+    const data = (await res.json()) as { error?: string };
+    if (!res.ok) {
+      throw new Error(data.error || "Rollback fejlede.");
+    }
+  }, {
+    onSuccess: () => {
       setStatus("Version rullet tilbage.");
-      await loadPage(selectedPageKey);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Ukendt fejl";
-      setError(message);
-    } finally {
-      setPublishing(false);
-    }
-  }
+      loadAction.run(selectedPageKey);
+    },
+  });
 
   async function handleAssetSelected(file: File | null) {
     if (!file) {
@@ -302,36 +277,31 @@ export default function InternalMarketingConsole() {
     }
   }
 
-  async function handleAssetUpload() {
+  const uploadAction = useAsyncAction(async () => {
     if (!assetFile) {
-      setError("Vælg en billedfil først.");
-      return;
+      throw new Error("Vælg en billedfil først.");
     }
     if (!assetAltText.trim()) {
-      setError("Alt-tekst er påkrævet for marketing-assets.");
-      return;
+      throw new Error("Alt-tekst er påkrævet for marketing-assets.");
     }
 
-    setUploadingAsset(true);
-    setError(null);
-    setStatus(null);
-    try {
-      const formData = new FormData();
-      formData.set("file", assetFile);
-      formData.set("title", assetTitle.trim());
-      formData.set("altText", assetAltText.trim());
-      if (assetDimensions.width) formData.set("width", String(assetDimensions.width));
-      if (assetDimensions.height) formData.set("height", String(assetDimensions.height));
+    const formData = new FormData();
+    formData.set("file", assetFile);
+    formData.set("title", assetTitle.trim());
+    formData.set("altText", assetAltText.trim());
+    if (assetDimensions.width) formData.set("width", String(assetDimensions.width));
+    if (assetDimensions.height) formData.set("height", String(assetDimensions.height));
 
-      const res = await fetch("/api/internal/marketing/assets", {
-        method: "POST",
-        body: formData,
-      });
-      const data = (await res.json()) as { error?: string };
-      if (!res.ok) {
-        throw new Error(data.error || "Kunne ikke uploade asset.");
-      }
-
+    const res = await fetch("/api/internal/marketing/assets", {
+      method: "POST",
+      body: formData,
+    });
+    const data = (await res.json()) as { error?: string };
+    if (!res.ok) {
+      throw new Error(data.error || "Kunne ikke uploade asset.");
+    }
+  }, {
+    onSuccess: () => {
       setStatus("Marketing-asset uploadet.");
       setAssetFile(null);
       setAssetTitle("");
@@ -341,14 +311,16 @@ export default function InternalMarketingConsole() {
         if (current) URL.revokeObjectURL(current);
         return null;
       });
-      await loadPage(selectedPageKey);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Ukendt fejl";
-      setError(message);
-    } finally {
-      setUploadingAsset(false);
-    }
-  }
+      loadAction.run(selectedPageKey);
+    },
+  });
+
+  const loading = loadAction.isPending;
+  const saving = saveDraftAction.isPending;
+  const publishing = publishAction.isPending || rollbackAction.isPending;
+  const uploadingAsset = uploadAction.isPending;
+  const error =
+    loadAction.error || saveDraftAction.error || publishAction.error || rollbackAction.error || uploadAction.error;
 
   return (
     <div className="space-y-6">
@@ -625,7 +597,7 @@ export default function InternalMarketingConsole() {
                     </p>
                     <button
                       type="button"
-                      onClick={handleAssetUpload}
+                      onClick={() => uploadAction.run()}
                       disabled={!canManage || uploadingAsset}
                       className="np-btn-primary inline-flex px-4 py-2 disabled:opacity-50"
                     >
@@ -643,12 +615,13 @@ export default function InternalMarketingConsole() {
                     <div key={asset.id} className="rounded-xl border border-gray-100 bg-gray-50/80 px-3 py-3">
                       <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                         <div className="flex gap-3">
-                          <div className="h-20 w-24 overflow-hidden rounded-xl border border-gray-200 bg-white">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
+                          <div className="relative h-20 w-24 overflow-hidden rounded-xl border border-gray-200 bg-white">
+                            <NextImage
                               src={asset.url}
                               alt={asset.altText || asset.title || asset.key}
-                              className="h-full w-full object-cover"
+                              fill
+                              sizes="96px"
+                              className="object-cover"
                             />
                           </div>
                           <div>
@@ -714,7 +687,7 @@ export default function InternalMarketingConsole() {
                       </div>
                       <button
                         type="button"
-                        onClick={() => handleRollback(version.id)}
+                        onClick={() => rollbackAction.run(version.id)}
                         disabled={!canManage || isActive || publishing || version.status === "draft"}
                         className="np-btn-ghost inline-flex px-3 py-2 disabled:opacity-50"
                       >

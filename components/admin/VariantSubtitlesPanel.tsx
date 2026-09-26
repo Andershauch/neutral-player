@@ -10,6 +10,7 @@ import {
   MAX_UPLOADED_VTT_BYTES,
   type SubtitleLanguage,
 } from "@/lib/subtitles";
+import { useAsyncAction } from "@/hooks/useAsyncAction";
 
 export interface SubtitleItem {
   languageCode: string;
@@ -26,6 +27,12 @@ interface VariantSubtitlesPanelProps {
   subtitles: SubtitleItem[];
 }
 
+async function throwOnError(res: Response, fallback: string): Promise<void> {
+  if (res.ok) return;
+  const data = (await res.json().catch(() => ({}))) as { error?: string };
+  throw new Error(data.error || fallback);
+}
+
 export default function VariantSubtitlesPanel({
   variantId,
   variantLang,
@@ -38,132 +45,101 @@ export default function VariantSubtitlesPanel({
     ? variantLang
     : "da";
   const [languageCode, setLanguageCode] = useState(defaultLang);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const [uploadLanguageCode, setUploadLanguageCode] = useState("");
   const [uploadName, setUploadName] = useState("");
   const [uploadFileName, setUploadFileName] = useState<string | null>(null);
-  const [uploadError, setUploadError] = useState<string | null>(null);
   const uploadFileRef = useRef<HTMLInputElement | null>(null);
 
-  const existingCodes = new Set(subtitles.map((s) => s.languageCode));
-  const available = GENERATED_SUBTITLE_LANGUAGES.filter((l) => !existingCodes.has(l.code));
-  const selected: SubtitleLanguage | undefined = available.find((l) => l.code === languageCode);
+  const requestAction = useAsyncAction(async () => {
+    const res = await fetch(`/api/variants/${variantId}/subtitles`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ languageCode }),
+    });
+    await throwOnError(res, "Kunne ikke bestille undertekster.");
+  }, { onSuccess: () => router.refresh() });
 
-  const request = async () => {
-    setBusy(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/variants/${variantId}/subtitles`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ languageCode }),
-      });
-      const data = (await res.json()) as { error?: string };
-      if (!res.ok) {
-        throw new Error(data.error || "Kunne ikke bestille undertekster.");
-      }
-      router.refresh();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Ukendt fejl");
-    } finally {
-      setBusy(false);
-    }
-  };
+  const removeAction = useAsyncAction(async (code: string) => {
+    const res = await fetch(
+      `/api/variants/${variantId}/subtitles?languageCode=${encodeURIComponent(code)}`,
+      { method: "DELETE" }
+    );
+    await throwOnError(res, "Kunne ikke fjerne underteksterne.");
+  }, { onSuccess: () => router.refresh() });
 
-  const remove = async (code: string) => {
-    setBusy(true);
-    setError(null);
-    try {
-      const res = await fetch(
-        `/api/variants/${variantId}/subtitles?languageCode=${encodeURIComponent(code)}`,
-        { method: "DELETE" }
-      );
-      const data = (await res.json()) as { error?: string };
-      if (!res.ok) {
-        throw new Error(data.error || "Kunne ikke fjerne underteksterne.");
-      }
-      router.refresh();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Ukendt fejl");
-    } finally {
-      setBusy(false);
-    }
-  };
+  const toggleAction = useAsyncAction(async (code: string, enabled: boolean) => {
+    const res = await fetch(`/api/variants/${variantId}/subtitles`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ languageCode: code, enabled }),
+    });
+    await throwOnError(res, "Kunne ikke ændre underteksterne.");
+  }, { onSuccess: () => router.refresh() });
 
-  const toggleEnabled = async (code: string, enabled: boolean) => {
-    setBusy(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/variants/${variantId}/subtitles`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ languageCode: code, enabled }),
-      });
-      const data = (await res.json()) as { error?: string };
-      if (!res.ok) {
-        throw new Error(data.error || "Kunne ikke ændre underteksterne.");
-      }
-      router.refresh();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Ukendt fejl");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  const upload = async () => {
-    setUploadError(null);
+  const uploadAction = useAsyncAction(async () => {
     const code = uploadLanguageCode.trim().toLowerCase();
     const name = uploadName.trim();
     const file = uploadFileRef.current?.files?.[0];
 
     if (!isValidCustomSubtitleLanguageCode(code)) {
-      setUploadError("Sprogkoden ser ikke rigtig ud. Brug f.eks. 'da' eller 'da-dtv'.");
-      return;
+      throw new Error("Sprogkoden ser ikke rigtig ud. Brug f.eks. 'da' eller 'da-dtv'.");
     }
     if (!name) {
-      setUploadError("Giv underteksterne et navn, f.eks. 'Dansk (efterredigeret)'.");
-      return;
+      throw new Error("Giv underteksterne et navn, f.eks. 'Dansk (efterredigeret)'.");
     }
     if (!file) {
-      setUploadError("Vælg en .vtt-fil.");
-      return;
+      throw new Error("Vælg en .vtt-fil.");
     }
     if (file.size > MAX_UPLOADED_VTT_BYTES) {
-      setUploadError("Filen er for stor.");
-      return;
+      throw new Error("Filen er for stor.");
     }
 
-    setBusy(true);
-    try {
-      const vttContent = await file.text();
-      if (!looksLikeWebVtt(vttContent)) {
-        throw new Error("Filen ligner ikke en gyldig .vtt-fil (skal starte med 'WEBVTT').");
-      }
+    const vttContent = await file.text();
+    if (!looksLikeWebVtt(vttContent)) {
+      throw new Error("Filen ligner ikke en gyldig .vtt-fil (skal starte med 'WEBVTT').");
+    }
 
-      const res = await fetch(`/api/variants/${variantId}/subtitles/upload`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ languageCode: code, name, vttContent }),
-      });
-      const data = (await res.json()) as { error?: string };
-      if (!res.ok) {
-        throw new Error(data.error || "Kunne ikke uploade underteksterne.");
-      }
-
+    const res = await fetch(`/api/variants/${variantId}/subtitles/upload`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ languageCode: code, name, vttContent }),
+    });
+    await throwOnError(res, "Kunne ikke uploade underteksterne.");
+  }, {
+    onSuccess: () => {
       setUploadLanguageCode("");
       setUploadName("");
       setUploadFileName(null);
       if (uploadFileRef.current) uploadFileRef.current.value = "";
       router.refresh();
-    } catch (e) {
-      setUploadError(e instanceof Error ? e.message : "Ukendt fejl");
-    } finally {
-      setBusy(false);
-    }
+    },
+  });
+
+  // De tre handlinger delte oprindeligt én fejl-banner — ryd de andre to,
+  // naar en ny handling startes, saa en gammel fejl ikke haenger fast.
+  const runRequest = () => {
+    removeAction.setError(null);
+    toggleAction.setError(null);
+    requestAction.run();
   };
+  const runRemove = (code: string) => {
+    requestAction.setError(null);
+    toggleAction.setError(null);
+    removeAction.run(code);
+  };
+  const runToggle = (code: string, enabled: boolean) => {
+    requestAction.setError(null);
+    removeAction.setError(null);
+    toggleAction.run(code, enabled);
+  };
+
+  const busy = requestAction.isPending || removeAction.isPending || toggleAction.isPending || uploadAction.isPending;
+  const error = requestAction.error || removeAction.error || toggleAction.error;
+
+  const existingCodes = new Set(subtitles.map((s) => s.languageCode));
+  const available = GENERATED_SUBTITLE_LANGUAGES.filter((l) => !existingCodes.has(l.code));
+  const selected: SubtitleLanguage | undefined = available.find((l) => l.code === languageCode);
 
   return (
     <div className="space-y-3 rounded-xl border border-gray-100 p-3">
@@ -217,7 +193,7 @@ export default function VariantSubtitlesPanel({
                   {isReady && subtitle.source === "uploaded" ? (
                     <button
                       type="button"
-                      onClick={() => toggleEnabled(subtitle.languageCode, !subtitle.enabled)}
+                      onClick={() => runToggle(subtitle.languageCode, !subtitle.enabled)}
                       disabled={busy}
                       className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-gray-600 hover:bg-gray-50 disabled:opacity-50"
                     >
@@ -226,7 +202,7 @@ export default function VariantSubtitlesPanel({
                   ) : null}
                   <button
                     type="button"
-                    onClick={() => remove(subtitle.languageCode)}
+                    onClick={() => runRemove(subtitle.languageCode)}
                     disabled={busy}
                     className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-gray-600 hover:bg-gray-50 disabled:opacity-50"
                   >
@@ -267,11 +243,11 @@ export default function VariantSubtitlesPanel({
           </div>
           <button
             type="button"
-            onClick={request}
+            onClick={runRequest}
             disabled={busy || !hasVideo}
             className="np-btn-primary px-4 py-2.5 disabled:opacity-50"
           >
-            {busy ? "Bestiller..." : "Generér undertekster"}
+            {requestAction.isPending ? "Bestiller..." : "Generér undertekster"}
           </button>
         </div>
       ) : null}
@@ -350,14 +326,14 @@ export default function VariantSubtitlesPanel({
           </div>
           <button
             type="button"
-            onClick={upload}
+            onClick={() => uploadAction.run()}
             disabled={busy || !hasVideo}
             className="np-btn-primary px-4 py-2.5 disabled:opacity-50"
           >
-            {busy ? "Uploader..." : "Upload"}
+            {uploadAction.isPending ? "Uploader..." : "Upload"}
           </button>
         </div>
-        {uploadError ? <p className="text-xs font-semibold text-red-600">{uploadError}</p> : null}
+        {uploadAction.error ? <p className="text-xs font-semibold text-red-600">{uploadAction.error}</p> : null}
       </div>
     </div>
   );

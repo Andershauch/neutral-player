@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import BrandingSettingsCard from "@/components/admin/BrandingSettingsCard";
 import { getPlanDisplayName } from "@/lib/plans";
+import { useAsyncAction } from "@/hooks/useAsyncAction";
 
 type InternalOrg = {
   id: string;
@@ -34,59 +35,39 @@ type ThemeHistoryResponse = {
 };
 
 export default function InternalBrandingConsole() {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [organizations, setOrganizations] = useState<InternalOrg[]>([]);
   const [selectedOrgId, setSelectedOrgId] = useState<string>("");
   const [refreshKey, setRefreshKey] = useState(0);
   const [canManageBranding, setCanManageBranding] = useState(false);
 
-  useEffect(() => {
-    let active = true;
-    async function load() {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await fetch("/api/internal/organizations", { cache: "no-store" });
-        const data = (await res.json()) as OrganizationsResponse;
-        if (!res.ok) {
-          throw new Error(data.error || "Kunne ikke hente organisationer.");
-        }
-        if (!active) return;
-
-        setOrganizations(data.organizations);
-        setSelectedOrgId((prev) => prev || data.organizations[0]?.id || "");
-      } catch (err) {
-        if (!active) return;
-        const message = err instanceof Error ? err.message : "Ukendt fejl";
-        setError(message);
-      } finally {
-        if (active) setLoading(false);
-      }
+  const orgsAction = useAsyncAction(async () => {
+    const res = await fetch("/api/internal/organizations", { cache: "no-store" });
+    const data = (await res.json()) as OrganizationsResponse;
+    if (!res.ok) {
+      throw new Error(data.error || "Kunne ikke hente organisationer.");
     }
-    void load();
-    return () => {
-      active = false;
-    };
-  }, []);
+    return data.organizations;
+  }, {
+    onSuccess: (organizations) => {
+      setOrganizations(organizations);
+      setSelectedOrgId((prev) => prev || organizations[0]?.id || "");
+    },
+  });
+
+  const accessAction = useAsyncAction(async () => {
+    const res = await fetch("/api/internal/access", { cache: "no-store" });
+    if (!res.ok) return false;
+    const data = (await res.json()) as { canManageInternalBranding?: boolean };
+    return Boolean(data.canManageInternalBranding);
+  }, {
+    onSuccess: (canManage) => setCanManageBranding(canManage),
+  });
 
   useEffect(() => {
-    let active = true;
-    async function loadAccess() {
-      try {
-        const res = await fetch("/api/internal/access", { cache: "no-store" });
-        if (!res.ok) return;
-        const data = (await res.json()) as { canManageInternalBranding?: boolean };
-        if (!active) return;
-        setCanManageBranding(Boolean(data.canManageInternalBranding));
-      } catch {
-        // ignore
-      }
-    }
-    void loadAccess();
-    return () => {
-      active = false;
-    };
+    orgsAction.run();
+    accessAction.run();
+    // Skal kun koere ved mount, ligesom de to load-effects den erstatter.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const selectedOrganization = useMemo(
@@ -105,10 +86,10 @@ export default function InternalBrandingConsole() {
           <p className="mt-1 text-sm text-gray-500">Vaelg organisation og administrer enterprise-branding samt global standard.</p>
         </div>
 
-        {loading ? <p className="text-sm text-gray-500">Indlaeser organisationer...</p> : null}
-        {error ? <p className="text-xs font-semibold text-red-600">{error}</p> : null}
+        {orgsAction.isPending ? <p className="text-sm text-gray-500">Indlaeser organisationer...</p> : null}
+        {orgsAction.error ? <p className="text-xs font-semibold text-red-600">{orgsAction.error}</p> : null}
 
-        {!loading && !error && (
+        {!orgsAction.isPending && !orgsAction.error && (
           <label className="space-y-1 block max-w-xl">
             <span className="text-[11px] font-black uppercase tracking-widest text-gray-500">Organisation</span>
             <select
@@ -185,72 +166,55 @@ function InternalThemeHistoryCard({
   onChanged: () => void;
   canManage: boolean;
 }) {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [rollingBackThemeId, setRollingBackThemeId] = useState<string | null>(null);
   const [versions, setVersions] = useState<ThemeVersion[]>([]);
+  const [rollingBackThemeId, setRollingBackThemeId] = useState<string | null>(null);
+
+  const loadAction = useAsyncAction(async () => {
+    const res = await fetch(endpoint, { cache: "no-store" });
+    const data = (await res.json()) as ThemeHistoryResponse;
+    if (!res.ok) {
+      throw new Error(data.error || "Kunne ikke hente historik.");
+    }
+    return data.versions || [];
+  }, {
+    onSuccess: (loadedVersions) => setVersions(loadedVersions),
+  });
 
   useEffect(() => {
-    let active = true;
-    async function load() {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await fetch(endpoint, { cache: "no-store" });
-        const data = (await res.json()) as ThemeHistoryResponse;
-        if (!res.ok) {
-          throw new Error(data.error || "Kunne ikke hente historik.");
-        }
-        if (!active) return;
-        setVersions(data.versions || []);
-      } catch (err) {
-        if (!active) return;
-        const message = err instanceof Error ? err.message : "Ukendt fejl";
-        setError(message);
-      } finally {
-        if (active) setLoading(false);
-      }
-    }
-    void load();
-    return () => {
-      active = false;
-    };
+    loadAction.run();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [endpoint, refreshKey]);
 
-  const rollbackToVersion = async (themeId: string) => {
+  const rollbackAction = useAsyncAction(async (themeId: string) => {
     setRollingBackThemeId(themeId);
-    setError(null);
-    try {
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "rollback",
-          themeId,
-        }),
-      });
-      const data = (await res.json()) as { error?: string };
-      if (!res.ok) {
-        throw new Error(data.error || "Rollback fejlede.");
-      }
-      onChanged();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Ukendt fejl";
-      setError(message);
-    } finally {
-      setRollingBackThemeId(null);
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "rollback", themeId }),
+    });
+    const data = (await res.json()) as { error?: string };
+    if (!res.ok) {
+      throw new Error(data.error || "Rollback fejlede.");
     }
-  };
+  }, {
+    onSuccess: () => {
+      setRollingBackThemeId(null);
+      onChanged();
+    },
+    onError: () => setRollingBackThemeId(null),
+  });
+
+  const error = loadAction.error || rollbackAction.error;
 
   return (
     <section className="np-card p-5 md:p-6 space-y-3">
       <p className="np-kicker text-blue-600">Historik</p>
       <h3 className="text-base font-bold text-gray-900 uppercase tracking-tight">{title}</h3>
 
-      {loading ? <p className="text-sm text-gray-500">Indlaeser versioner...</p> : null}
+      {loadAction.isPending ? <p className="text-sm text-gray-500">Indlaeser versioner...</p> : null}
       {error ? <p className="text-xs font-semibold text-red-600">{error}</p> : null}
 
-      {!loading && versions.length === 0 ? <p className="text-sm text-gray-500">Ingen versioner endnu.</p> : null}
+      {!loadAction.isPending && versions.length === 0 ? <p className="text-sm text-gray-500">Ingen versioner endnu.</p> : null}
 
       <div className="space-y-2">
         {versions.map((version) => {
@@ -267,7 +231,7 @@ function InternalThemeHistoryCard({
               </div>
               <button
                 type="button"
-                onClick={() => rollbackToVersion(version.id)}
+                onClick={() => rollbackAction.run(version.id)}
                 disabled={!canManage || isPublished || rollingBackThemeId === version.id}
                 className="np-btn-ghost inline-flex px-3 py-2 disabled:opacity-50"
               >

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import NextImage from "next/image";
 import VariantSubtitlesPanel, { type SubtitleItem } from "./VariantSubtitlesPanel";
 import CustomMuxPlayer from "@/components/player/CustomMuxPlayer";
+import { useAsyncAction } from "@/hooks/useAsyncAction";
 
 const MuxVideoUploader = dynamic(() => import("./MuxUploader"), {
   loading: () => <p className="text-xs font-semibold text-gray-500">Indlæser uploader...</p>,
@@ -35,12 +36,8 @@ export default function EmbedVariantCard({ variant, languages }: EmbedVariantCar
   const mediaRef = useRef<HTMLDivElement | null>(null);
   const posterInputRef = useRef<HTMLInputElement | null>(null);
   const shouldGateMedia = Boolean(variant.muxPlaybackId);
-  const [savingPoster, setSavingPoster] = useState(false);
-  const [posterError, setPosterError] = useState<string | null>(null);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState(variant.title || "");
-  const [savingTitle, setSavingTitle] = useState(false);
-  const [titleError, setTitleError] = useState<string | null>(null);
   const [isMediaActive, setIsMediaActive] = useState(
     () => !shouldGateMedia || (typeof window !== "undefined" && typeof IntersectionObserver === "undefined")
   );
@@ -145,50 +142,34 @@ export default function EmbedVariantCard({ variant, languages }: EmbedVariantCar
     alert("Videoen er uploadet, men Mux er stadig ved at behandle den. Prøv igen om lidt.");
   };
 
-  const savePosterFrame = async (posterFrameUrl: string | null) => {
-    setSavingPoster(true);
-    setPosterError(null);
-    try {
-      const res = await fetch(`/api/variants/${variant.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ posterFrameUrl }),
-      });
-      const data = (await res.json()) as { error?: string };
-      if (!res.ok) {
-        throw new Error(data.error || "Kunne ikke gemme posterframe.");
-      }
-      router.refresh();
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Ukendt fejl";
-      setPosterError(message);
-    } finally {
-      setSavingPoster(false);
+  const posterAction = useAsyncAction(async (posterFrameUrl: string | null) => {
+    const res = await fetch(`/api/variants/${variant.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ posterFrameUrl }),
+    });
+    const data = (await res.json()) as { error?: string };
+    if (!res.ok) {
+      throw new Error(data.error || "Kunne ikke gemme posterframe.");
     }
-  };
+  }, { onSuccess: () => router.refresh() });
 
-  const saveVariantTitle = async () => {
-    setSavingTitle(true);
-    setTitleError(null);
-    try {
-      const res = await fetch(`/api/variants/${variant.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: titleDraft }),
-      });
-      const data = (await res.json()) as { error?: string };
-      if (!res.ok) {
-        throw new Error(data.error || "Kunne ikke gemme titel.");
-      }
+  const titleAction = useAsyncAction(async () => {
+    const res = await fetch(`/api/variants/${variant.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: titleDraft }),
+    });
+    const data = (await res.json()) as { error?: string };
+    if (!res.ok) {
+      throw new Error(data.error || "Kunne ikke gemme titel.");
+    }
+  }, {
+    onSuccess: () => {
       setIsEditingTitle(false);
       router.refresh();
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Ukendt fejl";
-      setTitleError(message);
-    } finally {
-      setSavingTitle(false);
-    }
-  };
+    },
+  });
 
   const compressPosterFrame = async (file: File): Promise<string> => {
     const url = URL.createObjectURL(file);
@@ -250,21 +231,21 @@ export default function EmbedVariantCard({ variant, languages }: EmbedVariantCar
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      setPosterError("Vælg en billedfil.");
+      posterAction.setError("Vælg en billedfil.");
       return;
     }
 
     if (file.size > 8 * 1024 * 1024) {
-      setPosterError("Billedet er for stort. Maks 8 MB.");
+      posterAction.setError("Billedet er for stort. Maks 8 MB.");
       return;
     }
 
     try {
       const compressed = await compressPosterFrame(file);
-      await savePosterFrame(compressed);
+      await posterAction.run(compressed);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Kunne ikke behandle billedet.";
-      setPosterError(message);
+      posterAction.setError(message);
     }
   };
 
@@ -303,26 +284,26 @@ export default function EmbedVariantCard({ variant, languages }: EmbedVariantCar
             <input
               value={titleDraft}
               onChange={(e) => setTitleDraft(e.target.value)}
-              disabled={savingTitle}
+              disabled={titleAction.isPending}
               className="flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm font-bold text-gray-900 outline-none focus:ring-2 focus:ring-blue-400"
               placeholder="Variantnavn"
             />
             <button
               type="button"
-              onClick={saveVariantTitle}
-              disabled={savingTitle}
+              onClick={() => titleAction.run()}
+              disabled={titleAction.isPending}
               className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-blue-700 hover:bg-blue-100 disabled:opacity-50"
             >
-              {savingTitle ? "Gemmer..." : "Gem"}
+              {titleAction.isPending ? "Gemmer..." : "Gem"}
             </button>
             <button
               type="button"
               onClick={() => {
                 setIsEditingTitle(false);
                 setTitleDraft(variant.title || "");
-                setTitleError(null);
+                titleAction.setError(null);
               }}
-              disabled={savingTitle}
+              disabled={titleAction.isPending}
               className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-700 hover:bg-gray-50 disabled:opacity-50"
             >
               Annuller
@@ -336,7 +317,7 @@ export default function EmbedVariantCard({ variant, languages }: EmbedVariantCar
               onClick={() => {
                 setTitleDraft(variant.title || "");
                 setIsEditingTitle(true);
-                setTitleError(null);
+                titleAction.setError(null);
               }}
               className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700"
               aria-label="Rediger variantnavn"
@@ -349,7 +330,7 @@ export default function EmbedVariantCard({ variant, languages }: EmbedVariantCar
           </>
         )}
       </div>
-      {titleError ? <p className="text-xs font-semibold text-red-600">{titleError}</p> : null}
+      {titleAction.error ? <p className="text-xs font-semibold text-red-600">{titleAction.error}</p> : null}
 
       <div className={`rounded-2xl border px-4 py-3 ${statusTone}`}>
         <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
@@ -411,21 +392,21 @@ export default function EmbedVariantCard({ variant, languages }: EmbedVariantCar
           <button
             type="button"
             onClick={() => posterInputRef.current?.click()}
-            disabled={!variant.muxPlaybackId || savingPoster}
+            disabled={!variant.muxPlaybackId || posterAction.isPending}
             className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-700 hover:bg-gray-50 disabled:opacity-50"
           >
-            {savingPoster ? "Gemmer..." : "Upload posterframe"}
+            {posterAction.isPending ? "Gemmer..." : "Upload posterframe"}
           </button>
           <button
             type="button"
-            onClick={() => savePosterFrame(null)}
-            disabled={!variant.posterFrameUrl || savingPoster}
+            onClick={() => posterAction.run(null)}
+            disabled={!variant.posterFrameUrl || posterAction.isPending}
             className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-[10px] font-black uppercase tracking-widest text-gray-700 hover:bg-gray-50 disabled:opacity-50"
           >
             Fjern posterframe
           </button>
         </div>
-        {posterError ? <p className="text-xs font-semibold text-red-600">{posterError}</p> : null}
+        {posterAction.error ? <p className="text-xs font-semibold text-red-600">{posterAction.error}</p> : null}
       </div>
 
       <VariantSubtitlesPanel

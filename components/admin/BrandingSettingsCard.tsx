@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { ThemeTokens } from "@/lib/theme-schema";
+import { useAsyncAction } from "@/hooks/useAsyncAction";
+import FormField from "@/components/ui/FormField";
 
 type BrandingApiResponse = {
   plan: string;
@@ -31,6 +33,19 @@ interface BrandingSettingsCardProps {
   onChanged?: () => void;
 }
 
+const FONT_OPTIONS = [
+  { value: "Apex New", label: "Apex New" },
+  { value: "Inter", label: "Inter" },
+  { value: "Roboto", label: "Roboto" },
+  { value: "Source Sans 3", label: "Source Sans 3" },
+  { value: "Manrope", label: "Manrope" },
+];
+
+const FONT_WEIGHT_OPTIONS = [400, 500, 600, 700, 800].map((weight) => ({
+  value: String(weight),
+  label: String(weight),
+}));
+
 export default function BrandingSettingsCard({
   canManageBranding,
   canUseEnterpriseBranding,
@@ -43,10 +58,6 @@ export default function BrandingSettingsCard({
   refreshKey = 0,
   onChanged,
 }: BrandingSettingsCardProps) {
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [publishing, setPublishing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [themeName, setThemeName] = useState("Enterprise tema");
   const [draftThemeId, setDraftThemeId] = useState<string | null>(null);
@@ -55,44 +66,29 @@ export default function BrandingSettingsCard({
   const [defaultTokens, setDefaultTokens] = useState<ThemeTokens | null>(null);
   const [sourceLabel, setSourceLabel] = useState("default");
 
+  const loadAction = useAsyncAction(async () => {
+    const res = await fetch(endpoint, { cache: "no-store" });
+    const data = (await res.json()) as BrandingApiResponse & { error?: string };
+    if (!res.ok) {
+      throw new Error(data.error || "Kunne ikke hente branding.");
+    }
+    return data;
+  }, {
+    onSuccess: (data) => {
+      const initialTokens = data.draftTheme?.tokens || data.activeTheme.tokens;
+      setTokens(initialTokens);
+      setActiveTokens(data.activeTheme.tokens);
+      setDefaultTokens(data.defaultTokens);
+      setThemeName(data.draftTheme?.name || "Enterprise tema");
+      setDraftThemeId(data.draftTheme?.id || null);
+      setSourceLabel(data.activeTheme.source);
+    },
+  });
+
   useEffect(() => {
-    if (!canManageBranding) {
-      setLoading(false);
-      return;
-    }
-
-    let active = true;
-    async function load() {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await fetch(endpoint, { cache: "no-store" });
-        const data = (await res.json()) as BrandingApiResponse & { error?: string };
-        if (!res.ok) {
-          throw new Error(data.error || "Kunne ikke hente branding.");
-        }
-        if (!active) return;
-
-        const initialTokens = data.draftTheme?.tokens || data.activeTheme.tokens;
-        setTokens(initialTokens);
-        setActiveTokens(data.activeTheme.tokens);
-        setDefaultTokens(data.defaultTokens);
-        setThemeName(data.draftTheme?.name || "Enterprise tema");
-        setDraftThemeId(data.draftTheme?.id || null);
-        setSourceLabel(data.activeTheme.source);
-      } catch (err) {
-        if (!active) return;
-        const message = err instanceof Error ? err.message : "Ukendt fejl";
-        setError(message);
-      } finally {
-        if (active) setLoading(false);
-      }
-    }
-
-    void load();
-    return () => {
-      active = false;
-    };
+    if (!canManageBranding) return;
+    loadAction.run();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canManageBranding, endpoint, refreshKey]);
 
   const isReadOnly = !canManageBranding || !canUseEnterpriseBranding;
@@ -113,152 +109,116 @@ export default function BrandingSettingsCard({
   const updateColor = (path: keyof ThemeTokens["colors"], value: string) => {
     setTokens((prev) => {
       if (!prev) return prev;
-      return {
-        ...prev,
-        colors: {
-          ...prev.colors,
-          [path]: value,
-        },
-      };
+      return { ...prev, colors: { ...prev.colors, [path]: value } };
     });
   };
 
   const updatePlayer = (path: keyof ThemeTokens["player"], value: string) => {
     setTokens((prev) => {
       if (!prev) return prev;
-      return {
-        ...prev,
-        player: {
-          ...prev.player,
-          [path]: value,
-        },
-      };
+      return { ...prev, player: { ...prev.player, [path]: value } };
     });
   };
 
   const updateFontFamily = (fontFamily: string) => {
     setTokens((prev) => {
       if (!prev) return prev;
-      return {
-        ...prev,
-        typography: {
-          ...prev.typography,
-          fontFamily,
-        },
-      };
+      return { ...prev, typography: { ...prev.typography, fontFamily } };
     });
   };
 
   const updateFontWeight = (path: "headingWeight" | "bodyWeight", value: number) => {
     setTokens((prev) => {
       if (!prev) return prev;
-      return {
-        ...prev,
-        typography: {
-          ...prev.typography,
-          [path]: value,
-        },
-      };
+      return { ...prev, typography: { ...prev.typography, [path]: value } };
     });
   };
 
   const updateRadius = (path: keyof ThemeTokens["radius"], value: string) => {
     setTokens((prev) => {
       if (!prev) return prev;
-      return {
-        ...prev,
-        radius: {
-          ...prev.radius,
-          [path]: value,
-        },
-      };
+      return { ...prev, radius: { ...prev.radius, [path]: value } };
     });
   };
 
   const updateShadow = (path: keyof ThemeTokens["shadows"], value: string) => {
     setTokens((prev) => {
       if (!prev) return prev;
-      return {
-        ...prev,
-        shadows: {
-          ...prev.shadows,
-          [path]: value,
-        },
-      };
+      return { ...prev, shadows: { ...prev.shadows, [path]: value } };
     });
   };
 
-  const saveDraft = async () => {
-    if (!tokens) return;
-    setSaving(true);
-    setError(null);
+  const clearBanners = () => {
     setSuccess(null);
-    try {
-      const res = await fetch(endpoint, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: themeName,
-          tokens,
-        }),
-      });
-      const data = (await res.json()) as { error?: string; details?: string[]; theme?: { id: string } };
-      if (!res.ok) {
-        const details = data.details?.join(" ");
-        throw new Error(details ? `${data.error || "Validation fejl"} ${details}` : data.error || "Kunne ikke gemme kladde.");
-      }
-      setDraftThemeId(data.theme?.id || draftThemeId);
-      setSuccess("Kladde gemt.");
-      onChanged?.();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Ukendt fejl";
-      setError(message);
-    } finally {
-      setSaving(false);
-    }
+    loadAction.setError(null);
+    saveDraftAction.setError(null);
+    publishDraftAction.setError(null);
   };
 
-  const publishDraft = async () => {
-    setPublishing(true);
-    setError(null);
-    setSuccess(null);
-    try {
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "publish",
-          themeId: draftThemeId,
-        }),
-      });
-      const data = (await res.json()) as { error?: string };
-      if (!res.ok) {
-        throw new Error(data.error || "Kunne ikke udgive tema.");
-      }
+  const saveDraftAction = useAsyncAction(async () => {
+    const res = await fetch(endpoint, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: themeName, tokens }),
+    });
+    const data = (await res.json()) as { error?: string; details?: string[]; theme?: { id: string } };
+    if (!res.ok) {
+      const details = data.details?.join(" ");
+      throw new Error(details ? `${data.error || "Validation fejl"} ${details}` : data.error || "Kunne ikke gemme kladde.");
+    }
+    return data.theme?.id;
+  }, {
+    onSuccess: (themeId) => {
+      setDraftThemeId(themeId || draftThemeId);
+      setSuccess("Kladde gemt.");
+      onChanged?.();
+    },
+  });
+
+  const publishDraftAction = useAsyncAction(async () => {
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "publish", themeId: draftThemeId }),
+    });
+    const data = (await res.json()) as { error?: string };
+    if (!res.ok) {
+      throw new Error(data.error || "Kunne ikke udgive tema.");
+    }
+  }, {
+    onSuccess: () => {
       setSourceLabel("organization");
       setSuccess("Tema udgivet.");
       onChanged?.();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Ukendt fejl";
-      setError(message);
-    } finally {
-      setPublishing(false);
-    }
+    },
+  });
+
+  const handleSaveDraft = () => {
+    if (!tokens) return;
+    clearBanners();
+    saveDraftAction.run();
+  };
+
+  const handlePublishDraft = () => {
+    clearBanners();
+    publishDraftAction.run();
   };
 
   const resetToActiveTheme = () => {
     if (!activeTokens) return;
     setTokens(activeTokens);
+    clearBanners();
     setSuccess("Kladde nulstillet til aktivt tema.");
-    setError(null);
   };
 
   const resetToDefaultTheme = () => {
     if (!defaultTokens) return;
     setTokens(defaultTokens);
+    clearBanners();
     setSuccess("Kladde nulstillet til platform-standard.");
-    setError(null);
   };
+
+  const error = loadAction.error || saveDraftAction.error || publishDraftAction.error;
 
   return (
     <section className="np-card p-5 md:p-6 space-y-4">
@@ -281,67 +241,38 @@ export default function BrandingSettingsCard({
         </p>
       )}
 
-      {loading ? (
+      {loadAction.isPending ? (
         <p className="text-sm text-gray-500">Indlaeser branding...</p>
       ) : tokens ? (
         <>
           <div className="grid gap-3 md:grid-cols-2">
-            <label className="space-y-1">
-              <span className="text-[11px] font-black uppercase tracking-widest text-gray-500">Temanavn</span>
-              <input
-                value={themeName}
-                onChange={(e) => setThemeName(e.target.value)}
-                disabled={isReadOnly}
-                className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-60"
-              />
-            </label>
-            <label className="space-y-1">
-              <span className="text-[11px] font-black uppercase tracking-widest text-gray-500">Font</span>
-              <select
-                value={tokens.typography.fontFamily}
-                onChange={(e) => updateFontFamily(e.target.value)}
-                disabled={isReadOnly}
-                className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-60"
-              >
-                <option value="Apex New">Apex New</option>
-                <option value="Inter">Inter</option>
-                <option value="Roboto">Roboto</option>
-                <option value="Source Sans 3">Source Sans 3</option>
-                <option value="Manrope">Manrope</option>
-              </select>
-            </label>
+            <FormField label="Temanavn" value={themeName} onChange={setThemeName} disabled={isReadOnly} />
+            <FormField
+              label="Font"
+              type="select"
+              value={tokens.typography.fontFamily}
+              onChange={updateFontFamily}
+              options={FONT_OPTIONS}
+              disabled={isReadOnly}
+            />
             {!isCustomerLimited ? (
               <>
-                <label className="space-y-1">
-                  <span className="text-[11px] font-black uppercase tracking-widest text-gray-500">Heading weight</span>
-                  <select
-                    value={tokens.typography.headingWeight}
-                    onChange={(e) => updateFontWeight("headingWeight", Number(e.target.value))}
-                    disabled={isReadOnly}
-                    className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-60"
-                  >
-                    <option value={400}>400</option>
-                    <option value={500}>500</option>
-                    <option value={600}>600</option>
-                    <option value={700}>700</option>
-                    <option value={800}>800</option>
-                  </select>
-                </label>
-                <label className="space-y-1">
-                  <span className="text-[11px] font-black uppercase tracking-widest text-gray-500">Body weight</span>
-                  <select
-                    value={tokens.typography.bodyWeight}
-                    onChange={(e) => updateFontWeight("bodyWeight", Number(e.target.value))}
-                    disabled={isReadOnly}
-                    className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-60"
-                  >
-                    <option value={400}>400</option>
-                    <option value={500}>500</option>
-                    <option value={600}>600</option>
-                    <option value={700}>700</option>
-                    <option value={800}>800</option>
-                  </select>
-                </label>
+                <FormField
+                  label="Heading weight"
+                  type="select"
+                  value={String(tokens.typography.headingWeight)}
+                  onChange={(v) => updateFontWeight("headingWeight", Number(v))}
+                  options={FONT_WEIGHT_OPTIONS}
+                  disabled={isReadOnly}
+                />
+                <FormField
+                  label="Body weight"
+                  type="select"
+                  value={String(tokens.typography.bodyWeight)}
+                  onChange={(v) => updateFontWeight("bodyWeight", Number(v))}
+                  options={FONT_WEIGHT_OPTIONS}
+                  disabled={isReadOnly}
+                />
               </>
             ) : null}
           </div>
@@ -392,15 +323,15 @@ export default function BrandingSettingsCard({
           </div>
 
           <div className="grid gap-3 md:grid-cols-3">
-            <TokenTextField label="Card radius" value={tokens.radius.card} onChange={(v) => updateRadius("card", v)} disabled={isReadOnly} />
-            <TokenTextField label="Pill radius" value={tokens.radius.pill} onChange={(v) => updateRadius("pill", v)} disabled={isReadOnly} />
+            <FormField label="Card radius" value={tokens.radius.card} onChange={(v) => updateRadius("card", v)} disabled={isReadOnly} />
+            <FormField label="Pill radius" value={tokens.radius.pill} onChange={(v) => updateRadius("pill", v)} disabled={isReadOnly} />
             {!isCustomerLimited ? (
-              <TokenTextField label="Card shadow" value={tokens.shadows.card} onChange={(v) => updateShadow("card", v)} disabled={isReadOnly} />
+              <FormField label="Card shadow" value={tokens.shadows.card} onChange={(v) => updateShadow("card", v)} disabled={isReadOnly} />
             ) : null}
           </div>
 
           {!isCustomerLimited ? (
-            <TokenTextField
+            <FormField
               label="Play button shadow"
               value={tokens.player.playButtonShadow}
               onChange={(v) => updatePlayer("playButtonShadow", v)}
@@ -458,19 +389,19 @@ export default function BrandingSettingsCard({
             </button>
             <button
               type="button"
-              onClick={saveDraft}
-              disabled={isReadOnly || saving}
+              onClick={handleSaveDraft}
+              disabled={isReadOnly || saveDraftAction.isPending}
               className="np-btn-primary inline-flex px-4 py-3 disabled:opacity-60"
             >
-              {saving ? "Gemmer..." : "Gem kladde"}
+              {saveDraftAction.isPending ? "Gemmer..." : "Gem kladde"}
             </button>
             <button
               type="button"
-              onClick={publishDraft}
-              disabled={isReadOnly || publishing}
+              onClick={handlePublishDraft}
+              disabled={isReadOnly || publishDraftAction.isPending}
               className="np-btn-ghost inline-flex px-4 py-3 disabled:opacity-60"
             >
-              {publishing ? "Udgiver..." : "Udgiv"}
+              {publishDraftAction.isPending ? "Udgiver..." : "Udgiv"}
             </button>
           </div>
         </>
@@ -511,30 +442,6 @@ function ColorField({
           className="min-w-0 flex-1 bg-transparent text-sm text-gray-900 outline-none disabled:opacity-60"
         />
       </div>
-    </label>
-  );
-}
-
-function TokenTextField({
-  label,
-  value,
-  onChange,
-  disabled,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  disabled: boolean;
-}) {
-  return (
-    <label className="space-y-1">
-      <span className="text-[11px] font-black uppercase tracking-widest text-gray-500">{label}</span>
-      <input
-        value={value}
-        disabled={disabled}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-60"
-      />
     </label>
   );
 }
