@@ -24,13 +24,23 @@ export default async function DashboardPage({
 }: {
   searchParams: Promise<{ billing?: string; onboarding?: string }>;
 }) {
+  // TEMP: midlertidig timing-log til at diagnosticere langsom admin-
+  // navigation i produktion. Fjernes igen naar aarsagen er fundet. Dette er
+  // en Server Component, der koerer praecis en gang pr. request paa
+  // serveren, saa "purity"-reglen (skrevet til client-render) er ikke
+  // relevant her.
+  /* eslint-disable react-hooks/purity */
+  const pageStart = Date.now();
+
   const t = getMessages("da");
   const resolvedSearchParams = await searchParams;
   const orgCtx = await getOrgContextForContentEdit();
+  console.log(`[TIMING] dashboard getOrgContextForContentEdit: ${Date.now() - pageStart}ms`);
   if (!orgCtx) {
     redirect("/unauthorized");
   }
 
+  const waveStart = Date.now();
   const [user, projects, variantStats] = await Promise.all([
     prisma.user.findUnique({
       where: { id: orgCtx.userId },
@@ -63,13 +73,18 @@ export default async function DashboardPage({
       _sum: { views: true, durationSeconds: true },
     }),
   ]);
+  console.log(`[TIMING] dashboard user+projects+variantStats: ${Date.now() - waveStart}ms`);
 
   // Afhaenger af user.emailVerified fra ovenstaaende, saa den kan ikke
   // koeres parallelt med de tre uafhaengige forespoergsler ovenfor.
+  const activationStart = Date.now();
   const activation = await getActivationState({
     orgId: orgCtx.orgId,
     emailVerified: Boolean(user?.emailVerified),
   });
+  console.log(`[TIMING] dashboard getActivationState: ${Date.now() - activationStart}ms`);
+  console.log(`[TIMING] dashboard TOTAL: ${Date.now() - pageStart}ms`);
+  /* eslint-enable react-hooks/purity */
 
   const totalProjects = projects.length;
   const totalVariants = variantStats._count._all || 0;
