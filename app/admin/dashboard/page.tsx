@@ -7,6 +7,7 @@ import { getOrgContextForContentEdit } from "@/lib/authz";
 import { getMessages } from "@/lib/i18n/messages";
 import { getActivationState } from "@/lib/activation";
 import NextStepCard from "@/components/activation/NextStepCard";
+import StatTile from "@/components/ui/StatTile";
 
 const ProjectListClient = dynamicImport(() => import("@/components/admin/ProjectListClient"), {
   loading: () => (
@@ -90,34 +91,20 @@ export default async function DashboardPage({
       {!isFirstRun && (
         <section className="np-card np-card-pad rounded-2xl border-gray-200/90 shadow-[0_8px_24px_rgba(15,23,42,0.08)] bg-gradient-to-br from-white via-white to-blue-50/40">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-            <StatCard label="Projekter" value={totalProjects.toString()} />
-            <StatCard label="Sprogversioner" value={totalVariants.toString()} />
-            <StatCard label="Visninger" value={totalViews.toLocaleString("da-DK")} />
-            <StatCard label="Video på lager" value={`${storageMinutes} min`} />
+            <StatTile label="Projekter" value={totalProjects.toString()} />
+            <StatTile label="Sprogversioner" value={totalVariants.toString()} />
+            <StatTile label="Visninger" value={totalViews.toLocaleString("da-DK")} />
+            <StatTile label="Video på lager" value={`${storageMinutes} min`} />
           </div>
         </section>
       )}
 
       {resolvedSearchParams.billing === "success" && (
-        <div
-          className="rounded-xl border px-5 py-4 shadow-[0_6px_18px_rgba(15,23,42,0.06)]"
-          style={{ borderColor: "var(--success-bg)", background: "var(--success-bg)" }}
-        >
-          <p className="text-xs font-black uppercase tracking-widest" style={{ color: "var(--success-fg)" }}>
-            {t.dashboard.billingSuccess}
-          </p>
-        </div>
+        <div className="np-status-banner np-status-banner-success">{t.dashboard.billingSuccess}</div>
       )}
 
       {resolvedSearchParams.billing === "cancelled" && (
-        <div
-          className="rounded-xl border px-5 py-4 shadow-[0_6px_18px_rgba(15,23,42,0.06)]"
-          style={{ borderColor: "var(--warning-bg)", background: "var(--warning-bg)" }}
-        >
-          <p className="text-xs font-black uppercase tracking-widest" style={{ color: "var(--warning-fg)" }}>
-            {t.dashboard.billingCancelled}
-          </p>
-        </div>
+        <div className="np-status-banner np-status-banner-warning">{t.dashboard.billingCancelled}</div>
       )}
 
       <div className="space-y-6">
@@ -127,15 +114,6 @@ export default async function DashboardPage({
 
         {projects.length > 0 ? <ProjectListClient initialProjects={projects} /> : null}
       </div>
-    </div>
-  );
-}
-
-function StatCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl border border-gray-200 bg-gray-50/85 px-4 py-4 shadow-[0_4px_14px_rgba(15,23,42,0.05)]">
-      <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">{label}</p>
-      <p className="mt-1 text-xl font-black text-gray-900 tracking-tight">{value}</p>
     </div>
   );
 }

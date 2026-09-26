@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
+import { useAsyncAction } from "@/hooks/useAsyncAction";
 
 const EmbedCodeGenerator = dynamic(() => import("./EmbedCodeGenerator"), {
   loading: () => <p className="text-xs font-semibold text-gray-500">Indlæser embed-kode...</p>,
@@ -29,22 +30,20 @@ export default function ProjectListClient({ initialProjects }: ProjectListClient
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const router = useRouter();
 
-  const handleDelete = async (id: string, name: string) => {
+  const deleteAction = useAsyncAction(async (id: string) => {
+    const res = await fetch(`/api/embeds/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      throw new Error("Der opstod en fejl under sletning af projektet.");
+    }
+  }, {
+    onSuccess: () => router.refresh(),
+    onError: (error) => alert(error.message),
+  });
+
+  const handleDelete = (id: string, name: string) => {
     if (!confirm(`Er du sikker på, at du vil slette "${name}"?`)) return;
     setIsDeleting(id);
-
-    try {
-      const res = await fetch(`/api/embeds/${id}`, { method: "DELETE" });
-      if (res.ok) {
-        router.refresh();
-      } else {
-        alert("Der opstod en fejl under sletning af projektet.");
-      }
-    } catch (error) {
-      console.error("Sletning fejlede:", error);
-    } finally {
-      setIsDeleting(null);
-    }
+    deleteAction.run(id).finally(() => setIsDeleting(null));
   };
 
   const selectedProject = initialProjects.find((project) => project.id === showEmbedId) || null;
