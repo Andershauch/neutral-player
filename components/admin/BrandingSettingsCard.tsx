@@ -378,6 +378,19 @@ export default function BrandingSettingsCard({
             <ColorField label="Play Hover Border" value={tokens.player.playButtonHoverBorder} onChange={(v) => updatePlayer("playButtonHoverBorder", v)} disabled={isReadOnly} />
           </div>
 
+          <div>
+            <p className="mb-2 text-[11px] font-black uppercase tracking-widest text-gray-500">Afspiller-kontroller</p>
+            <div className="grid gap-3 md:grid-cols-3">
+              <ColorField label="Knap-baggrund" value={tokens.player.controlBg} onChange={(v) => updatePlayer("controlBg", v)} disabled={isReadOnly} />
+              <ColorField label="Knap-kant" value={tokens.player.controlBorder} onChange={(v) => updatePlayer("controlBorder", v)} disabled={isReadOnly} />
+              <ColorField label="Knap hover-baggrund" value={tokens.player.controlHoverBg} onChange={(v) => updatePlayer("controlHoverBg", v)} disabled={isReadOnly} />
+            </div>
+            <p className="mt-1 text-xs text-gray-500">
+              Styrer play/pause, spol, lyd, undertekster og fuldskærm i selve videoafspilleren. Hold baggrunden neutral
+              (ikke for lys), så knapperne kan ses tydeligt oven på både lyse og mørke videoer.
+            </p>
+          </div>
+
           <div className="grid gap-3 md:grid-cols-3">
             <TokenTextField label="Card radius" value={tokens.radius.card} onChange={(v) => updateRadius("card", v)} disabled={isReadOnly} />
             <TokenTextField label="Pill radius" value={tokens.radius.pill} onChange={(v) => updateRadius("pill", v)} disabled={isReadOnly} />

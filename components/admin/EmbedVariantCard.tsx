@@ -5,13 +5,10 @@ import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import NextImage from "next/image";
 import VariantSubtitlesPanel, { type SubtitleItem } from "./VariantSubtitlesPanel";
+import CustomMuxPlayer from "@/components/player/CustomMuxPlayer";
 
 const MuxVideoUploader = dynamic(() => import("./MuxUploader"), {
   loading: () => <p className="text-xs font-semibold text-gray-500">Indlæser uploader...</p>,
-});
-const MuxPlayer = dynamic(() => import("@mux/mux-player-react"), {
-  ssr: false,
-  loading: () => <p className="text-xs font-semibold text-gray-500">Indlæser afspiller...</p>,
 });
 
 interface LanguageOption {
@@ -377,27 +374,13 @@ export default function EmbedVariantCard({ variant, languages }: EmbedVariantCar
             </button>
           </>
         ) : variant.muxPlaybackId ? (
-          <MuxPlayer
+          <CustomMuxPlayer
+            variantId={variant.id}
             playbackId={variant.muxPlaybackId}
             poster={variant.posterFrameUrl || undefined}
-            className="np-mux-play-skin h-full w-full object-contain"
-            primaryColor="var(--primary)"
-            secondaryColor="var(--foreground)"
-            crossOrigin="anonymous"
+            subtitles={(variant.subtitles || []).filter((s) => s.status === "ready" && s.enabled)}
             onPlay={trackView}
-          >
-            {(variant.subtitles || [])
-              .filter((s) => s.status === "ready" && s.enabled && s.source === "uploaded")
-              .map((s) => (
-                <track
-                  key={s.languageCode}
-                  kind="subtitles"
-                  srcLang={s.languageCode}
-                  label={s.name}
-                  src={`/api/variants/${variant.id}/subtitles/${s.languageCode}`}
-                />
-              ))}
-          </MuxPlayer>
+          />
         ) : (
           <div className="flex h-full w-full flex-col items-center justify-center gap-4 bg-gradient-to-br from-gray-100 via-white to-blue-50 p-5 text-center">
             <div className="max-w-sm space-y-2">

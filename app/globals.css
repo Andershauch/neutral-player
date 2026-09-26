@@ -780,4 +780,125 @@ h6 {
   .np-themed .focus\:ring-blue-500:focus {
     --tw-ring-color: color-mix(in srgb, var(--primary) 44%, white) !important;
   }
+
+  /* Vores egen kontrolbjælke (components/player/CustomMuxPlayer.tsx). Bygget
+     fra bunden fordi mux-players indbyggede UI ikke kan styles/placeres
+     paalideligt udefra (se player-subtitle-controls-memo). Genbruger de
+     samme temafarver som resten af playeren, plus de nye
+     --np-player-control-*-tokens, saa en kunde kan style den i
+     /admin/profile/branding ligesom alt andet. */
+  .np-custom-player {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .np-custom-player-center-play {
+    background: var(--np-player-play-bg);
+    border: 2px solid var(--np-player-play-border);
+    color: #ffffff;
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+
+  .np-custom-player-center-play:hover {
+    background: var(--np-player-play-hover-bg);
+    border-color: var(--np-player-play-hover-border);
+    box-shadow: var(--np-player-play-shadow);
+  }
+
+  .np-custom-player-controls {
+    background: linear-gradient(
+      to top,
+      color-mix(in srgb, black 78%, transparent) 0%,
+      color-mix(in srgb, black 45%, transparent) 60%,
+      transparent 100%
+    );
+  }
+
+  .np-custom-player-button {
+    background: var(--np-player-control-bg);
+    border: 1px solid var(--np-player-control-border);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+
+  .np-custom-player-button:hover {
+    background: var(--np-player-control-hover-bg);
+  }
+
+  .np-custom-player-button:focus-visible {
+    outline: 2px solid #ffffff;
+    outline-offset: 2px;
+  }
+
+  .np-custom-player-button-active {
+    background: var(--np-player-accent);
+    border-color: transparent;
+  }
+
+  .np-custom-player-menu {
+    background: color-mix(in srgb, black 85%, transparent);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 12px 28px color-mix(in srgb, black 40%, transparent);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  .np-custom-player-menu-item-active {
+    background: var(--np-player-accent);
+  }
+
+  .np-custom-player-range {
+    --thumb-size: 13px;
+  }
+
+  .np-custom-player-range::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: 9999px;
+    background: transparent;
+  }
+
+  .np-custom-player-range::-moz-range-track {
+    height: 4px;
+    border-radius: 9999px;
+    background: transparent;
+  }
+
+  .np-custom-player-volume::-webkit-slider-runnable-track {
+    background: rgba(255, 255, 255, 0.28);
+  }
+
+  .np-custom-player-volume::-moz-range-track {
+    background: rgba(255, 255, 255, 0.28);
+  }
+
+  .np-custom-player-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: var(--thumb-size);
+    height: var(--thumb-size);
+    border-radius: 9999px;
+    background: #ffffff;
+    border: 2px solid var(--np-player-accent-strong);
+    margin-top: -4.5px;
+    cursor: pointer;
+  }
+
+  .np-custom-player-range::-moz-range-thumb {
+    width: var(--thumb-size);
+    height: var(--thumb-size);
+    border-radius: 9999px;
+    background: #ffffff;
+    border: 2px solid var(--np-player-accent-strong);
+    cursor: pointer;
+  }
+
+  .np-custom-player-range:focus-visible::-webkit-slider-thumb {
+    outline: 2px solid #ffffff;
+    outline-offset: 2px;
+  }
+
+  .np-custom-player-range:focus-visible::-moz-range-thumb {
+    outline: 2px solid #ffffff;
+    outline-offset: 2px;
+  }
 }

@@ -39,6 +39,14 @@ export interface ThemeTokens {
     playButtonHoverBg: string;
     playButtonHoverBorder: string;
     playButtonShadow: string;
+    /// Baggrund for de runde kontrolknapper (play/pause, CC, fuldskaerm osv.)
+    /// og selve kontrolbjaelken. Boer vaere neutral (ikke farvetonet), saa
+    /// knapperne laeser tydeligt uanset om videoen bag dem er lys eller moerk.
+    controlBg: string;
+    /// Tynd kant-ring om hver knap, saa den holder facon uanset baggrund.
+    controlBorder: string;
+    /// Baggrund naar en knap er hover/aktiv.
+    controlHoverBg: string;
   };
 }
 
@@ -75,6 +83,9 @@ export const DEFAULT_THEME_TOKENS: ThemeTokens = {
     playButtonHoverBg: "#ff5ca8",
     playButtonHoverBorder: "#ff5ca8",
     playButtonShadow: "0 8px 24px rgba(255, 92, 168, 0.35)",
+    controlBg: "rgba(0, 0, 0, 0.55)",
+    controlBorder: "rgba(255, 255, 255, 0.22)",
+    controlHoverBg: "rgba(37, 99, 235, 0.55)",
   },
 };
 
@@ -133,6 +144,9 @@ export function validateThemeTokens(input: unknown): ThemeValidationResult {
       playButtonHoverBg: requireColorOrRgba(player, "playButtonHoverBg", errors),
       playButtonHoverBorder: requireColorOrRgba(player, "playButtonHoverBorder", errors),
       playButtonShadow: requireShadowValue(player, "playButtonShadow", errors),
+      controlBg: optionalColorOrRgba(player, "controlBg", DEFAULT_THEME_TOKENS.player.controlBg),
+      controlBorder: optionalColorOrRgba(player, "controlBorder", DEFAULT_THEME_TOKENS.player.controlBorder),
+      controlHoverBg: optionalColorOrRgba(player, "controlHoverBg", DEFAULT_THEME_TOKENS.player.controlHoverBg),
     },
   };
 
@@ -192,6 +206,25 @@ function requireColor(parent: Record<string, unknown>, key: string, errors: stri
     errors.push(`"${key}" skal være HEX-farve (fx #2563eb).`);
   }
   return value;
+}
+
+/// Som `requireColorOrRgba`, men falder tilbage til en standardvaerdi i
+/// stedet for at fejle, hvis feltet slet ikke findes. Bruges til felter der
+/// er tilfoejet EFTER at temaer allerede laa gemt i databasen — ellers ville
+/// et gyldigt, tidligere publiceret kundetema pludselig blive afvist som
+/// ugyldigt og falde tilbage til platform-standarden, blot fordi det mangler
+/// et nyt felt det aldrig kunne kende til.
+function optionalColorOrRgba(parent: Record<string, unknown>, key: string, fallback: string): string {
+  const value = parent[key];
+  if (typeof value !== "string" || !value.trim()) {
+    return fallback;
+  }
+  const trimmed = value.trim();
+  const rgbaLike = trimmed.startsWith("rgba(") && trimmed.endsWith(")");
+  if (!HEX_COLOR_REGEX.test(trimmed) && !rgbaLike) {
+    return fallback;
+  }
+  return trimmed;
 }
 
 function requireColorOrRgba(parent: Record<string, unknown>, key: string, errors: string[]): string {

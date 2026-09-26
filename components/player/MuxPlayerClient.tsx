@@ -1,9 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import dynamic from "next/dynamic";
-
-const MuxPlayer = dynamic(() => import("@mux/mux-player-react"), { ssr: false });
+import CustomMuxPlayer, { type CustomMuxPlayerHandle } from "@/components/player/CustomMuxPlayer";
 
 const LANGUAGE_NAMES: Record<string, string> = {
   da: "Dansk",
@@ -62,9 +60,7 @@ export default function MuxPlayerClient({
   const [playedVariantMap, setPlayedVariantMap] = useState<Record<string, boolean>>({});
   const [variantResumeMap, setVariantResumeMap] = useState<Record<string, boolean>>({});
   const variantProgressRef = useRef<Record<string, number>>({});
-  const playerElementRef = useRef<(HTMLElement & { play?: () => Promise<void> | void; currentTime?: number; duration?: number }) | null>(
-    null
-  );
+  const playerElementRef = useRef<CustomMuxPlayerHandle | null>(null);
   const resumeAppliedForVariantRef = useRef<Record<string, boolean>>({});
   const hasPlayedActiveVariant = Boolean(playedVariantMap[activeVariant.id]);
   const shouldHidePoster = hasPlayedActiveVariant || Boolean(variantResumeMap[activeVariant.id]);
@@ -79,21 +75,21 @@ export default function MuxPlayerClient({
       return;
     }
     const maybePlayer = playerElementRef.current;
-    if (!maybePlayer || typeof maybePlayer.currentTime !== "number") {
+    if (!maybePlayer) {
       return;
     }
-    const duration = maybePlayer.duration;
-    if (typeof duration === "number" && Number.isFinite(duration) && duration > 0) {
-      maybePlayer.currentTime = Math.min(resumeAt, Math.max(0, duration - 0.5));
+    const duration = maybePlayer.getDuration();
+    if (Number.isFinite(duration) && duration > 0) {
+      maybePlayer.setCurrentTime(Math.min(resumeAt, Math.max(0, duration - 0.5)));
     } else {
-      maybePlayer.currentTime = resumeAt;
+      maybePlayer.setCurrentTime(resumeAt);
     }
     resumeAppliedForVariantRef.current[activeVariant.id] = true;
   };
 
   const saveCurrentProgress = (variantId: string) => {
     const maybePlayer = playerElementRef.current;
-    const currentTime = maybePlayer?.currentTime;
+    const currentTime = maybePlayer?.getCurrentTime();
     if (typeof currentTime !== "number" || !Number.isFinite(currentTime) || currentTime < 0) {
       return;
     }
@@ -146,15 +142,14 @@ export default function MuxPlayerClient({
       {playerError ? (
         <div className="text-white/80 text-sm px-6 text-center">Videoen kunne ikke afspilles lige nu. Prøv igen om et øjeblik.</div>
       ) : (
-        <MuxPlayer
+        <CustomMuxPlayer
           key={activeVariant.id}
-          ref={(node) => {
-            playerElementRef.current = node as typeof playerElementRef.current;
-          }}
+          ref={playerElementRef}
+          variantId={activeVariant.id}
           playbackId={activeVariant.muxPlaybackId || ""}
           poster={shouldHidePoster ? undefined : activeVariant.posterFrameUrl || undefined}
-          metadataVideoTitle={`${embedName} - ${activeVariant.title || activeVariant.lang}`}
-          streamType="on-demand"
+          videoTitle={`${embedName} - ${activeVariant.title || activeVariant.lang}`}
+          subtitles={activeVariant.subtitles}
           onPlay={handlePlay}
           onTimeUpdate={() => {
             saveCurrentProgress(activeVariant.id);
@@ -183,30 +178,7 @@ export default function MuxPlayerClient({
             setPlayerError("mux-error");
             setIsVariantLoading(false);
           }}
-          primaryColor="var(--primary)"
-          secondaryColor="var(--foreground)"
-          accentColor="var(--primary-strong)"
-          crossOrigin="anonymous"
-          className="np-mux-play-skin w-full h-full object-contain"
-          style={{ height: "100%", width: "100%" }}
-        >
-          {/* Mux-genererede spor er allerede bagt ind i HLS-manifestet og
-              dukker selv op i CC-menuen — de skal ikke gentages her, ellers
-              risikerer vi to spor med samme sprogkode, der kolliderer i
-              menuen. Kun kundens egen upload findes ikke i manifestet og
-              skal derfor tilføjes eksplicit. */}
-          {(activeVariant.subtitles || [])
-            .filter((subtitle) => subtitle.source === "uploaded")
-            .map((subtitle) => (
-              <track
-                key={subtitle.languageCode}
-                kind="subtitles"
-                srcLang={subtitle.languageCode}
-                label={subtitle.name}
-                src={`/api/variants/${activeVariant.id}/subtitles/${subtitle.languageCode}`}
-              />
-            ))}
-        </MuxPlayer>
+        />
       )}
 
       {showWatermark && !playerError && (

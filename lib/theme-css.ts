@@ -29,5 +29,8 @@ export function buildThemeCssVars(tokens: ThemeTokens): CSSProperties {
     ["--np-player-play-hover-bg" as string]: tokens.player.playButtonHoverBg,
     ["--np-player-play-hover-border" as string]: tokens.player.playButtonHoverBorder,
     ["--np-player-play-shadow" as string]: tokens.player.playButtonShadow,
+    ["--np-player-control-bg" as string]: tokens.player.controlBg,
+    ["--np-player-control-border" as string]: tokens.player.controlBorder,
+    ["--np-player-control-hover-bg" as string]: tokens.player.controlHoverBg,
   };
 }
