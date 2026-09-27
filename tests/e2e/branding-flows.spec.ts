@@ -101,22 +101,28 @@ test.describe("Branding E2E flows", () => {
         })
         .toBe("#ea580c");
 
-      const player = page.locator("mux-player");
+      // The embed player is CustomMuxPlayer (a plain <mux-video> with a hand-built,
+      // light-DOM control bar) — not mux-player-react's media-chrome skin, which is
+      // only used on the public marketing hero demo. Assert against the real markup.
+      const player = page.locator("mux-video");
       await player.waitFor({ state: "attached", timeout: 15_000 });
-      await expect(player).toHaveClass(/np-mux-play-skin/);
 
-      const playerVars = await player.evaluate((element) => {
-        const styles = getComputedStyle(element);
-        return {
-          accent: styles.getPropertyValue("--media-accent-color").trim(),
-          controlBackground: styles.getPropertyValue("--media-control-background").trim(),
-          focusRing: styles.getPropertyValue("--media-focus-box-shadow").trim(),
-        };
-      });
+      const progressFill = page.locator('.np-custom-player-controls div[style*="np-player-accent"]');
+      await progressFill.waitFor({ state: "attached", timeout: 15_000 });
 
-      expect(playerVars.accent === "" || playerVars.accent === "#ea580c").toBeTruthy();
-      expect(playerVars.controlBackground === "" || playerVars.controlBackground.includes("color-mix")).toBeTruthy();
-      expect(playerVars.focusRing === "" || playerVars.focusRing.includes("0 0 0 2px")).toBeTruthy();
+      const accentColors = await progressFill.evaluate((element, primary) => {
+        // Appended as a child of `element` (not document.body) so it inherits
+        // the same cascade context — including the org's --primary override on
+        // main.np-themed — rather than falling back to :root's default.
+        const probe = document.createElement("div");
+        probe.style.color = `color-mix(in srgb, ${primary} 55%, white)`;
+        element.appendChild(probe);
+        const expected = getComputedStyle(probe).color;
+        probe.remove();
+        return { actual: getComputedStyle(element).backgroundColor, expected };
+      }, ENTERPRISE_PRIMARY);
+
+      expect(accentColors.actual).toBe(accentColors.expected);
     } finally {
       await cleanupUser(account.userId, account.organizationId, account.embedId ?? null);
     }
@@ -207,7 +213,7 @@ async function createUserWithPlan(
                   title: "Dansk",
                   lang: "da",
                   sortOrder: 0,
-                  muxPlaybackId: "test-playback-id",
+                  muxPlaybackId: "Q4rd8viHzoTRIW00i9yN7kJ1idhhfXDBdwfFnIGcT00vM",
                   organizationId: organization.id,
                 },
               },

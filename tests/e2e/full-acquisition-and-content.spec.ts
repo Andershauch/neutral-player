@@ -55,7 +55,7 @@ test.describe("Full SaaS flow (signup/checkout/upload/embed)", () => {
       await page.getByPlaceholder(/neutral agency/i).fill(workspaceName);
       await Promise.all([
         page.waitForURL(/\/admin\/dashboard/, { timeout: 20_000 }),
-        page.getByRole("button", { name: /dashboard/i }).click(),
+        page.getByRole("button", { name: /kom i gang/i }).click(),
       ]);
 
       await page.getByRole("button", { name: /nyt projekt/i }).click();

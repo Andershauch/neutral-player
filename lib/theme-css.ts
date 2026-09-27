@@ -32,5 +32,17 @@ export function buildThemeCssVars(tokens: ThemeTokens): CSSProperties {
     ["--np-player-control-bg" as string]: tokens.player.controlBg,
     ["--np-player-control-border" as string]: tokens.player.controlBorder,
     ["--np-player-control-hover-bg" as string]: tokens.player.controlHoverBg,
+
+    // Declared here (not just once at :root in globals.css) with the literal
+    // resolved primary baked in, not var(--primary): a custom property whose
+    // value contains var() is substituted once, using the value in scope where
+    // it is DECLARED, and that already-resolved value is what inherits — so a
+    // color-mix(var(--primary)) declared only at :root stays pinned to the
+    // default --primary forever, even under a descendant that overrides
+    // --primary (like this org's own .np-themed root). Redeclaring it here,
+    // per organization, is what makes the embed player's accent actually track
+    // the org's brand color instead of silently staying blue.
+    ["--np-player-accent" as string]: `color-mix(in srgb, ${tokens.colors.primary} 55%, white)`,
+    ["--np-player-accent-strong" as string]: `color-mix(in srgb, ${tokens.colors.primary} 80%, white)`,
   };
 }

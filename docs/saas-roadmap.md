@@ -874,8 +874,10 @@
   hvilket siges tydeligt i UI'et.
 - `DONE`: `video.asset.track.ready` og `video.asset.track.errored` opdaterer status; Mux-webhooken skal have
   de to events slaaet til i dashboardet.
+- `DONE`: Upload af kundens egen VTT/SRT-fil (`app/api/variants/[id]/subtitles/upload/route.ts`), gemt som raat
+  tekstindhold i Postgres (`VariantSubtitle.vttContent`, `@db.Text`) — kraever ikke fillagring. Bekraeftet
+  manuelt fungerende 2026-09-27.
 - `TODO`: Redigering af genereret tekst. I dag kan et spor bestilles og fjernes, men ikke rettes i appen.
-- `TODO`: Upload af kundens egen VTT/SRT-fil. Kraever fillagring, som projektet ikke har i dag.
 - `TODO`: Formel WCAG 2.1 AA-gennemgang af afspilleren, saa paastanden paa forsiden er efterproevet.
 
 ### TASK-12.8 Bloedere overgang ved login
