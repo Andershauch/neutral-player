@@ -8,6 +8,9 @@ import UsageLimitsCard from "@/components/admin/UsageLimitsCard";
 import NextStepCard from "@/components/activation/NextStepCard";
 import ProfileAvatarCard from "@/components/admin/ProfileAvatarCard";
 import AppPageHeader from "@/components/navigation/AppPageHeader";
+import Card from "@/components/ui/Card";
+import SectionHeader from "@/components/ui/SectionHeader";
+import StatTile from "@/components/ui/StatTile";
 import { canManageBillingRole, canManageBrandingRole } from "@/lib/authz";
 import { getCurrentOrgContext } from "@/lib/org-context";
 import { getBillingPlansForDisplay, getPlanDisplayName } from "@/lib/plans";
@@ -76,35 +79,38 @@ export default async function ProfilePage() {
         }
       />
 
-      <section className="np-card np-card-pad bg-gradient-to-br from-white via-white to-blue-50/30">
+      <Card className="bg-gradient-to-br from-white via-white to-blue-50/30">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <ProfileStat label="Navn" value={session.user.name || "Ikke angivet"} />
-          <ProfileStat label="Email" value={session.user.email} />
-          <ProfileStat label="Rolle" value={orgCtx.role} />
+          <StatTile label="Navn" value={session.user.name || "Ikke angivet"} />
+          <StatTile label="Email" value={session.user.email} />
+          <StatTile label="Rolle" value={orgCtx.role} />
         </div>
-      </section>
+      </Card>
 
       <ProfileAvatarCard initialName={session.user.name || "Bruger"} initialImage={session.user.image || null} />
 
-      <section className="np-card p-5 md:p-6">
+      <Card className="p-5 md:p-6">
         <p className="np-kicker text-blue-600">Nuværende abonnement</p>
         <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
-          <ProfileStat label="Plan" value={getPlanDisplayName(currentPlan)} />
-          <ProfileStat label="Status" value={toStatusLabel(currentStatus)} />
+          <StatTile label="Plan" value={getPlanDisplayName(currentPlan)} />
+          <StatTile label="Status" value={toStatusLabel(currentStatus)} />
         </div>
-      </section>
+      </Card>
 
       {isAuditAdmin && (
-        <section className="np-card p-5 md:p-6">
-          <p className="np-kicker text-blue-600">Sikkerhed</p>
-          <h2 className="text-lg font-bold text-gray-900 uppercase tracking-tight">Audit log</h2>
-          <p className="text-sm text-gray-500 mt-1">Som admin kan du se historik over administrative hændelser.</p>
-          <div className="mt-4">
-            <Link href="/admin/audit" className="np-btn-ghost inline-flex px-4 py-3">
-              Åbn audit
-            </Link>
-          </div>
-        </section>
+        <Card className="p-5 md:p-6">
+          <SectionHeader
+            kicker="Sikkerhed"
+            kickerClassName="text-blue-600"
+            title="Audit log"
+            description="Som admin kan du se historik over administrative hændelser."
+            actions={
+              <Link href="/admin/audit" className="np-btn-ghost inline-flex px-4 py-3">
+                Åbn audit
+              </Link>
+            }
+          />
+        </Card>
       )}
 
       {!activation.isComplete && (
@@ -114,28 +120,27 @@ export default async function ProfilePage() {
         </section>
       )}
 
-      <section className="np-card p-5 md:p-6">
-        <p className="np-kicker text-blue-600">Branding</p>
-        <h2 className="text-lg font-bold text-gray-900 uppercase tracking-tight">Tema og design</h2>
-        <p className="mt-1 text-sm text-gray-500">
-          Administrér farver, font og player-stil på en dedikeret side.
-        </p>
+      <Card className="p-5 md:p-6">
+        <SectionHeader
+          kicker="Branding"
+          kickerClassName="text-blue-600"
+          title="Tema og design"
+          description="Administrér farver, font og player-stil på en dedikeret side."
+          actions={
+            <Link href="/admin/profile/branding" className="np-btn-ghost inline-flex px-4 py-3">
+              Åbn branding
+            </Link>
+          }
+        />
         {!planCapabilities.capabilities.enterpriseBrandingEnabled ? (
-          <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700">
-            Custom branding kræver Enterprise-plan.
-          </p>
+          <div className="np-status-banner np-status-banner-warning mt-3">Custom branding kræver Enterprise-plan.</div>
         ) : null}
         {!canManageBranding ? (
-          <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700">
+          <div className="np-status-banner np-status-banner-warning mt-3">
             Du har ikke rettigheder til at redigere branding.
-          </p>
+          </div>
         ) : null}
-        <div className="mt-4">
-          <Link href="/admin/profile/branding" className="np-btn-ghost inline-flex px-4 py-3">
-            Åbn branding
-          </Link>
-        </div>
-      </section>
+      </Card>
 
       <BillingPlansCard
         plans={plans}
@@ -148,16 +153,6 @@ export default async function ProfilePage() {
     </div>
   );
 }
-
-function ProfileStat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-2xl border border-gray-100 bg-gray-50/70 px-4 py-4">
-      <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">{label}</p>
-      <p className="mt-1 text-sm font-bold text-gray-900 break-words">{value}</p>
-    </div>
-  );
-}
-
 
 function toStatusLabel(status: string) {
   if (status === "active") return "Aktiv";

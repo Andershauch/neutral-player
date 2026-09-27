@@ -525,6 +525,14 @@ h6 {
     color: var(--muted);
   }
 
+  /* TASK-11.6: internal admins accent-kicker. Bevidst en anden hue (graphite)
+     end kundefladens blaa accent (--primary), saa internal foeles som samme
+     komponentfamilie men tydeligt operations-praeget — uden at aendre
+     layout/komponenthierarki, som er systemlaast jf. theme-boundary. */
+  .np-ops-accent {
+    color: #334155;
+  }
+
   .np-btn-primary {
     border-radius: var(--radius-pill);
     background: var(--primary);

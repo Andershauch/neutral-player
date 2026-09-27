@@ -13,6 +13,17 @@ import {
 import { type MarketingPageKey } from "@/lib/marketing-pages";
 import { getMarketingPublicPath } from "@/lib/marketing-routes";
 import { useAsyncAction } from "@/hooks/useAsyncAction";
+import Badge, { type BadgeTone } from "@/components/ui/Badge";
+import Card from "@/components/ui/Card";
+import SectionHeader from "@/components/ui/SectionHeader";
+
+/// draft/published/archived-status-farvning. Samme mapping findes i
+/// InternalBrandingConsole.tsx — hold de to i sync hvis en status tilfoejes.
+function contentStatusTone(status: string): BadgeTone {
+  if (status === "published") return "success";
+  if (status === "draft") return "warning";
+  return "neutral";
+}
 
 type MarketingPageSummary = {
   key: MarketingPageKey;
@@ -324,19 +335,18 @@ export default function InternalMarketingConsole() {
 
   return (
     <div className="space-y-6">
-      <section className="np-card p-5 md:p-6 space-y-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <p className="np-kicker text-blue-600">Internal marketing</p>
-            <h2 className="text-xl font-bold text-gray-900 uppercase tracking-tight">Marketing content editor</h2>
-            <p className="mt-1 text-sm text-gray-500">
-              Redigér draft-indhold pr. side, preview ændringer og publicér når historien er klar.
-            </p>
-          </div>
-          <div className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-xs font-semibold text-gray-600">
-            Rolle: {actorRole ?? "indlæser"} · {canManage ? "Write access" : "Read/preview only"}
-          </div>
-        </div>
+      <Card className="p-5 md:p-6 space-y-4">
+        <SectionHeader
+          kicker="Internal marketing"
+          kickerClassName="np-ops-accent"
+          title="Marketing content editor"
+          description="Redigér draft-indhold pr. side, preview ændringer og publicér når historien er klar."
+          actions={
+            <div className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-xs font-semibold text-gray-600">
+              Rolle: {actorRole ?? "indlæser"} · {canManage ? "Write access" : "Read/preview only"}
+            </div>
+          }
+        />
 
         <label className="block max-w-xl space-y-1">
           <span className="text-[11px] font-black uppercase tracking-widest text-gray-500">Marketing-side</span>
@@ -365,53 +375,55 @@ export default function InternalMarketingConsole() {
         {loading ? <p className="text-sm text-gray-500">Indlæser marketing-editor...</p> : null}
         {error ? <p className="text-xs font-semibold text-red-600">{error}</p> : null}
         {status ? <p className="text-xs font-semibold text-emerald-700">{status}</p> : null}
-      </section>
+      </Card>
 
       {!loading && (
         <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
           <section className="space-y-4">
-            <div className="np-card p-5 md:p-6 space-y-4">
-              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <p className="np-kicker text-blue-600">Editor</p>
-                  <h3 className="text-base font-bold text-gray-900 uppercase tracking-tight">Section-for-section draft</h3>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <button type="button" onClick={handlePreview} className="np-btn-ghost inline-flex px-4 py-2">
-                    Preview
-                  </button>
-                  <Link
-                    href={`/internal/marketing/preview/${selectedPageKey}`}
-                    className="np-btn-ghost inline-flex px-4 py-2"
-                    target="_blank"
-                  >
-                    Åbn draft preview
-                  </Link>
-                  <Link
-                    href={getMarketingPublicPath(selectedPageKey)}
-                    className="np-btn-ghost inline-flex px-4 py-2"
-                    target="_blank"
-                  >
-                    Åbn live side
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={handleSaveDraft}
-                    disabled={!canManage || saving}
-                    className="np-btn-primary inline-flex px-4 py-2 disabled:opacity-50"
-                  >
-                    {saving ? "Gemmer..." : canManage ? "Gem draft" : "Read-only"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handlePublish}
-                    disabled={!canManage || publishing || saving}
-                    className="np-btn-ghost inline-flex px-4 py-2 disabled:opacity-50"
-                  >
-                    {publishing ? "Publicerer..." : saving ? "Gemmer..." : canManage ? "Gem og publish" : "Preview only"}
-                  </button>
-                </div>
-              </div>
+            <Card className="p-5 md:p-6 space-y-4">
+              <SectionHeader
+                kicker="Editor"
+                kickerClassName="np-ops-accent"
+                title="Section-for-section draft"
+                titleAs="h3"
+                actions={
+                  <>
+                    <button type="button" onClick={handlePreview} className="np-btn-ghost inline-flex px-4 py-2">
+                      Preview
+                    </button>
+                    <Link
+                      href={`/internal/marketing/preview/${selectedPageKey}`}
+                      className="np-btn-ghost inline-flex px-4 py-2"
+                      target="_blank"
+                    >
+                      Åbn draft preview
+                    </Link>
+                    <Link
+                      href={getMarketingPublicPath(selectedPageKey)}
+                      className="np-btn-ghost inline-flex px-4 py-2"
+                      target="_blank"
+                    >
+                      Åbn live side
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={handleSaveDraft}
+                      disabled={!canManage || saving}
+                      className="np-btn-primary inline-flex px-4 py-2 disabled:opacity-50"
+                    >
+                      {saving ? "Gemmer..." : canManage ? "Gem draft" : "Read-only"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handlePublish}
+                      disabled={!canManage || publishing || saving}
+                      className="np-btn-ghost inline-flex px-4 py-2 disabled:opacity-50"
+                    >
+                      {publishing ? "Publicerer..." : saving ? "Gemmer..." : canManage ? "Gem og publish" : "Preview only"}
+                    </button>
+                  </>
+                }
+              />
 
               <label className="block space-y-1">
                 <span className="text-[11px] font-black uppercase tracking-widest text-gray-500">Change summary</span>
@@ -519,14 +531,16 @@ export default function InternalMarketingConsole() {
                   </div>
                 ))}
               </div>
-            </div>
+            </Card>
 
-            <section className="np-card p-5 md:p-6 space-y-3">
-              <p className="np-kicker text-blue-600">Assets</p>
-              <h3 className="text-base font-bold uppercase tracking-tight text-gray-900">Referencebibliotek</h3>
-              <p className="text-sm text-gray-500">
-                Brug `assetKey` i hero-media og andre referencesektioner. V1 understøtter billed-upload med alt-tekst og tydelig ratio-guidance.
-              </p>
+            <Card className="p-5 md:p-6 space-y-3">
+              <SectionHeader
+                kicker="Assets"
+                kickerClassName="np-ops-accent"
+                title="Referencebibliotek"
+                titleAs="h3"
+                description="Brug `assetKey` i hero-media og andre referencesektioner. V1 understøtter billed-upload med alt-tekst og tydelig ratio-guidance."
+              />
 
               <div className="rounded-[1.5rem] border border-gray-100 bg-gray-50/80 px-4 py-4 space-y-4">
                 <div className="grid gap-4 md:grid-cols-2">
@@ -645,25 +659,24 @@ export default function InternalMarketingConsole() {
                   ))}
                 </div>
               )}
-            </section>
+            </Card>
           </section>
 
           <section className="space-y-4">
-            <section className="np-card p-5 md:p-6 space-y-4">
-              <div>
-                <p className="np-kicker text-blue-600">Preview</p>
-                <h3 className="text-base font-bold uppercase tracking-tight text-gray-900">Lokal draft-preview</h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  Previewen bruger samme validator som save/publish. Brug “Åbn draft preview” for at se den gemte draft i sit eget internal preview-flow.
-                </p>
-              </div>
+            <Card className="p-5 md:p-6 space-y-4">
+              <SectionHeader
+                kicker="Preview"
+                kickerClassName="np-ops-accent"
+                title="Lokal draft-preview"
+                titleAs="h3"
+                description="Previewen bruger samme validator som save/publish. Brug “Åbn draft preview” for at se den gemte draft i sit eget internal preview-flow."
+              />
 
               {previewContent ? <MarketingPagePreview pageKey={selectedPageKey} content={previewContent} /> : null}
-            </section>
+            </Card>
 
-            <section className="np-card p-5 md:p-6 space-y-3">
-              <p className="np-kicker text-blue-600">Historik</p>
-              <h3 className="text-base font-bold uppercase tracking-tight text-gray-900">Versioner</h3>
+            <Card className="p-5 md:p-6 space-y-3">
+              <SectionHeader kicker="Historik" kickerClassName="np-ops-accent" title="Versioner" titleAs="h3" />
               <div className="rounded-xl border border-gray-100 bg-gray-50/80 px-3 py-3 text-xs font-semibold text-gray-600">
                 Draft preview ligger under internal og er tydeligt adskilt fra live public-siden. Publish gemmer altid den aktuelle draft først.
               </div>
@@ -677,8 +690,9 @@ export default function InternalMarketingConsole() {
                       className="rounded-xl border border-gray-100 bg-gray-50/80 px-3 py-3 flex flex-wrap items-center justify-between gap-3"
                     >
                       <div>
-                        <p className="text-xs font-black uppercase tracking-widest text-gray-700">
-                          v{version.version} · {version.status}
+                        <p className="flex flex-wrap items-center gap-2 text-xs font-black uppercase tracking-widest text-gray-700">
+                          v{version.version}
+                          <Badge tone={contentStatusTone(version.status)}>{version.status}</Badge>
                         </p>
                         <p className="mt-1 text-xs text-gray-500">
                           {new Date(version.updatedAt).toLocaleString("da-DK")}
@@ -697,7 +711,7 @@ export default function InternalMarketingConsole() {
                   );
                 })}
               </div>
-            </section>
+            </Card>
           </section>
         </div>
       )}

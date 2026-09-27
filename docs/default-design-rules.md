@@ -12,7 +12,7 @@ Reglerne gaelder for:
 - verify, invite og andre ikke-theme-overstyrede system-sider
 
 Reglerne gaelder ikke for:
-- enterprise theme overrides
+- enterprise theme overrides — se `docs/theme-boundary.md` for hvad et kundetema maa og ikke maa aendre
 - interne admin-flader med separat funktionelt behov
 
 ## Core principle

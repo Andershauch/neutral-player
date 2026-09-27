@@ -2,8 +2,19 @@
 
 import { useEffect, useMemo, useState } from "react";
 import BrandingSettingsCard from "@/components/admin/BrandingSettingsCard";
+import Badge, { type BadgeTone } from "@/components/ui/Badge";
+import Card from "@/components/ui/Card";
+import SectionHeader from "@/components/ui/SectionHeader";
 import { getPlanDisplayName } from "@/lib/plans";
 import { useAsyncAction } from "@/hooks/useAsyncAction";
+
+/// draft/published/archived-status-farvning. Samme mapping findes i
+/// InternalMarketingConsole.tsx — hold de to i sync hvis en status tilfoejes.
+function contentStatusTone(status: string): BadgeTone {
+  if (status === "published") return "success";
+  if (status === "draft") return "warning";
+  return "neutral";
+}
 
 type InternalOrg = {
   id: string;
@@ -79,12 +90,13 @@ export default function InternalBrandingConsole() {
 
   return (
     <div className="space-y-6">
-      <section className="np-card p-5 md:p-6 space-y-4">
-        <div>
-          <p className="np-kicker text-blue-600">Internal</p>
-          <h2 className="text-xl font-bold text-gray-900 uppercase tracking-tight">Kunde-branding kontrol</h2>
-          <p className="mt-1 text-sm text-gray-500">Vaelg organisation og administrer enterprise-branding samt global standard.</p>
-        </div>
+      <Card className="p-5 md:p-6 space-y-4">
+        <SectionHeader
+          kicker="Internal"
+          kickerClassName="np-ops-accent"
+          title="Kunde-branding kontrol"
+          description="Vaelg organisation og administrer enterprise-branding samt global standard."
+        />
 
         {orgsAction.isPending ? <p className="text-sm text-gray-500">Indlaeser organisationer...</p> : null}
         {orgsAction.error ? <p className="text-xs font-semibold text-red-600">{orgsAction.error}</p> : null}
@@ -105,7 +117,7 @@ export default function InternalBrandingConsole() {
             </select>
           </label>
         )}
-      </section>
+      </Card>
 
       <BrandingSettingsCard
         canManageBranding={canManageBranding}
@@ -207,9 +219,8 @@ function InternalThemeHistoryCard({
   const error = loadAction.error || rollbackAction.error;
 
   return (
-    <section className="np-card p-5 md:p-6 space-y-3">
-      <p className="np-kicker text-blue-600">Historik</p>
-      <h3 className="text-base font-bold text-gray-900 uppercase tracking-tight">{title}</h3>
+    <Card className="p-5 md:p-6 space-y-3">
+      <SectionHeader kicker="Historik" kickerClassName="np-ops-accent" title={title} titleAs="h3" />
 
       {loadAction.isPending ? <p className="text-sm text-gray-500">Indlaeser versioner...</p> : null}
       {error ? <p className="text-xs font-semibold text-red-600">{error}</p> : null}
@@ -225,9 +236,10 @@ function InternalThemeHistoryCard({
                 <p className="text-xs font-black uppercase tracking-widest text-gray-700">
                   v{version.version} · {version.name || "Uden navn"}
                 </p>
-                <p className="text-[11px] text-gray-500 mt-1">
-                  Status: {version.status} · Opdateret: {new Date(version.updatedAt).toLocaleString("da-DK")}
-                </p>
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-gray-500">
+                  <Badge tone={contentStatusTone(version.status)}>{version.status}</Badge>
+                  <span>Opdateret: {new Date(version.updatedAt).toLocaleString("da-DK")}</span>
+                </div>
               </div>
               <button
                 type="button"
@@ -241,7 +253,7 @@ function InternalThemeHistoryCard({
           );
         })}
       </div>
-    </section>
+    </Card>
   );
 }
 

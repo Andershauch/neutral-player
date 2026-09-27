@@ -692,7 +692,7 @@
 
 ## SPRINT-11 Visual System Unification
 **Goal:** Give hele applikationen samme overordnede look and feel foer login, efter login, i customer admin og i internal admin uden at laase fremtidige temaer eller kundebranding.
-**Status:** `IN PROGRESS` (TASK-11.1/11.2 `DONE`; 11.3/11.4/11.5 `IN PROGRESS`; 11.6/11.7/11.8 `TODO`)
+**Status:** `IN PROGRESS` (TASK-11.1/11.2/11.4/11.5/11.7/11.8 `DONE`; 11.3/11.6 `IN PROGRESS`)
 **Scope:** Design tokens, shells, overflader, spacing, typografi, kort, formularer, tabeller, status-komponenter og temagraenser mellem public, customer og internal.
 **Princip:** Et delt grundsystem foerst. Kundetemaer og enterprise-branding maa farve oven paa systemet, men ikke bryde layout, komponenthierarki eller navigation.
 
@@ -739,7 +739,7 @@
 - Verificeret: `npm run test` (89/89), `npm run test:e2e` (7/7 ikke-skippede specs), `npm run typecheck`, `npm run lint` paa alle rørte filer, og `npm run perf:budget` (2383.8 KB / 2600 KB budget) — alle groenne efter rettelserne.
 
 ### TASK-11.4 Shared component primitives
-**Status:** `IN PROGRESS` (2026-09-26)
+**Status:** `DONE` (2026-09-27)
 - Saml og ryd op i de mest brugte primitives:
   - buttons
   - pills/badges
@@ -753,10 +753,11 @@
   - Samme komponenttype ser ud og opfoerer sig ens paa tvaers af appen.
   - Nye sider kan bygges hurtigere uden nye lokale style-familier.
 - **Delvist leveret (2026-09-26):** `components/ui/{Card,SectionHeader,StatTile,FormField,Badge}.tsx` bygget oven paa eksisterende `.np-*`-klasser, plus `hooks/useAsyncAction.ts` der formaliserer det ~25 steder haandrullede "kald API, hold styr paa saving/error"-moenster. `StatTile`/`FormField` er taget i brug (EmbedEditor, BrandingSettingsCard); `useAsyncAction` er adopteret i 6 komponenter (se TASK-11.5-note).
-- **Yderligere leveret (2026-09-27, som del af TASK-11.3):** `Card` udvidet med `tone: "section"/"section-muted"` og adopteret 9 steder (se TASK-11.3-note) — internal admin gik fra nul `.np-card`-brug til at bruge den delte primitiv alle steder. `SectionHeader`/`Badge` er stadig bygget, men endnu ikke adopteret nogen steder.
+- **Yderligere leveret (2026-09-27, som del af TASK-11.3):** `Card` udvidet med `tone: "section"/"section-muted"` og adopteret 9 steder (se TASK-11.3-note) — internal admin gik fra nul `.np-card`-brug til at bruge den delte primitiv alle steder. En reel bug fundet og rettet samtidig: `tone="muted"` udsendte kun `.np-card-muted`, som (i modsaetning til `.np-section-card-muted`) ikke har sin egen border-radius/box-shadow — den er en modifier, der forudsaetter `.np-card` ved siden af. `Card.tsx` udsender nu `"np-card np-card-muted"` sammen for den tone.
+- **Fuldt leveret (2026-09-27):** `SectionHeader` og `Badge`, som ellers havde nul adoptioner, er nu i brug paa tvaers af customer admin (dashboard, projekter, billing, team, profil, audit) og internal admin (begge konsoller) — se TASK-11.5/11.6-noterne. `SectionHeader` fik desuden en `kickerClassName`-prop (fandtes ikke oprindeligt): mindst 8 rigtige steder havde brug for en farvet kicker (kundefladens blaa vs. internals graphite-accent), og uden propen mistede hver konverteret sektion sin accentfarve stille og roligt.
 
 ### TASK-11.5 Customer admin visual uplift
-**Status:** `IN PROGRESS` (2026-09-26)
+**Status:** `DONE` (2026-09-27)
 - Harmoniser customer admin:
   - dashboard
   - projects
@@ -769,10 +770,11 @@
 - **Acceptance criteria:**
   - Customer admin foeles som en sammenhaengende arbejdsflade.
   - Embed/editoren foeles som en del af samme system som resten af admin.
-- **Delvist leveret (2026-09-26):** `EmbedEditor.tsx`, `EmbedVariantCard.tsx`, `BrandingSettingsCard.tsx`, `VariantSubtitlesPanel.tsx` samt de interne `InternalBrandingConsole.tsx`/`InternalMarketingConsole.tsx` migreret til `useAsyncAction`. `EmbedEditor` har desuden faaet et accordion-lag (kun ét ekstra afsnit ad gangen udfoldet ud over den altid synlige upload-sektion, i stedet for 5 samtidigt synlige bokse) — verificeret direkte mod databasen at standard-aabne afsnit raemmer korrekt for baade nyt og faerdigt projekt. Bevidst fravalgt denne omgang: at gruppere `BrandingSettingsCard`s 6+ felt-grids under faner (som TASK-11.4/11.5 ellers laegger op til) — droppet for ikke at risikere `branding-flows.spec.ts`, som er den eneste automatiserede daekning af Enterprise-branding. Tilbage: dashboard/projects/billing/team/profile/audit er ikke rørt endnu.
+- **Delvist leveret (2026-09-26):** `EmbedEditor.tsx`, `EmbedVariantCard.tsx`, `BrandingSettingsCard.tsx`, `VariantSubtitlesPanel.tsx` samt de interne `InternalBrandingConsole.tsx`/`InternalMarketingConsole.tsx` migreret til `useAsyncAction`. `EmbedEditor` har desuden faaet et accordion-lag (kun ét ekstra afsnit ad gangen udfoldet ud over den altid synlige upload-sektion, i stedet for 5 samtidigt synlige bokse) — verificeret direkte mod databasen at standard-aabne afsnit raemmer korrekt for baade nyt og faerdigt projekt. Bevidst fravalgt denne omgang: at gruppere `BrandingSettingsCard`s 6+ felt-grids under faner (som TASK-11.4/11.5 ellers laegger op til) — droppet for ikke at risikere `branding-flows.spec.ts`, som er den eneste automatiserede daekning af Enterprise-branding.
+- **Fuldt leveret (2026-09-27):** dashboard/projects/billing/team/profile/audit migreret til `Card`/`SectionHeader`/`StatTile`/`Badge` — de sidste seks flader, roadmappet selv listede som "ikke rørt endnu". Konkret: `app/admin/dashboard/page.tsx` og `app/admin/projects/page.tsx` (loading-fallbacks + tomme tilstande); `app/admin/billing/page.tsx` + `BillingPlansCard.tsx` + `InvoiceRequestForm.tsx` (EAN-sektion, plan-tiles, "Nuvaerende plan"-badge); `TeamManagementPage.tsx` (to tabel-kort, "Udloebet"/"Dig selv"-badges); `app/admin/profile/page.tsx` + `ProfileAvatarCard.tsx` (fire sektioner var den stoerste enkelt-gevinst — lokal `ProfileStat` slettet til fordel for `StatTile`, som allerede havde en kommentar om at generalisere netop den); `app/admin/audit/page.tsx` (tabel-kort, handlings-badge). Bevidst ikke tvunget ind i et primitiv: `InvoiceRequestForm`s lokale `Field`-komponent (prop-formen passer reelt ikke til `FormField`, og formularen har ingen e2e-daekning — for stor risiko for lav gevinst); billing- og profil-sidens to-linjers prøveperiode/adgangs-advarsler (feltets `.np-status-banner-*` er designet til én kort uppercase-linje, ikke titel+brødtekst). Verificeret: `npm run typecheck`/`lint` efter hver fil, fuld `npm run test`/`test:e2e` (ingen af de seks sider har normalt e2e-daekning — supplerede med en midlertidig, ikke-committet Playwright-session der besoegte alle fem utestede ruter autentificeret og bekraeftede ingen konsol-/side-fejl).
 
 ### TASK-11.6 Internal admin visual uplift
-**Status:** `TODO`
+**Status:** `IN PROGRESS` (2026-09-27)
 - Giv internal et beslægtet, men tydeligt operations-look:
   - samme komponentfamilie
   - lidt mere system/operations-praeg
@@ -780,9 +782,14 @@
 - **Acceptance criteria:**
   - Internal ligner samme produkt, men med tydeligere operationskontekst.
   - Branding, marketing og preview foeles som samme vaerktoejsfamilie.
+- **Leveret (2026-09-27):**
+  - Live/draft/status-visualisering: begge interne konsoller (`InternalBrandingConsole.tsx`, `InternalMarketingConsole.tsx`) viste status som raa, ufarvet tekst i to forskellige formater. Begge bruger nu `Badge` med samme mapping (`draft`→warning, `published`→success, andet→neutral, se `contentStatusTone()` i begge filer — bevidst duplikeret 4 linjer fremfor at koble de to konsoller sammen via et delt modul).
+  - Operations-praeg: ny `.np-ops-accent`-klasse (`app/globals.css`, graphite `#334155`) erstatter internal admins haandkodede `text-blue-600`-accent-kickere alle steder (`app/internal/page.tsx`, `app/internal/marketing/page.tsx`, `InternalNav.tsx`, `MarketingPagePreview.tsx`, samt alle nye `SectionHeader`-kickere i begge konsoller). Layout, komponenthierarki og navigation er bevidst uaendret — kun accentfarven paa kickere er systematisk anderledes end kundefladens blaa, jf. den nye `docs/theme-boundary.md`. Interaktive tilstande (focus-ringe, hover, aktiv-nav-item) er bevidst IKKE aendret her — det ville vaere en stoerre re-theming end en "lille, reversibel differentiator".
+  - Ny `.np-internal-shell`-markoerklasse paa `app/internal/layout.tsx`s rod-element, saa TASK-11.8s shell-smoke-test har noget konkret at assertere paa.
+- Tilbage: selve komponentfamilien (kort/badges/sektionshoveder) er nu delt med customer admin (jf. TASK-11.4/11.5), men ingen yderligere strukturel internal-specifik variation er tilfoejet ud over accentfarven.
 
 ### TASK-11.7 Theme boundary and branding rules
-**Status:** `TODO`
+**Status:** `DONE` (2026-09-27)
 - Dokumenter og implementer tydelige regler for hvad kundetemaer maa aendre:
   - accentfarver
   - enkelte surfaces
@@ -796,9 +803,10 @@
 - **Acceptance criteria:**
   - Customer-managed branding oven paa systemet er tydeligt afgraenset.
   - Internal/global defaults kan udvikles uden at kundetemaer bryder appens sammenhaeng.
+- **Leveret (2026-09-27):** Ny `docs/theme-boundary.md`. Grænsen var allerede haandhaevet i kode (`lib/theme-schema.ts`), bare ikke dokumenteret — denne opgave var at skrive den ned, ikke opfinde en ny. Konkret dokumenteret: (1) `ThemeTokens`-skemaet har slet ingen layout/navigation/spacing/hierarki-felter — de er strukturelt umulige at sende, ikke bare konventionelt undgaaede; (2) `validateCustomerThemeTokens()` laaser desuden en delmaengde af skemaets egne felter (`successBg/successFg/warningBg/warningFg/danger`, `typography.headingWeight/bodyWeight`, `shadows.card`, `player.playButtonShadow`) specifikt for kunde-selvbetjening; (3) denne strammere validering rammer kun `app/api/branding/theme/route.ts` (kunde-selvbetjening) — den interne rute `app/api/internal/branding/theme/route.ts` bruger den loesere `validateThemeTokens()` uden laasen, saa NeutralPlayer-staff kan saette alt, skemaet tillader, paa vegne af en kunde. `docs/default-design-rules.md` peger nu paa den nye side i stedet for blot at ekskludere theming fra sit eget scope.
 
 ### TASK-11.8 Verification and visual QA
-**Status:** `TODO`
+**Status:** `DONE` (2026-09-27)
 - Udvid guardrails og verifikation:
   - visuel checklist
   - kritiske shell-smokes
@@ -806,6 +814,7 @@
 - **Acceptance criteria:**
   - Vi har en fast maade at kontrollere at look and feel stadig haenger sammen.
   - Fremtidige redesigns kan ske centralt uden at glide tilbage i lokal styling.
+- **Leveret (2026-09-27):** Ny `tests/e2e/shell-smokes.spec.ts`, tre specs — én pr. flade: public (`/pricing`, asserter `.np-page-shell.np-default-theme`), customer admin (login + `.np-themed` paa `/admin/dashboard`), internal (login med `role: "np_super_admin"` + `.np-internal-shell` paa `/internal`, samt at `.np-ops-accent`s computed farve faktisk er graphite og ikke kundefladens blaa — saa TASK-11.6s differentiator har en regressions-vagt, ikke kun et screenshot). Alle tre groenne. Ikke en fuld visuel checklist/design-QA-proces — det er stadig en manuel opgave — men den konkrete, billige "shell-smoke"-del af opgaven, som roadmappet selv efterspurgte, er nu automatiseret.
 
 ### Forslag til dag 1
 1. Luk `TASK-11.1` med en skarp audit af public, admin og internal surfaces.

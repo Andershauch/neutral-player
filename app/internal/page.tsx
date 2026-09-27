@@ -32,7 +32,7 @@ export default function InternalPage() {
             href={tool.href}
             className="rounded-[2rem] border border-gray-200 bg-white p-5 shadow-[0_8px_24px_rgba(15,23,42,0.08)] transition hover:border-blue-200 hover:bg-blue-50/40"
           >
-            <p className="text-[10px] font-black uppercase tracking-[0.24em] text-blue-600">{tool.area}</p>
+            <p className="np-ops-accent text-[10px] font-black uppercase tracking-[0.24em]">{tool.area}</p>
             <h2 className="mt-3 text-xl font-black uppercase tracking-tight text-gray-900">{tool.label}</h2>
             <p className="mt-2 text-sm text-gray-600">{tool.summary}</p>
             <p className="mt-4 text-xs font-black uppercase tracking-widest text-gray-500">Åbn værktøj</p>

@@ -4,6 +4,8 @@ import DeleteUserButton from "@/app/admin/users/DeleteUserButton";
 import InviteActions from "@/app/admin/users/InviteActions";
 import RoleSelector from "@/app/admin/users/RoleSelector";
 import AppPageHeader from "@/components/navigation/AppPageHeader";
+import Badge from "@/components/ui/Badge";
+import Card from "@/components/ui/Card";
 import { getOrgContextForMemberManagement } from "@/lib/authz";
 import { prisma } from "@/lib/prisma";
 
@@ -12,9 +14,7 @@ export default async function TeamManagementPage() {
   if (!orgCtx) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="rounded-2xl border border-red-100 bg-red-50 px-6 py-4 text-xs font-bold uppercase tracking-widest text-red-600">
-          Ingen adgang
-        </div>
+        <div className="np-status-banner np-status-banner-error">Ingen adgang</div>
       </div>
     );
   }
@@ -65,7 +65,7 @@ export default async function TeamManagementPage() {
 
       <AddMemberForm canAssignOwner={canAssignOwner} />
 
-      <section className="np-card overflow-hidden">
+      <Card padded={false} className="overflow-hidden">
         <div className="px-5 py-4 md:px-6 md:py-5 border-b border-gray-100">
           <h2 className="text-sm font-bold text-gray-900 uppercase tracking-widest">Afventende invitationer</h2>
           <p className="text-xs text-gray-500 mt-1">
@@ -102,9 +102,9 @@ export default async function TeamManagementPage() {
                           minute: "2-digit",
                         }).format(invite.expiresAt)}
                         {isExpired ? (
-                          <span className="ml-2 px-2 py-1 rounded-full bg-red-50 text-red-600 text-[10px] font-black uppercase tracking-widest">
+                          <Badge tone="warning" className="ml-2 px-2 py-1 text-[10px] tracking-widest">
                             Udløbet
-                          </span>
+                          </Badge>
                         ) : null}
                       </td>
                       <td className="px-4 md:px-6 py-4 whitespace-nowrap text-right">
@@ -117,9 +117,9 @@ export default async function TeamManagementPage() {
             </table>
           </div>
         )}
-      </section>
+      </Card>
 
-      <section className="np-card overflow-hidden">
+      <Card padded={false} className="overflow-hidden">
         <div className="px-5 py-4 md:px-6 md:py-5 border-b border-gray-100 bg-white">
           <h2 className="text-sm font-bold text-gray-900 uppercase tracking-widest">Medlemmer</h2>
           <p className="text-xs text-gray-500 mt-1">Roller og adgangsniveau for nuværende team.</p>
@@ -173,9 +173,9 @@ export default async function TeamManagementPage() {
                     {membership.user.id !== orgCtx.userId ? (
                       <DeleteUserButton userId={membership.user.id} userName={membership.user.name || membership.user.email} />
                     ) : (
-                      <span className="font-black uppercase text-blue-600 bg-blue-50 px-4 py-2 rounded-full tracking-widest">
+                      <Badge tone="info" className="px-4 py-2 tracking-widest">
                         Dig selv
-                      </span>
+                      </Badge>
                     )}
                   </td>
                 </tr>
@@ -183,7 +183,7 @@ export default async function TeamManagementPage() {
             </tbody>
           </table>
         </div>
-      </section>
+      </Card>
     </div>
   );
 }

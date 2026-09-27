@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import Card from "@/components/ui/Card";
 
 interface InvoiceRequestFormProps {
   planKey: string;
@@ -60,7 +61,7 @@ export default function InvoiceRequestForm({
 
   if (done || hasPendingRequest) {
     return (
-      <div className="np-card np-card-pad space-y-4">
+      <Card className="space-y-4">
         <p className="np-kicker text-blue-600">Anmodning modtaget</p>
         <h2 className="text-lg font-bold uppercase tracking-tight text-gray-900">
           Vi behandler jeres anmodning
@@ -73,7 +74,7 @@ export default function InvoiceRequestForm({
         <Link href="/admin/billing" className="np-btn-ghost inline-flex px-4 py-3">
           Tilbage til plan
         </Link>
-      </div>
+      </Card>
     );
   }
 

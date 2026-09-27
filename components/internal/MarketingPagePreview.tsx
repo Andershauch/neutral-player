@@ -116,7 +116,7 @@ function PreviewHero({
 }) {
   return (
     <div className="rounded-[1.75rem] border border-gray-200 bg-gradient-to-br from-white via-white to-blue-50/60 px-5 py-5">
-      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-blue-600">Hero</p>
+      <p className="np-ops-accent text-[10px] font-black uppercase tracking-[0.24em]">Hero</p>
       <h4 className="mt-3 text-2xl font-black uppercase tracking-tight text-gray-900">{title}</h4>
       <p className="mt-3 text-sm leading-6 text-gray-600">{body}</p>
       <div className="mt-4 flex flex-wrap gap-2">

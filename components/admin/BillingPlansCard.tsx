@@ -4,6 +4,8 @@ import { useState } from "react";
 import { getMessages } from "@/lib/i18n/messages";
 import type { BillingPlanDefinition, BillingPlanKey } from "@/lib/plans";
 import Link from "next/link";
+import Badge from "@/components/ui/Badge";
+import Card from "@/components/ui/Card";
 
 interface BillingPlansCardProps {
   plans: BillingPlanDefinition[];
@@ -64,7 +66,7 @@ export default function BillingPlansCard({
   };
 
   return (
-    <div className="np-card p-6 md:p-8">
+    <Card className="p-6 md:p-8">
       <div className="mb-5">
         <h2 className="text-sm font-bold text-gray-900 uppercase tracking-widest">{t.billing.title}</h2>
         <p className="text-xs text-gray-500 mt-1">{t.billing.subtitle}</p>
@@ -76,7 +78,7 @@ export default function BillingPlansCard({
           const isLoading = loadingPlan === plan.key;
 
           return (
-            <div key={plan.key} className="rounded-2xl border border-gray-100 p-5 bg-gray-50/40">
+            <Card key={plan.key} tone="muted" className="p-5">
               <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">{plan.name}</p>
               <p className="mt-1 text-lg font-black text-gray-900">{plan.priceLabel}</p>
               <p className="mt-2 text-xs text-gray-600">{plan.description}</p>
@@ -91,9 +93,9 @@ export default function BillingPlansCard({
 
               <div className="mt-5">
                 {isCurrent ? (
-                  <span className="inline-flex px-3 py-2 rounded-xl bg-emerald-50 text-emerald-700 text-[10px] font-black uppercase tracking-widest border border-emerald-100">
+                  <Badge tone="success" className="px-3 py-2 text-[10px] tracking-widest">
                     {t.billing.currentPlan}
-                  </span>
+                  </Badge>
                 ) : !plan.checkoutEnabled ? (
                   <Link
                     href="/contact"
@@ -112,7 +114,7 @@ export default function BillingPlansCard({
                   </button>
                 )}
               </div>
-            </div>
+            </Card>
           );
         })}
       </div>
@@ -136,6 +138,6 @@ export default function BillingPlansCard({
       </div>
 
       {error && <p className="mt-4 text-xs font-semibold text-red-600">{error}</p>}
-    </div>
+    </Card>
   );
 }

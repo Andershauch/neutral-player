@@ -51,7 +51,7 @@ export default function InternalMarketingPage() {
 function MarketingFlowCard({ title, copy }: { title: string; copy: string }) {
   return (
     <Card className="shadow-[0_8px_24px_rgba(15,23,42,0.08)]">
-      <p className="text-[10px] font-black uppercase tracking-[0.24em] text-blue-600">{title}</p>
+      <p className="np-ops-accent text-[10px] font-black uppercase tracking-[0.24em]">{title}</p>
       <p className="mt-3 text-sm text-gray-600">{copy}</p>
     </Card>
   );

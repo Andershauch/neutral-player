@@ -12,7 +12,11 @@ interface CardProps {
 
 const TONE_CLASS: Record<CardTone, string> = {
   default: "np-card",
-  muted: "np-card-muted",
+  // .np-card-muted (globals.css) kun overrider background/border-color — den
+  // har bevidst ingen egen border-radius/box-shadow og skal derfor kombineres
+  // med .np-card, i modsaetning til .np-section-card-muted, som er sit eget
+  // fuldstaendige recipe.
+  muted: "np-card np-card-muted",
   section: "np-section-card",
   "section-muted": "np-section-card-muted",
 };

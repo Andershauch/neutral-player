@@ -13,7 +13,7 @@ export default function InternalNav() {
     <Card className="bg-white/85 shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
       <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
         <div className="space-y-2">
-          <p className="text-[10px] font-black uppercase tracking-[0.24em] text-blue-600">Internal shell</p>
+          <p className="np-ops-accent text-[10px] font-black uppercase tracking-[0.24em]">Internal shell</p>
           <h2 className="text-lg font-black uppercase tracking-tight text-gray-900">Interne værktøjer</h2>
           <p className="max-w-2xl text-sm text-gray-600">
             Brug internal-området til platformstyring, marketing og senere governance- eller supportværktøjer. Customer admin er stadig et separat arbejdsområde.

@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import BillingPlansCard from "@/components/admin/BillingPlansCard";
 import UsageLimitsCard from "@/components/admin/UsageLimitsCard";
 import AppPageHeader from "@/components/navigation/AppPageHeader";
+import Card from "@/components/ui/Card";
+import SectionHeader from "@/components/ui/SectionHeader";
 import { canManageBillingRole } from "@/lib/authz";
 import { getCurrentOrgContext } from "@/lib/org-context";
 import { getBillingPlansForDisplay } from "@/lib/plans";
@@ -76,9 +78,8 @@ export default async function BillingPage() {
         hasStripeCustomer={Boolean(activeSubscription?.stripeCustomerId)}
       />
 
-      <section className="np-card np-card-pad space-y-3">
-        <p className="np-kicker text-blue-600">Offentlige kunder</p>
-        <h2 className="text-lg font-bold uppercase tracking-tight text-gray-900">Betal med EAN-faktura</h2>
+      <Card className="space-y-3">
+        <SectionHeader kicker="Offentlige kunder" kickerClassName="text-blue-600" title="Betal med EAN-faktura" titleAs="h2" />
         <p className="max-w-prose text-sm text-gray-600">
           Kommuner, skoler og andre offentlige enheder kan sjældent betale med kort. Send jeres EAN-nummer og
           rekvisition, så fakturerer vi planen gennem den vante proces.
@@ -88,7 +89,7 @@ export default async function BillingPage() {
             Anmod om faktura
           </Link>
         </div>
-      </section>
+      </Card>
 
       <UsageLimitsCard plan={usageSummary.plan} items={usageSummary.items} canManageBilling={canManageBilling} />
     </div>

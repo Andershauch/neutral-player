@@ -1,6 +1,7 @@
 "use client";
 
 import { ChangeEvent, useRef, useState, useTransition } from "react";
+import Card from "@/components/ui/Card";
 
 type Props = {
   initialName: string;
@@ -127,7 +128,7 @@ export default function ProfileAvatarCard({ initialName, initialImage }: Props) 
   };
 
   return (
-    <section className="np-card p-5 md:p-6">
+    <Card className="p-5 md:p-6">
       <p className="np-kicker text-blue-600">Profilbillede</p>
       <div className="mt-3 flex flex-col sm:flex-row sm:items-center gap-4">
         <div className="h-16 w-16 rounded-full border border-gray-200 bg-gray-100 flex items-center justify-center overflow-hidden">
@@ -156,6 +157,6 @@ export default function ProfileAvatarCard({ initialName, initialImage }: Props) 
       <p className="mt-3 text-xs text-gray-500">Google- og Microsoft-billede synkroniseres automatisk ved social login.</p>
       {error ? <p className="mt-2 text-xs font-bold text-red-600">{error}</p> : null}
       {message ? <p className="mt-2 text-xs font-bold text-green-600">{message}</p> : null}
-    </section>
+    </Card>
   );
 }

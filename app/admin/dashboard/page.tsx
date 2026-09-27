@@ -7,13 +7,14 @@ import { getOrgContextForContentEdit } from "@/lib/authz";
 import { getMessages } from "@/lib/i18n/messages";
 import { getActivationState } from "@/lib/activation";
 import NextStepCard from "@/components/activation/NextStepCard";
+import Card from "@/components/ui/Card";
 import StatTile from "@/components/ui/StatTile";
 
 const ProjectListClient = dynamicImport(() => import("@/components/admin/ProjectListClient"), {
   loading: () => (
-    <div className="np-card p-8">
+    <Card>
       <p className="text-xs font-semibold text-gray-500">Indlæser projekter...</p>
-    </div>
+    </Card>
   ),
 });
 
@@ -89,14 +90,14 @@ export default async function DashboardPage({
 
       {/* Første besøg er en invitation, ikke et dashboard af nuller. */}
       {!isFirstRun && (
-        <section className="np-card np-card-pad rounded-2xl border-gray-200/90 shadow-[0_8px_24px_rgba(15,23,42,0.08)] bg-gradient-to-br from-white via-white to-blue-50/40">
+        <Card className="rounded-2xl border-gray-200/90 shadow-[0_8px_24px_rgba(15,23,42,0.08)] bg-gradient-to-br from-white via-white to-blue-50/40">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
             <StatTile label="Projekter" value={totalProjects.toString()} />
             <StatTile label="Sprogversioner" value={totalVariants.toString()} />
             <StatTile label="Visninger" value={totalViews.toLocaleString("da-DK")} />
             <StatTile label="Video på lager" value={`${storageMinutes} min`} />
           </div>
-        </section>
+        </Card>
       )}
 
       {resolvedSearchParams.billing === "success" && (

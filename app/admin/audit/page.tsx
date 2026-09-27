@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import AppPageHeader from "@/components/navigation/AppPageHeader";
+import Badge from "@/components/ui/Badge";
+import Card from "@/components/ui/Card";
 import { getCurrentOrgContext } from "@/lib/org-context";
 import { prisma } from "@/lib/prisma";
 
@@ -44,7 +46,7 @@ export default async function AuditPage() {
         }
       />
 
-      <section className="np-card overflow-hidden">
+      <Card padded={false} className="overflow-hidden">
         <div className="px-5 py-4 md:px-6 md:py-5 border-b border-gray-100 bg-white">
           <h2 className="text-sm font-bold text-gray-900 uppercase tracking-widest">Aktivitetslog</h2>
           <p className="text-xs text-gray-500 mt-1">Viser de nyeste 100 hændelser.</p>
@@ -94,15 +96,9 @@ export default async function AuditPage() {
                     </td>
 
                     <td className="px-4 md:px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`inline-flex items-center rounded-lg border px-2.5 py-1 text-[10px] font-black uppercase tracking-widest ${
-                          log.action.includes("SLET")
-                            ? "bg-red-50 text-red-600 border-red-100"
-                            : "bg-blue-50 text-blue-700 border-blue-100"
-                        }`}
-                      >
+                      <Badge tone={log.action.includes("SLET") ? "warning" : "info"} className="rounded-lg px-2.5 py-1 text-[10px] tracking-widest">
                         {log.action}
-                      </span>
+                      </Badge>
                     </td>
 
                     <td className="px-4 md:px-6 py-4 text-sm text-gray-500 min-w-[240px]">{log.target}</td>
@@ -112,7 +108,7 @@ export default async function AuditPage() {
             </tbody>
           </table>
         </div>
-      </section>
+      </Card>
     </div>
   );
 }

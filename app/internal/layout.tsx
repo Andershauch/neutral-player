@@ -13,7 +13,7 @@ export default async function InternalLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-6 md:px-8 md:py-8">
+    <div className="np-internal-shell min-h-screen bg-gray-50 px-4 py-6 md:px-8 md:py-8">
       <div className="mx-auto w-full max-w-7xl space-y-6">
         <InternalNav />
         {children}
