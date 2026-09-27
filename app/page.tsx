@@ -1,6 +1,7 @@
 import Link from "next/link";
 import HeroPlayerDemo, { type DemoVariant } from "@/components/public/HeroPlayerDemo";
 import PublicSiteHeader from "@/components/public/PublicSiteHeader";
+import PublicPageShell from "@/components/public/PublicPageShell";
 import { getResolvedMarketingPageContent, type ResolvedMarketingAsset } from "@/lib/marketing-content-runtime";
 import { type HomeMarketingContent, type MarketingLinkField } from "@/lib/marketing-content-schema";
 import { getBillingPlansForDisplay } from "@/lib/plans";
@@ -27,9 +28,8 @@ export default async function Home() {
   const demoVariants = getDemoVariants();
 
   return (
-    <main className="np-default-theme np-page-shell">
-      <div className="np-page-wrap np-page-stack md:gap-10">
-        <PublicSiteHeader activePath="/" />
+    <PublicPageShell className="md:gap-10">
+      <PublicSiteHeader activePath="/" />
 
         <section className="np-section-card relative overflow-hidden">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(23,73,77,0.16),transparent_30%),radial-gradient(circle_at_bottom_left,rgba(168,103,48,0.14),transparent_34%)]" />
@@ -344,8 +344,7 @@ export default async function Home() {
             </div>
           </div>
         </section>
-      </div>
-    </main>
+    </PublicPageShell>
   );
 }
 

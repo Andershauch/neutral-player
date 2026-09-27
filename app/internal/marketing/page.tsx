@@ -1,6 +1,7 @@
 import Link from "next/link";
 import InternalMarketingConsole from "@/components/internal/InternalMarketingConsole";
 import AppPageHeader from "@/components/navigation/AppPageHeader";
+import Card from "@/components/ui/Card";
 
 export const dynamic = "force-dynamic";
 
@@ -49,9 +50,9 @@ export default function InternalMarketingPage() {
 
 function MarketingFlowCard({ title, copy }: { title: string; copy: string }) {
   return (
-    <div className="rounded-[2rem] border border-gray-200 bg-white p-5 shadow-[0_8px_24px_rgba(15,23,42,0.08)]">
+    <Card className="shadow-[0_8px_24px_rgba(15,23,42,0.08)]">
       <p className="text-[10px] font-black uppercase tracking-[0.24em] text-blue-600">{title}</p>
       <p className="mt-3 text-sm text-gray-600">{copy}</p>
-    </div>
+    </Card>
   );
 }

@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import PublicSiteHeader from "@/components/public/PublicSiteHeader";
+import PublicPageShell from "@/components/public/PublicPageShell";
 import WorkspaceSetupCard from "@/components/public/WorkspaceSetupCard";
 import { getCurrentOrgContext } from "@/lib/org-context";
 import { setIntendedPlan } from "@/lib/activation";
@@ -45,20 +46,18 @@ export default async function WorkspaceSetupPage({
   const plan = selectedPlan ?? storedPlan;
 
   return (
-    <main className="np-default-theme np-page-shell">
-      <div className="np-page-wrap np-page-stack">
-        <PublicSiteHeader />
-        <div className="w-full flex justify-center">
-          <WorkspaceSetupCard
-            initialName={organization?.name || ""}
-            email={user?.email || ""}
-            emailVerified={Boolean(user?.emailVerified)}
-            planKey={plan?.key ?? null}
-            planName={plan?.name ?? null}
-            planRequiresInvoice={plan?.purchaseMode === "invoice"}
-          />
-        </div>
+    <PublicPageShell>
+      <PublicSiteHeader />
+      <div className="w-full flex justify-center">
+        <WorkspaceSetupCard
+          initialName={organization?.name || ""}
+          email={user?.email || ""}
+          emailVerified={Boolean(user?.emailVerified)}
+          planKey={plan?.key ?? null}
+          planName={plan?.name ?? null}
+          planRequiresInvoice={plan?.purchaseMode === "invoice"}
+        />
       </div>
-    </main>
+    </PublicPageShell>
   );
 }

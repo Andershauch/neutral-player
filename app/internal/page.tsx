@@ -1,6 +1,7 @@
 import Link from "next/link";
 import InternalBrandingConsole from "@/components/internal/InternalBrandingConsole";
 import AppPageHeader from "@/components/navigation/AppPageHeader";
+import Card from "@/components/ui/Card";
 import { INTERNAL_TOOLS } from "@/lib/internal-tools";
 
 export const dynamic = "force-dynamic";
@@ -39,7 +40,7 @@ export default function InternalPage() {
         ))}
       </section>
 
-      <section className="rounded-[2rem] border border-gray-200 bg-white p-5 shadow-[0_8px_24px_rgba(15,23,42,0.08)] md:p-6">
+      <Card className="shadow-[0_8px_24px_rgba(15,23,42,0.08)]">
         <div className="grid gap-4 lg:grid-cols-3">
           <InternalRuleCard
             title="Platformstandard"
@@ -54,7 +55,7 @@ export default function InternalPage() {
             copy="Customer admin er altid en bevidst exit, ikke den primære navigation. Internal skal føles som sit eget arbejdsområde."
           />
         </div>
-      </section>
+      </Card>
 
       <InternalBrandingConsole />
     </div>

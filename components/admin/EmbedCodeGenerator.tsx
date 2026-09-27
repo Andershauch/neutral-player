@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import Card from "@/components/ui/Card";
 
 interface EmbedCodeGeneratorProps {
   projectId: string;
@@ -57,7 +58,7 @@ export default function EmbedCodeGenerator({
   };
 
   return (
-    <div className="rounded-[2rem] border border-gray-100 bg-gray-50/50 p-6 shadow-inner md:p-8">
+    <Card tone="muted" className="shadow-inner">
       <div className="mb-4 space-y-2">
         <h3 className="ml-1 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">
           Embed-kode (16:9 responsiv)
@@ -111,6 +112,6 @@ export default function EmbedCodeGenerator({
           Embed-url: <span className="font-mono text-[11px]">{baseUrl}/embed/{projectId}</span>
         </p>
       </div>
-    </div>
+    </Card>
   );
 }

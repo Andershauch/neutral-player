@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
+import Card from "@/components/ui/Card";
 import { useAsyncAction } from "@/hooks/useAsyncAction";
 
 const EmbedCodeGenerator = dynamic(() => import("./EmbedCodeGenerator"), {
@@ -52,11 +53,11 @@ export default function ProjectListClient({ initialProjects }: ProjectListClient
     <div className="space-y-4">
       <div className="grid grid-cols-1 gap-5 md:gap-6">
         {initialProjects.map((project) => (
-          <article
+          <Card
             key={project.id}
-            className="group relative flex flex-col justify-between gap-4 rounded-2xl border border-gray-200/90 bg-white p-5 shadow-[0_8px_24px_rgba(15,23,42,0.08)] transition-all duration-300 hover:border-blue-200 hover:shadow-[0_16px_36px_rgba(15,23,42,0.12)] lg:flex-row lg:items-start md:gap-5 md:p-7"
+            className="group relative flex flex-col justify-between gap-4 shadow-[0_8px_24px_rgba(15,23,42,0.08)] transition-all duration-300 hover:border-blue-200 hover:shadow-[0_16px_36px_rgba(15,23,42,0.12)] lg:flex-row lg:items-start md:gap-5"
           >
-            <Link href={`/admin/embed/${project.id}`} className="absolute inset-0 z-0 rounded-2xl" aria-label={`Rediger projekt ${project.name}`} />
+            <Link href={`/admin/embed/${project.id}`} className="absolute inset-0 z-0 rounded-[2rem]" aria-label={`Rediger projekt ${project.name}`} />
 
             <div className="min-w-0 flex-1 space-y-3">
               <div className="flex items-stretch justify-between gap-4">
@@ -110,7 +111,7 @@ export default function ProjectListClient({ initialProjects }: ProjectListClient
                 </svg>
               </button>
             </div>
-          </article>
+          </Card>
         ))}
       </div>
 

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import ContactForm from "@/components/public/ContactForm";
 import PublicSiteHeader from "@/components/public/PublicSiteHeader";
+import PublicPageShell from "@/components/public/PublicPageShell";
 import { getResolvedMarketingPageContent } from "@/lib/marketing-content-runtime";
 import { type ContactMarketingContent, type MarketingLinkField } from "@/lib/marketing-content-schema";
 
@@ -9,9 +10,8 @@ export default async function ContactPage() {
   const content = marketing.content;
 
   return (
-    <main className="np-default-theme np-page-shell">
-      <div className="np-page-wrap np-page-stack">
-        <PublicSiteHeader activePath="/contact" />
+    <PublicPageShell>
+      <PublicSiteHeader activePath="/contact" />
 
         <section className="np-section-card space-y-8">
           <div className="np-marketing-grid">
@@ -57,8 +57,7 @@ export default async function ContactPage() {
             </div>
           </div>
         </section>
-      </div>
-    </main>
+    </PublicPageShell>
   );
 }
 

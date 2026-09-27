@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import PricingPlans from "@/components/public/PricingPlans";
 import PublicSiteHeader from "@/components/public/PublicSiteHeader";
+import PublicPageShell from "@/components/public/PublicPageShell";
 import { Providers } from "@/components/Providers";
 import { getResolvedMarketingPageContent } from "@/lib/marketing-content-runtime";
 import { type MarketingLinkField, type PricingMarketingContent } from "@/lib/marketing-content-schema";
@@ -17,9 +18,8 @@ export default async function PricingPage() {
   const content = marketing.content;
 
   return (
-    <main className="np-default-theme np-page-shell">
-      <div className="np-page-wrap np-page-stack">
-        <PublicSiteHeader activePath="/pricing" />
+    <PublicPageShell>
+      <PublicSiteHeader activePath="/pricing" />
 
         <section className="np-section-card space-y-8">
           <div className="np-marketing-grid">
@@ -91,8 +91,7 @@ export default async function PricingPage() {
             </div>
           </div>
         </section>
-      </div>
-    </main>
+    </PublicPageShell>
   );
 }
 

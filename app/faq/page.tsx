@@ -1,5 +1,6 @@
 import Link from "next/link";
 import PublicSiteHeader from "@/components/public/PublicSiteHeader";
+import PublicPageShell from "@/components/public/PublicPageShell";
 import { getResolvedMarketingPageContent } from "@/lib/marketing-content-runtime";
 import { type FaqMarketingContent, type MarketingLinkField } from "@/lib/marketing-content-schema";
 
@@ -8,9 +9,8 @@ export default async function FAQPage() {
   const content = marketing.content;
 
   return (
-    <main className="np-default-theme np-page-shell">
-      <div className="np-page-wrap np-page-stack">
-        <PublicSiteHeader activePath="/faq" />
+    <PublicPageShell>
+      <PublicSiteHeader activePath="/faq" />
 
         <section className="np-section-card space-y-8">
           <div className="np-marketing-grid">
@@ -76,8 +76,7 @@ export default async function FAQPage() {
             </div>
           </div>
         </section>
-      </div>
-    </main>
+    </PublicPageShell>
   );
 }
 

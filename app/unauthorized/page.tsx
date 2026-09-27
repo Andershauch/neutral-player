@@ -1,11 +1,11 @@
 import Link from "next/link";
 import PublicSiteHeader from "@/components/public/PublicSiteHeader";
+import PublicPageShell from "@/components/public/PublicPageShell";
 
 export default function UnauthorizedPage() {
   return (
-    <div className="np-default-theme np-page-shell">
-      <div className="np-page-wrap np-page-stack">
-        <PublicSiteHeader />
+    <PublicPageShell>
+      <PublicSiteHeader />
         <div className="np-form-shell">
           <div className="np-form-layout">
             <aside className="np-form-aside">
@@ -54,7 +54,6 @@ export default function UnauthorizedPage() {
             </div>
           </div>
         </div>
-      </div>
-    </div>
+    </PublicPageShell>
   );
 }

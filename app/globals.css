@@ -16,7 +16,35 @@
   font-display: swap;
 }
 
+/**
+ * Token-hierarki (TASK-11.2). Fire lag, i den raekkefoelge en ny token skal
+ * placeres i:
+ *
+ * 1. CORE — raa palette, typografi, radius/shadow. Systemets fundament.
+ * 2. SHELL (systemlaast) — page-shell/panel-chrome til public/auth-fladen.
+ *    Bor udelukkende i `.np-default-theme` herunder, IKKE her ved :root, og
+ *    IKKE i `lib/theme-css.ts`. Kundetemaer maa aendre accent/surface-niveau,
+ *    men ikke splitte systemet i tre design (jf. roadmappets princip for
+ *    SPRINT-11) — derfor er hero-overlays og panel-baggrunde bevidst ikke
+ *    per-organisation tema-bare. Alle forbrugere af disse tokens har et
+ *    fornuftigt blaa-tonet fallback (fx `var(--np-panel-bg, ...)`), saa en
+ *    org-themed flade (`.np-themed`) uden disse tokens saette ser stadig
+ *    rigtig ud — den falder bare tilbage til det neutrale system-look.
+ * 3. COMPONENT — afledte/beregnede tokens (fx --np-player-accent). Pas paa:
+ *    en CSS custom property, der referer en anden via var(), bliver kun
+ *    substitueret dér hvor den ER DEKLARERET, ikke pr. nedarvende element —
+ *    saa en afledt token, der KUN findes ved :root, kan aldrig foelge et
+ *    per-organisation override laengere nede i traeet. Det var praecis den
+ *    bug i --np-player-accent/-accent-strong, som blev fundet og rettet i
+ *    denne session (se `lib/theme-css.ts`) — enhver ny afledt token skal
+ *    enten leve i tier 4 (recomputed pr. organisation) eller vaere bevidst
+ *    systemlaast som tier 2.
+ * 4. THEMED OVERRIDE — praecis det, `lib/theme-css.ts`'s `buildThemeCssVars()`
+ *    udsender pr. organisation. Hold de to filer i sync: en ny core/component
+ *    token, som skal kunne temas, skal tilfoejes BEGGE steder.
+ */
 :root {
+  /* --- 1. Core tokens --- */
   --background: #f8fafc;
   --surface: #ffffff;
   --foreground: #0f172a;
@@ -35,6 +63,12 @@
   --radius-card: 2rem;
   --radius-pill: 0.75rem;
   --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.05);
+  /* Alias for --line, brugt af .np-header-link. Egen token (i stedet for at
+     bruge --line direkte) saa en fremtidig "border, men kun til links"-
+     justering kan ske ét sted uden at paavirke alle andre --line-forbrugere. */
+  --np-border: var(--line);
+
+  /* --- 3. Component tokens (afledte) --- */
   --np-player-play-bg: rgba(0, 0, 0, 0.45);
   --np-player-play-border: rgba(255, 255, 255, 0.8);
   --np-player-play-hover-bg: #ff5ca8;
@@ -44,7 +78,10 @@
      Den raa --primary er valgt til at staa paa hvid baggrund i resten af
      app'en og kan vaere for moerk til at ses tydeligt oven paa sort video
      (progress-bar, fokusring, hover). Her laases den op i lyshed, uanset
-     hvor moerk tenantens brandfarve er. */
+     hvor moerk tenantens brandfarve er. Bemaerk: denne :root-vaerdi er kun
+     en generisk fallback (bruges hvor intet tema er anvendt); den rigtige,
+     per-organisation vaerdi udsendes af buildThemeCssVars() i lib/theme-css.ts
+     — se kommentaren dér for hvorfor det er noedvendigt. */
   --np-player-accent: color-mix(in srgb, var(--primary) 55%, white);
   --np-player-accent-strong: color-mix(in srgb, var(--primary) 80%, white);
 }
@@ -52,7 +89,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: "Apex New", "ApexNew", "Segoe UI", sans-serif;
+  --font-sans: var(--font-family-sans);
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
 
@@ -82,6 +119,9 @@ h6 {
 }
 
 @layer components {
+  /* --- 2. Shell tokens (systemlaast) ---
+     Statisk skin til public/auth-fladen. Bevidst IKKE en del af
+     buildThemeCssVars() — se tier-forklaringen ved :root ovenfor. */
   .np-default-theme {
     --primary: #17494d;
     --primary-strong: #11383b;

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import Card from "@/components/ui/Card";
 
 type BreadcrumbItem = {
   label: string;
@@ -20,7 +21,7 @@ export default function AppPageHeader({
   actions?: ReactNode;
 }) {
   return (
-    <section className="np-card np-card-pad rounded-2xl border-gray-200/90 shadow-[0_8px_24px_rgba(15,23,42,0.08)] bg-gradient-to-br from-white via-white to-blue-50/30">
+    <Card className="rounded-2xl border-gray-200/90 shadow-[0_8px_24px_rgba(15,23,42,0.08)] bg-gradient-to-br from-white via-white to-blue-50/30">
       {breadcrumbs.length > 0 ? (
         <nav aria-label="Brødkrumme" className="mb-4 flex flex-wrap items-center gap-2 text-[11px] font-black uppercase tracking-[0.18em] text-gray-400">
           {breadcrumbs.map((item, index) => (
@@ -47,6 +48,6 @@ export default function AppPageHeader({
 
         {actions ? <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">{actions}</div> : null}
       </div>
-    </section>
+    </Card>
   );
 }

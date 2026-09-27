@@ -2,13 +2,14 @@
 
 import { createEmbed } from "@/app/actions/create-embed";
 import { useRef, useState } from "react";
+import Card from "@/components/ui/Card";
 
 export default function CreateProjectForm() {
   const formRef = useRef<HTMLFormElement>(null);
   const [isPending, setIsPending] = useState(false);
 
   return (
-    <div className="bg-white p-6 md:p-8 rounded-[2rem] mb-10 border border-gray-100 shadow-sm">
+    <Card className="mb-10">
       <div className="mb-6">
         <h2 className="text-xl font-black text-gray-900 uppercase tracking-tight">Opret nyt projekt</h2>
         <p className="text-gray-400 text-[10px] font-black uppercase tracking-widest mt-1">
@@ -53,6 +54,6 @@ export default function CreateProjectForm() {
           {isPending ? "Opretter..." : "Opret projekt"}
         </button>
       </form>
-    </div>
+    </Card>
   );
 }

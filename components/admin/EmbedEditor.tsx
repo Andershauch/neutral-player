@@ -21,6 +21,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useAsyncAction } from "@/hooks/useAsyncAction";
+import Card from "@/components/ui/Card";
 import StatTile from "@/components/ui/StatTile";
 
 const EmbedCodeGenerator = dynamic(() => import("./EmbedCodeGenerator"), {
@@ -327,7 +328,7 @@ export default function EmbedEditor({ embed }: EmbedEditorProps) {
 
   return (
     <div className="space-y-6 pb-20 md:space-y-8">
-      <section id="project-basics" className="space-y-5 rounded-[2rem] border border-gray-200 bg-gradient-to-br from-white via-white to-blue-50/30 p-5 shadow-[0_8px_24px_rgba(15,23,42,0.08)] md:p-6">
+      <Card id="project-basics" className="space-y-5 bg-gradient-to-br from-white via-white to-blue-50/30 shadow-[0_8px_24px_rgba(15,23,42,0.08)]">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="space-y-2">
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600">Projektflow</p>
@@ -386,7 +387,7 @@ export default function EmbedEditor({ embed }: EmbedEditorProps) {
             </button>
           ))}
         </div>
-      </section>
+      </Card>
 
       <CollapsibleSection
         id="project-basics-details"
@@ -528,10 +529,10 @@ export default function EmbedEditor({ embed }: EmbedEditorProps) {
         </div>
 
         {totalVariants === 0 ? (
-          <div className="rounded-[2rem] border border-dashed border-gray-200 bg-white px-6 py-10 text-center shadow-[0_8px_24px_rgba(15,23,42,0.05)]">
+          <Card className="border-dashed px-6 py-10 text-center shadow-[0_8px_24px_rgba(15,23,42,0.05)]">
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">Ingen versioner endnu</p>
             <p className="mt-2 text-sm text-gray-600">Opret din første version ovenfor for at komme videre til upload og preview.</p>
-          </div>
+          </Card>
         ) : (
           <div className="space-y-8">
             {embed.groups?.map((group) => (
@@ -671,7 +672,7 @@ function CollapsibleSection({
   children: ReactNode;
 }) {
   return (
-    <section id={id} className="rounded-[2rem] border border-gray-200 bg-white shadow-[0_8px_24px_rgba(15,23,42,0.08)]">
+    <Card id={id} padded={false} className="shadow-[0_8px_24px_rgba(15,23,42,0.08)]">
       <button type="button" onClick={onToggle} aria-expanded={expanded} className="flex w-full items-center justify-between gap-3 p-5 text-left md:p-6">
         <div className="space-y-1">
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-500">{kicker}</p>
@@ -687,7 +688,7 @@ function CollapsibleSection({
       <div hidden={!expanded} className="space-y-4 px-5 pb-5 md:px-6 md:pb-6">
         {children}
       </div>
-    </section>
+    </Card>
   );
 }
 

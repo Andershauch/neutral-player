@@ -6,6 +6,7 @@ import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import GoogleSignInButton from "@/components/auth/GoogleSignInButton";
 import PublicSiteHeader from "@/components/public/PublicSiteHeader";
+import PublicPageShell from "@/components/public/PublicPageShell";
 import { getMessages } from "@/lib/i18n/messages";
 
 function LoginContent() {
@@ -186,21 +187,17 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <div className="np-default-theme np-page-shell">
-          <div className="np-page-wrap np-page-stack">
-            <PublicSiteHeader />
-            <div className="flex min-h-[60vh] items-center justify-center text-xs font-black uppercase tracking-[0.3em] text-gray-300 animate-pulse">
-              {t.login.loading}
-            </div>
+        <PublicPageShell>
+          <PublicSiteHeader />
+          <div className="flex min-h-[60vh] items-center justify-center text-xs font-black uppercase tracking-[0.3em] text-gray-300 animate-pulse">
+            {t.login.loading}
           </div>
-        </div>
+        </PublicPageShell>
       }
     >
-      <div className="np-default-theme np-page-shell">
-        <div className="np-page-wrap np-page-stack">
-          <LoginContent />
-        </div>
-      </div>
+      <PublicPageShell>
+        <LoginContent />
+      </PublicPageShell>
     </Suspense>
   );
 }

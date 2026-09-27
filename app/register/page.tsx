@@ -5,6 +5,7 @@ import { signIn } from "next-auth/react";
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import PublicSiteHeader from "@/components/public/PublicSiteHeader";
+import PublicPageShell from "@/components/public/PublicPageShell";
 import { getMessages } from "@/lib/i18n/messages";
 
 function RegisterContent() {
@@ -221,21 +222,17 @@ export default function RegisterPage() {
   return (
     <Suspense
       fallback={
-        <div className="np-default-theme np-page-shell">
-          <div className="np-page-wrap np-page-stack">
-            <PublicSiteHeader />
-            <div className="min-h-[60vh] flex items-center justify-center font-black uppercase text-xs tracking-[0.3em] text-gray-300 animate-pulse">
-              {t.register.loading}
-            </div>
+        <PublicPageShell>
+          <PublicSiteHeader />
+          <div className="min-h-[60vh] flex items-center justify-center font-black uppercase text-xs tracking-[0.3em] text-gray-300 animate-pulse">
+            {t.register.loading}
           </div>
-        </div>
+        </PublicPageShell>
       }
     >
-      <div className="np-default-theme np-page-shell">
-        <div className="np-page-wrap np-page-stack">
-          <RegisterContent />
-        </div>
-      </div>
+      <PublicPageShell>
+        <RegisterContent />
+      </PublicPageShell>
     </Suspense>
   );
 }

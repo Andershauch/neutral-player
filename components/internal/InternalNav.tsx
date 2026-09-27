@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { getInternalTool, INTERNAL_TOOLS } from "@/lib/internal-tools";
+import Card from "@/components/ui/Card";
 
 export default function InternalNav() {
   const pathname = usePathname();
   const activeTool = getInternalTool(pathname);
 
   return (
-    <div className="rounded-[2rem] border border-gray-200 bg-white/85 px-5 py-5 shadow-[0_8px_24px_rgba(15,23,42,0.06)] md:px-6">
+    <Card className="bg-white/85 shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
       <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
         <div className="space-y-2">
           <p className="text-[10px] font-black uppercase tracking-[0.24em] text-blue-600">Internal shell</p>
@@ -61,6 +62,6 @@ export default function InternalNav() {
           );
         })}
       </div>
-    </div>
+    </Card>
   );
 }

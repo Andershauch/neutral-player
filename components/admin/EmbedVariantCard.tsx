@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import NextImage from "next/image";
 import VariantSubtitlesPanel, { type SubtitleItem } from "./VariantSubtitlesPanel";
 import CustomMuxPlayer from "@/components/player/CustomMuxPlayer";
+import Card from "@/components/ui/Card";
 import { useAsyncAction } from "@/hooks/useAsyncAction";
 
 const MuxVideoUploader = dynamic(() => import("./MuxUploader"), {
@@ -250,7 +251,7 @@ export default function EmbedVariantCard({ variant, languages }: EmbedVariantCar
   };
 
   return (
-    <article className="group relative flex flex-col gap-5 rounded-[2rem] border border-gray-200 bg-white p-5 shadow-[0_8px_24px_rgba(15,23,42,0.08)] transition-shadow hover:shadow-md md:gap-6 md:p-6">
+    <Card className="group relative flex flex-col gap-5 shadow-[0_8px_24px_rgba(15,23,42,0.08)] transition-shadow hover:shadow-md md:gap-6">
       <button
         onClick={deleteVariant}
         className="absolute right-4 top-4 inline-flex h-9 w-9 items-center justify-center rounded-xl border border-red-100 bg-white text-red-400 transition-colors hover:bg-red-50 hover:text-red-600 md:right-5 md:top-5 md:opacity-0 md:group-hover:opacity-100"
@@ -420,6 +421,6 @@ export default function EmbedVariantCard({ variant, languages }: EmbedVariantCar
         <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500">{variant.lang.toUpperCase()} version</div>
         <div className="text-[10px] font-bold uppercase tracking-widest text-gray-600">{hasVideo ? "Video klar" : "Mangler upload"}</div>
       </div>
-    </article>
+    </Card>
   );
 }

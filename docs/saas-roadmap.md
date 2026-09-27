@@ -692,7 +692,7 @@
 
 ## SPRINT-11 Visual System Unification
 **Goal:** Give hele applikationen samme overordnede look and feel foer login, efter login, i customer admin og i internal admin uden at laase fremtidige temaer eller kundebranding.
-**Status:** `TODO`
+**Status:** `IN PROGRESS` (TASK-11.1/11.2 `DONE`; 11.3/11.4/11.5 `IN PROGRESS`; 11.6/11.7/11.8 `TODO`)
 **Scope:** Design tokens, shells, overflader, spacing, typografi, kort, formularer, tabeller, status-komponenter og temagraenser mellem public, customer og internal.
 **Princip:** Et delt grundsystem foerst. Kundetemaer og enterprise-branding maa farve oven paa systemet, men ikke bryde layout, komponenthierarki eller navigation.
 
@@ -706,7 +706,7 @@
 - **Audit-fund (2026-09-26):** Ingen `components/ui/`-mappe findes. 12 filer definerer hver deres lokale `*Card` (bl.a. `NextStepCard`, `StatCard`/`Stat` i dashboard, `InternalThemeHistoryCard`), 4 filer deres egen `*Stat` (`JourneyStat`, `ProfileStat`), 3 deres egen `*Field` (`ColorField`, `TokenTextField`) — ingen delt `Badge`. Raw Tailwind-kicker-strengen som `.np-kicker` skal daekke findes stadig haandkodet 135 gange paa tvaers af 44 filer; label/input-moenstret bag en manglende `FormField` gaar igen 10 gange. ~25 filer haandruller samme "kald API, hold styr paa saving/error, kald onSuccess"-moenster uden en delt hook. Vaerste enkeltfil: `components/admin/EmbedEditor.tsx` (532 linjer, 5 altid-synlige stablede sektions-kort + 4 naesten-identiske gem-handlers). Fuld komponent-for-komponent liste og faseinddelt plan findes i den aktive refactor-plan (se `CLAUDE.md`).
 
 ### TASK-11.2 Design token hierarchy
-**Status:** `TODO`
+**Status:** `DONE` (2026-09-27)
 - Etabler et lille, klart token-hierarki i `app/globals.css`:
   - core tokens
   - shell tokens
@@ -716,9 +716,10 @@
 - **Acceptance criteria:**
   - Public, customer admin og internal bygger paa samme token-grundlag.
   - Kundebranding kan aendre accent/surface-niveau, men ikke splitte systemet i tre designs.
+- **Leveret (2026-09-27):** Audit fandt at alle `:root`-tokens allerede var 1:1 daekket af `lib/theme-css.ts`s `buildThemeCssVars()` — det reelle hul var en udokumenteret anden tier (11 `--np-shell-*`/`--np-panel-*`/`--np-hero-overlay`/`--np-quiet-link*`-tokens, kun erklaeret i `.np-default-theme`), som ingen kunne se var *bevidst* system-laast fremfor glemt. `globals.css`s `:root`-blok har nu et eksplicit, kommenteret fire-tier-hierarki (core/shell/component/themed override) med krydshenvisning til `buildThemeCssVars()`. To reelle smaa bugs rettet samtidig: `@theme inline`s `--font-sans` var en haardkodet literal (ikke `var(--font-family-sans)`) — en kundes eget font naaede aldrig Tailwinds `font-sans`-utility; `.np-header-link` refererede `var(--np-border, #e5e7eb)`, hvor `--np-border` ikke var erklaeret nogen steder (nu erklaeret som alias for `--line`).
 
 ### TASK-11.3 Shared shell surface language
-**Status:** `TODO`
+**Status:** `IN PROGRESS` (2026-09-27)
 - Saml shell-fladerne visuelt:
   - page backgrounds
   - section cards
@@ -729,6 +730,13 @@
 - **Acceptance criteria:**
   - Public, admin og internal foeles som samme produkt, ikke tre sites.
   - Overgangen fra foer login til efter login foeles naturlig.
+- **Leveret (2026-09-27):**
+  - `components/ui/Card.tsx` udvidet med `tone: "section" | "section-muted"` (mapper til de eksisterende `.np-section-card`/`.np-section-card-muted`), saa public og admin/internal kan bruge samme primitiv til sektions-kort.
+  - `components/navigation/AppPageHeader.tsx` bygger nu paa `Card` i stedet for at haandduplikere `.np-card np-card-pad`-opskriften.
+  - Internal admin havde **nul** brug af `.np-card`/`.np-section-card` nogen steder — hvert panel haandrullede den samme literal (`rounded-[2rem] border border-gray-200 bg-white p-5 shadow-[0_8px_24px_rgba(15,23,42,0.08)]`). Migreret til `Card` i `app/internal/page.tsx`, `app/internal/marketing/page.tsx`, `components/internal/InternalNav.tsx`, samt de tilsvarende admin-forekomster i `EmbedVariantCard.tsx`, `ProjectListClient.tsx`, `EmbedEditor.tsx` (3 steder), `CreateProjectForm.tsx`, `EmbedCodeGenerator.tsx`. Verificeret mod `branding-flows.spec.ts` (eneste automatiserede daekning af `EmbedEditor`/`EmbedVariantCard`).
+  - Ny `components/public/PublicPageShell.tsx` erstatter den identiske, haandskrevne `<div className="np-default-theme np-page-shell"><div className="np-page-wrap np-page-stack">`-boilerplate, der fandtes i alle 11 public/auth-sider (home, pricing, faq, contact, login, register, invite/[token], not-found, unauthorized, verify-email, setup/workspace). **Vigtigt fund undervejs:** en foerste udgave brugte `<main>` som yderste element, hvilket fik `public-flows.spec.ts` til at fejle — et `<header>` mister sin implicitte "banner"-landmark-rolle, naar det er efterkommer af `<main>` (HTML-AAM). Rettet til bevidst `<div>`, som er hvad testen (og 5 af de 11 sider) allerede reelt afhang af; de resterende 6 sider fik samtidig rettet den samme, tidligere upaagtede inkonsistens (deres `<header>` var utilsigtet ikke en banner-landmark).
+  - Bevidst ikke rørt denne omgang (noteret som opfoelgning, ikke udfoert): normalisering af de tre forskellige spacing-rytmer paa tvaers af admin/internal/public (kosmetisk, hoej blast radius for lav gevinst), sammenlaegning af `.np-page-shell`/`.np-section-card` med de naer-identiske `.np-form-shell`/`.np-form-card`/`.np-form-aside`-CSS-opskrifter, og en delt public hero/titel-komponent (sidernes overskriftsstoerrelser varierer reelt for meget til at tvinge ind i én komponent uden visuel risiko denne omgang).
+- Verificeret: `npm run test` (89/89), `npm run test:e2e` (7/7 ikke-skippede specs), `npm run typecheck`, `npm run lint` paa alle rørte filer, og `npm run perf:budget` (2383.8 KB / 2600 KB budget) — alle groenne efter rettelserne.
 
 ### TASK-11.4 Shared component primitives
 **Status:** `IN PROGRESS` (2026-09-26)
@@ -744,7 +752,8 @@
 - **Acceptance criteria:**
   - Samme komponenttype ser ud og opfoerer sig ens paa tvaers af appen.
   - Nye sider kan bygges hurtigere uden nye lokale style-familier.
-- **Delvist leveret (2026-09-26):** `components/ui/{Card,SectionHeader,StatTile,FormField,Badge}.tsx` bygget oven paa eksisterende `.np-*`-klasser, plus `hooks/useAsyncAction.ts` der formaliserer det ~25 steder haandrullede "kald API, hold styr paa saving/error"-moenster. `StatTile`/`FormField` er taget i brug (EmbedEditor, BrandingSettingsCard); `Card`/`SectionHeader`/`Badge` er bygget men endnu ikke adopteret nogen steder — naeste session kan rydde flere `np-card`-forekomster op til at bruge dem. `useAsyncAction` er adopteret i 6 komponenter (se TASK-11.5-note).
+- **Delvist leveret (2026-09-26):** `components/ui/{Card,SectionHeader,StatTile,FormField,Badge}.tsx` bygget oven paa eksisterende `.np-*`-klasser, plus `hooks/useAsyncAction.ts` der formaliserer det ~25 steder haandrullede "kald API, hold styr paa saving/error"-moenster. `StatTile`/`FormField` er taget i brug (EmbedEditor, BrandingSettingsCard); `useAsyncAction` er adopteret i 6 komponenter (se TASK-11.5-note).
+- **Yderligere leveret (2026-09-27, som del af TASK-11.3):** `Card` udvidet med `tone: "section"/"section-muted"` og adopteret 9 steder (se TASK-11.3-note) — internal admin gik fra nul `.np-card`-brug til at bruge den delte primitiv alle steder. `SectionHeader`/`Badge` er stadig bygget, men endnu ikke adopteret nogen steder.
 
 ### TASK-11.5 Customer admin visual uplift
 **Status:** `IN PROGRESS` (2026-09-26)
