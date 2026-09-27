@@ -33,10 +33,12 @@ export default async function AdminEmbedPage({ params }: PageProps) {
           id: true,
           name: true,
           variants: {
+            orderBy: { sortOrder: "asc" },
             select: {
               id: true,
               title: true,
               lang: true,
+              sortOrder: true,
               muxPlaybackId: true,
               posterFrameUrl: true,
               views: true,

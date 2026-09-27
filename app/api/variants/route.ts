@@ -73,6 +73,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Gruppen findes ikke" }, { status: 404 });
     }
 
+    const lastVariant = await prisma.variant.findFirst({
+      where: { groupId: targetGroupId },
+      orderBy: { sortOrder: "desc" },
+      select: { sortOrder: true },
+    });
+
     const variant = await prisma.variant.create({
       data: {
         groupId: targetGroupId,
@@ -80,6 +86,7 @@ export async function POST(req: Request) {
         title,
         views: 0,
         organizationId: orgCtx.orgId,
+        sortOrder: (lastVariant?.sortOrder ?? -1) + 1,
       },
     });
 

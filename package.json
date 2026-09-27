@@ -18,6 +18,7 @@
         "encoding:fix": "node scripts/fix-encoding.mjs",
         "perf:budget": "node scripts/check-client-bundle-budget.mjs",
         "theme:backfill-default": "node scripts/backfill-default-theme.mjs",
+        "variants:backfill-sort-order": "node scripts/backfill-variant-sort-order.mjs",
         "marketing:publish-defaults": "node --experimental-strip-types --loader ./scripts/alias-loader.mjs scripts/publish-marketing-defaults.mjs",
         "postinstall": "prisma generate"
     },

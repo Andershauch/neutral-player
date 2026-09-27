@@ -3,6 +3,23 @@
 import { useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
+import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  rectSortingStrategy,
+  sortableKeyboardCoordinates,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { useAsyncAction } from "@/hooks/useAsyncAction";
 import StatTile from "@/components/ui/StatTile";
 
@@ -51,6 +68,7 @@ interface EmbedEditorProps {
         id: string;
         title: string | null;
         lang: string;
+        sortOrder: number;
         muxPlaybackId: string | null;
         posterFrameUrl: string | null;
         views: number;
@@ -100,6 +118,58 @@ export default function EmbedEditor({ embed }: EmbedEditorProps) {
   );
   const totalVariants = variants.length;
   const readyVariantCount = variants.filter((variant) => Boolean(variant.muxPlaybackId)).length;
+
+  // Optimistisk override af sprogversioners raekkefoelge pr. gruppe, mens en
+  // drag'n'drop-sortering gemmes i baggrunden. Filtreret mod den aktuelle
+  // server-liste ved render, saa den ikke bliver ugyldig hvis en variant
+  // tilfoejes/slettes, mens en override staar tilbage fra et tidligere drag.
+  const [groupOrderOverride, setGroupOrderOverride] = useState<Record<string, string[]>>({});
+  const [reorderErrors, setReorderErrors] = useState<Record<string, string>>({});
+
+  const resolveVariantOrder = (serverIds: string[], override?: string[]) => {
+    if (!override) return serverIds;
+    const kept = override.filter((id) => serverIds.includes(id));
+    const missing = serverIds.filter((id) => !kept.includes(id));
+    return [...kept, ...missing];
+  };
+
+  const persistVariantOrder = async (groupId: string, orderedIds: string[], previousIds: string[]) => {
+    setReorderErrors((prev) => ({ ...prev, [groupId]: "" }));
+    try {
+      const res = await fetch("/api/reorder-variants", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: orderedIds.map((id, index) => ({ id, sortOrder: index })),
+        }),
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(data.error || "Kunne ikke gemme rækkefølgen.");
+      }
+    } catch (error) {
+      setGroupOrderOverride((prev) => ({ ...prev, [groupId]: previousIds }));
+      const message = error instanceof Error ? error.message : "Kunne ikke gemme rækkefølgen.";
+      setReorderErrors((prev) => ({ ...prev, [groupId]: message }));
+    }
+  };
+
+  const dndSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handleVariantDragEnd = (groupId: string, orderedIds: string[]) => (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = orderedIds.indexOf(String(active.id));
+    const newIndex = orderedIds.indexOf(String(over.id));
+    if (oldIndex === -1 || newIndex === -1) return;
+    const newOrder = arrayMove(orderedIds, oldIndex, newIndex);
+    setGroupOrderOverride((prev) => ({ ...prev, [groupId]: newOrder }));
+    void persistVariantOrder(groupId, newOrder, orderedIds);
+  };
+
   const domainsValue = (embed.allowedDomains || "*").trim();
   const nextActionTargetId =
     totalVariants === 0 ? "variant-create" : readyVariantCount === 0 ? "variant-library" : "share-project";
@@ -476,13 +546,52 @@ export default function EmbedEditor({ embed }: EmbedEditorProps) {
                   </div>
                 ) : null}
 
-                <div className={`grid grid-cols-1 gap-6 md:gap-8 ${group.variants.length > 1 ? "xl:grid-cols-2" : "max-w-2xl"}`}>
-                  {[...group.variants]
-                    .sort((a, b) => (a.title ?? "").localeCompare(b.title ?? ""))
-                    .map((variant) => (
-                      <EmbedVariantCard key={variant.id} variant={variant} languages={LANGUAGES} />
-                    ))}
-                </div>
+                {(() => {
+                  const serverIds = [...group.variants]
+                    .sort((a, b) => a.sortOrder - b.sortOrder)
+                    .map((variant) => variant.id);
+                  const orderedIds = resolveVariantOrder(serverIds, groupOrderOverride[group.id]);
+                  const orderedVariants = orderedIds
+                    .map((id) => group.variants.find((variant) => variant.id === id))
+                    .filter((variant): variant is (typeof group.variants)[number] => Boolean(variant));
+                  const gridClassName = `grid grid-cols-1 gap-6 md:gap-8 ${orderedVariants.length > 1 ? "xl:grid-cols-2" : "max-w-2xl"}`;
+
+                  if (orderedVariants.length <= 1) {
+                    return (
+                      <div className={gridClassName}>
+                        {orderedVariants.map((variant) => (
+                          <EmbedVariantCard key={variant.id} variant={variant} languages={LANGUAGES} />
+                        ))}
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="space-y-3">
+                      <p className="text-xs font-semibold text-gray-500">
+                        Træk i håndtaget for at ændre rækkefølgen. Den øverste version er den, der afspilles som standard i embed-koden.
+                      </p>
+                      {reorderErrors[group.id] ? (
+                        <p className="text-xs font-semibold text-red-600">{reorderErrors[group.id]}</p>
+                      ) : null}
+                      <DndContext
+                        sensors={dndSensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={handleVariantDragEnd(group.id, orderedIds)}
+                      >
+                        <SortableContext items={orderedIds} strategy={rectSortingStrategy}>
+                          <div className={gridClassName}>
+                            {orderedVariants.map((variant, index) => (
+                              <SortableVariantItem key={variant.id} id={variant.id} position={index + 1}>
+                                <EmbedVariantCard variant={variant} languages={LANGUAGES} />
+                              </SortableVariantItem>
+                            ))}
+                          </div>
+                        </SortableContext>
+                      </DndContext>
+                    </div>
+                  );
+                })()}
               </div>
             ))}
           </div>
@@ -579,5 +688,49 @@ function CollapsibleSection({
         {children}
       </div>
     </section>
+  );
+}
+
+function SortableVariantItem({
+  id,
+  position,
+  children,
+}: {
+  id: string;
+  position: number;
+  children: ReactNode;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      className={`relative ${isDragging ? "z-10 opacity-60" : ""}`}
+    >
+      <div className="mb-2 flex items-center gap-2">
+        <button
+          type="button"
+          {...attributes}
+          {...listeners}
+          className="inline-flex h-8 w-8 touch-none cursor-grab items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700 active:cursor-grabbing"
+          aria-label="Flyt version i rækkefølgen"
+          title="Træk for at ændre rækkefølge"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4">
+            <circle cx="9" cy="6" r="1.5" />
+            <circle cx="15" cy="6" r="1.5" />
+            <circle cx="9" cy="12" r="1.5" />
+            <circle cx="15" cy="12" r="1.5" />
+            <circle cx="9" cy="18" r="1.5" />
+            <circle cx="15" cy="18" r="1.5" />
+          </svg>
+        </button>
+        <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+          {position === 1 ? "Afspilles som standard" : `Version ${position}`}
+        </span>
+      </div>
+      {children}
+    </div>
   );
 }
