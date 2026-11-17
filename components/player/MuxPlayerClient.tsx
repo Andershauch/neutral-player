@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import CustomMuxPlayer, { type CustomMuxPlayerHandle } from "@/components/player/CustomMuxPlayer";
 import TranscriptDetails from "@/components/player/TranscriptDetails";
 import { useEmbedHeightReporter } from "@/components/player/useEmbedHeightReporter";
@@ -62,6 +62,24 @@ export default function MuxPlayerClient({
   const [transcriptOpen, setTranscriptOpen] = useState(false);
   const hasAnyTranscript = allVariants.some((v) => Boolean(v.transcript));
   const activeTranscript = activeVariant.transcript ?? null;
+  // The vertical language column (md and up) is centred in the video area. With a text
+  // version below, that area can be too short for it, so it would be clipped and hidden
+  // behind the text. Then the buttons go in a row along the top instead (as on mobile).
+  const videoRegionRef = useRef<HTMLDivElement | null>(null);
+  const [regionHeight, setRegionHeight] = useState<number | null>(null);
+  useLayoutEffect(() => {
+    const el = videoRegionRef.current;
+    if (!el || !hasAnyTranscript) return;
+    const update = () => setRegionHeight(el.clientHeight);
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasAnyTranscript]);
+  // "Lyd" label (~50px) + one 44px button and 12px gap per language + padding, with
+  // room above and below for the player's own control bar.
+  const verticalColumnHeight = 50 + allVariants.length * 56 + 12 + 160;
+  const languageColumnFits = !hasAnyTranscript || (regionHeight !== null && regionHeight >= verticalColumnHeight);
   const resizeActive = useEmbedHeightReporter({
     enabled: hasAnyTranscript,
     hasActiveTranscript: Boolean(activeTranscript),
@@ -154,6 +172,7 @@ export default function MuxPlayerClient({
   return (
     <div className={hasAnyTranscript ? "flex h-full w-full flex-col bg-black" : "contents"}>
     <div
+      ref={videoRegionRef}
       className={`group/player relative w-full bg-black flex items-center justify-center overflow-hidden ${
         hasAnyTranscript ? "min-h-0 flex-1" : "h-full"
       }`}
@@ -221,13 +240,13 @@ export default function MuxPlayerClient({
         <div
           className={`
           absolute z-10 transition-all duration-500 ease-in-out pointer-events-none
-          md:left-auto md:right-4 md:top-1/2 md:-translate-y-1/2 md:flex-col md:gap-3 md:bottom-auto md:px-0
-          top-4 left-0 right-0 flex justify-center gap-2 px-4 overflow-x-auto no-scrollbar
+          ${languageColumnFits ? "md:left-auto md:right-2.5 md:top-1/2 md:-translate-y-1/2 md:flex-col md:gap-3 md:bottom-auto md:px-1.5 md:py-1.5" : ""}
+          top-4 left-0 right-0 flex justify-center gap-2 px-4 py-1.5 overflow-x-auto no-scrollbar
           ${showControls ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"}
-          md:group-hover/player:opacity-100 md:group-hover/player:translate-y-0
+          md:group-hover/player:opacity-100 ${languageColumnFits ? "md:group-hover/player:-translate-y-1/2" : "md:group-hover/player:translate-y-0"}
         `}
         >
-          <p className="hidden md:block text-[9px] text-white/40 font-black uppercase tracking-widest vertical-text mb-2 text-center select-none">
+          <p className={`hidden ${languageColumnFits ? "md:block" : ""} text-[9px] text-white/40 font-black uppercase tracking-widest vertical-text mb-2 text-center select-none`}>
             Lyd
           </p>
 
@@ -238,7 +257,7 @@ export default function MuxPlayerClient({
                 showControls ? "pointer-events-auto" : "pointer-events-none"
               } md:group-hover/player:pointer-events-auto`}
             >
-              <span className="hidden md:block absolute right-12 px-3 py-1 bg-white text-black text-[10px] font-bold rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-xl">
+              <span className={`hidden ${languageColumnFits ? "md:block" : ""} absolute right-12 px-3 py-1 bg-white text-black text-[10px] font-bold rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-xl`}>
                 {LANGUAGE_NAMES[v.lang] || v.title || v.lang.toUpperCase()}
               </span>
 
