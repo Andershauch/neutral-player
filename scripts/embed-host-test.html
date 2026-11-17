@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Embed-test MED resize-script</title>
+<style>body{font-family:system-ui,sans-serif;max-width:900px;margin:0 auto;padding:16px}.narrow{max-width:390px}.after{background:#fde68a;padding:12px;margin:16px 0}</style>
+</head>
+<body>
+<h1>Embed-test MED resize-script</h1>
+<p>Testside på et andet origin (port 3001). Bruges kun lokalt og kommer ikke med i deploy.</p>
+
+<h2>Embed 1 (fuld bredde)</h2>
+<div style="position:relative;padding-top:calc(56.25% + 3.5rem);width:100%;overflow:hidden;border-radius:12px;background:#000;">
+  <iframe src="http://localhost:3000/embed/cmwkco1gi0001fp96ames9x3x" loading="lazy"
+    style="position:absolute;top:0;left:0;bottom:0;right:0;width:100%;height:100%;border:none;"
+    allow="autoplay; fullscreen; picture-in-picture" allowfullscreen title="Video: Fleksjob"></iframe>
+</div>
+<p class="after">Denne gule boks skal følge med, når videoen vokser og krymper.</p>
+
+<h2>Embed 2 (390 px)</h2>
+<div class="narrow">
+<div style="position:relative;padding-top:calc(56.25% + 3.5rem);width:100%;overflow:hidden;border-radius:12px;background:#000;">
+  <iframe src="http://localhost:3000/embed/cmwkco1gi0001fp96ames9x3x" loading="lazy"
+    style="position:absolute;top:0;left:0;bottom:0;right:0;width:100%;height:100%;border:none;"
+    allow="autoplay; fullscreen; picture-in-picture" allowfullscreen title="Video: Fleksjob"></iframe>
+</div>
+</div>
+<p class="after">Gul boks efter embed 2.</p>
+
+<script src="http://localhost:3000/embed-resize.js" async></script>
+</body>
+</html>

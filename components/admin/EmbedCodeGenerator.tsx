@@ -3,12 +3,15 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import Card from "@/components/ui/Card";
+import { buildEmbedCode } from "@/lib/embed-code";
 
 interface EmbedCodeGeneratorProps {
   projectId: string;
   projectTitle: string;
   disabled?: boolean;
   disabledReason?: string | null;
+  /// True when at least one language has a text version; changes the snippet.
+  hasTranscript?: boolean;
 }
 
 export default function EmbedCodeGenerator({
@@ -16,22 +19,13 @@ export default function EmbedCodeGenerator({
   projectTitle,
   disabled = false,
   disabledReason = null,
+  hasTranscript = false,
 }: EmbedCodeGeneratorProps) {
   const router = useRouter();
   const [copied, setCopied] = useState(false);
 
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
-  const embedCode = `
-<div style="position:relative;padding-top:56.25%;width:100%;overflow:hidden;border-radius:12px;background:#000;">
-  <iframe
-    src="${baseUrl}/embed/${projectId}"
-    loading="lazy"
-    style="position:absolute;top:0;left:0;bottom:0;right:0;width:100%;height:100%;border:none;"
-    allow="autoplay; fullscreen; picture-in-picture"
-    allowfullscreen
-    title="${projectTitle}">
-  </iframe>
-</div>`.trim();
+  const embedCode = buildEmbedCode({ baseUrl, projectId, projectTitle, hasTranscript });
 
   const copyToClipboard = async () => {
     if (disabled) {
@@ -66,6 +60,13 @@ export default function EmbedCodeGenerator({
         <p className="text-sm text-gray-600">
           Brug koden nedenfor på din hjemmeside eller i dit CMS. Når mindst én video er klar, kan du kopiere koden og indsætte den direkte.
         </p>
+        {hasTranscript ? (
+          <p className="text-sm text-gray-600">
+            Projektet har en tekstversion, så koden er højere end en almindelig 16:9-video. Scriptet nederst er valgfrit:
+            med det vokser og krymper videoen, når tekstversionen åbnes. Uden det åbner teksten inde i videoen med sin egen rullebjælke.
+            Har du indsat en ældre kode, skal du indsætte den nye.
+          </p>
+        ) : null}
       </div>
 
       <div className="group relative">

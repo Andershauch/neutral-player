@@ -42,6 +42,7 @@ export default async function AdminEmbedPage({ params }: PageProps) {
               muxPlaybackId: true,
               posterFrameUrl: true,
               views: true,
+              transcript: true,
               subtitles: {
                 orderBy: { languageCode: "asc" },
                 select: { languageCode: true, name: true, status: true, source: true, enabled: true },
@@ -56,6 +57,18 @@ export default async function AdminEmbedPage({ params }: PageProps) {
   if (!embed) {
     return notFound();
   }
+
+  // The editor only needs to know whether a text version exists, not its content.
+  const editorEmbed = {
+    ...embed,
+    groups: embed.groups.map((group) => ({
+      ...group,
+      variants: group.variants.map(({ transcript, ...variant }) => ({
+        ...variant,
+        hasTranscript: transcript !== null,
+      })),
+    })),
+  };
 
   return (
     <div className="space-y-6">
@@ -81,7 +94,7 @@ export default async function AdminEmbedPage({ params }: PageProps) {
       />
 
       <div className="rounded-2xl border border-gray-200 bg-gray-100 p-4 md:p-6 text-black shadow-[0_8px_24px_rgba(15,23,42,0.08)]">
-        <EmbedEditor embed={embed} />
+        <EmbedEditor embed={editorEmbed} />
       </div>
     </div>
   );

@@ -6,6 +6,7 @@ import { resolveThemeForOrganization } from "@/lib/theme";
 import { buildThemeCssVars } from "@/lib/theme-css";
 import { DEFAULT_THEME_TOKENS } from "@/lib/theme-schema";
 import { getOrgPlanState } from "@/lib/plan-limits";
+import { readStoredTranscript } from "@/lib/transcript";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -37,6 +38,7 @@ export default async function EmbedPage({ params }: PageProps) {
               title: true,
               muxPlaybackId: true,
               posterFrameUrl: true,
+              transcript: true,
               subtitles: {
                 // Mux-genererede spor er allerede en del af HLS-manifestet og
                 // surfacer selv i afspillerens CC-menu — kun kundens egen
@@ -105,7 +107,10 @@ export default async function EmbedPage({ params }: PageProps) {
   }
 
   const allVariants = embed.groups.flatMap((g) => g.variants);
-  const readyVariants = allVariants.filter((v) => v.muxPlaybackId !== null);
+  // Validate the stored JSON before it reaches the client; bad data simply means no text version.
+  const readyVariants = allVariants
+    .filter((v) => v.muxPlaybackId !== null)
+    .map((v) => ({ ...v, transcript: readStoredTranscript(v.transcript) }));
 
   if (readyVariants.length === 0) {
     return (

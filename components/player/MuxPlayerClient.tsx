@@ -2,6 +2,9 @@
 
 import { useState, useEffect, useRef } from "react";
 import CustomMuxPlayer, { type CustomMuxPlayerHandle } from "@/components/player/CustomMuxPlayer";
+import TranscriptDetails from "@/components/player/TranscriptDetails";
+import { useEmbedHeightReporter } from "@/components/player/useEmbedHeightReporter";
+import type { TranscriptData } from "@/lib/transcript";
 
 const LANGUAGE_NAMES: Record<string, string> = {
   da: "Dansk",
@@ -37,6 +40,7 @@ interface Variant {
   muxPlaybackId: string | null;
   posterFrameUrl?: string | null;
   subtitles?: VariantSubtitleTrack[];
+  transcript?: TranscriptData | null;
 }
 
 interface MuxPlayerClientProps {
@@ -54,6 +58,16 @@ export default function MuxPlayerClient({
   showWatermark = false,
 }: MuxPlayerClientProps) {
   const [activeVariant, setActiveVariant] = useState(initialVariant);
+  // Kept here (not in TranscriptDetails) so the text stays open when the language changes.
+  const [transcriptOpen, setTranscriptOpen] = useState(false);
+  const hasAnyTranscript = allVariants.some((v) => Boolean(v.transcript));
+  const activeTranscript = activeVariant.transcript ?? null;
+  const resizeActive = useEmbedHeightReporter({
+    enabled: hasAnyTranscript,
+    hasActiveTranscript: Boolean(activeTranscript),
+    transcriptOpen,
+    contentKey: activeVariant.id,
+  });
   const [showControls, setShowControls] = useState(true);
   const [playerError, setPlayerError] = useState<string | null>(null);
   const [isVariantLoading, setIsVariantLoading] = useState(false);
@@ -138,7 +152,13 @@ export default function MuxPlayerClient({
   };
 
   return (
-    <div className="group/player relative w-full h-full bg-black flex items-center justify-center overflow-hidden" onClick={() => setShowControls(true)}>
+    <div className={hasAnyTranscript ? "flex h-full w-full flex-col bg-black" : "contents"}>
+    <div
+      className={`group/player relative w-full bg-black flex items-center justify-center overflow-hidden ${
+        hasAnyTranscript ? "min-h-0 flex-1" : "h-full"
+      }`}
+      onClick={() => setShowControls(true)}
+    >
       {playerError ? (
         <div className="text-white/80 text-sm px-6 text-center">Videoen kunne ikke afspilles lige nu. Prøv igen om et øjeblik.</div>
       ) : (
@@ -253,6 +273,16 @@ export default function MuxPlayerClient({
           scrollbar-width: none;
         }
       `}</style>
+    </div>
+    {activeTranscript ? (
+      <TranscriptDetails
+        transcript={activeTranscript}
+        lang={activeVariant.lang}
+        open={transcriptOpen}
+        onOpenChange={setTranscriptOpen}
+        growWithText={resizeActive}
+      />
+    ) : null}
     </div>
   );
 }

@@ -898,6 +898,30 @@
 - `TODO`: Redigering af genereret tekst. I dag kan et spor bestilles og fjernes, men ikke rettes i appen.
 - `TODO`: Formel WCAG 2.1 AA-gennemgang af afspilleren, saa paastanden paa forsiden er efterproevet.
 
+### TASK-12.12 Tilgaengelig tekstversion (transskription) i embed
+**Status:** `IN PROGRESS`
+**Plan:** `docs/transcript-plan.md` (godkendt 2026-11-17). Rækkefølge og beslutninger står dér.
+- `DONE`: `lib/transcript.ts` + unit tests i `tests/unit/transcript.test.ts` (skridt 1), verificeret mod den rigtige fleksjob-fil.
+- `DONE`: Migration `Variant.transcript Json?` (skridt 2), kørt mod Neon 2026-11-17 med `npm run db:migrate:deploy`.
+- `DONE`: Upload-API `POST/DELETE /api/embeds/[id]/transcript` (skridt 3). Har embedden flere grupper, kræves `groupId`. Endnu ikke testet mod rigtig upload.
+- `DONE`: Admin-afsnit `TranscriptUploadPanel` i `EmbedEditor` (skridt 4). Testet manuelt af Anders 2026-11-17.
+- `DONE`: `TranscriptDetails` i embed, følger valgt sprog (skridt 5). Testet manuelt af Anders 2026-11-17.
+- `DONE`: Højdebeskeder, `public/embed-resize.js` og ny embed-kode via `lib/embed-code.ts` (skridt 6). Testet manuelt af Anders 2026-11-17.
+  Højden regnes ud (16:9 + knaprække + tekstens naturlige højde) frem for at måle siden, fordi en iframes dokument aldrig bliver kortere end iframen.
+  Scriptet svarer med `resize-active`, og først da fjerner embeden teksthøjde-grænsen (`55vh`). Test: `node scripts/embed-host-test-server.mjs`.
+  Embeds uden tekstversion får stadig den gamle kode uden de ekstra 3,5 rem.
+- `IN PROGRESS`: Samlet tjekliste (skridt 7). Lint, typecheck, 102 unit tests, build og `perf:budget` er grønne.
+  Tastatur, `lang`/`dir`, overskrifter, 390 px, 200 % zoom, sprogskift, gammel embed-kode, med/uden script og konsol er kørt i Chromium (39/39).
+  `TODO` manuelt: arabisk tegnsætning visuelt, rigtig iPhone (zoom, `maximumScale`), skærmlæser, og om halsnaes.dk tillader scriptet.
+
+**Idébank (bygges ikke nu):**
+- Sprogknapperne viser kun "UK"/"AR", så skærmlæsere siger "U K". Giv dem et tilgængeligt navn (fx "Українська") og `lang`.
+- Det valgte sprog mangler `aria-pressed`.
+- Sprogknapperne skjules efter 3 sekunder, men kan stadig få tastaturfokus. Vis dem ved `:focus-within`, eller skjul dem ikke.
+- `app/layout.tsx` sætter `maximumScale: 1, userScalable: false`, som blokerer zoom i admin (WCAG 1.4.4). Påvirker sandsynligvis ikke iframen `[USIKKERT: test på iOS]`.
+- Ekstra fallback: link til tekstversion på egen side (`/embed/[id]/tekst?lang=xx`).
+- Klik på en talblok for at hoppe i videoen. `cues` gemmes allerede.
+
 ### TASK-12.8 Bloedere overgang ved login
 **Status:** `TODO`
 - Skiftet fra public top-header til admin-sidebar sker stadig abrupt.

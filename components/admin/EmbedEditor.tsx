@@ -27,6 +27,9 @@ import StatTile from "@/components/ui/StatTile";
 const EmbedCodeGenerator = dynamic(() => import("./EmbedCodeGenerator"), {
   loading: () => <p className="text-xs font-semibold text-gray-500">Indlæser embed-kode...</p>,
 });
+const TranscriptUploadPanel = dynamic(() => import("./TranscriptUploadPanel"), {
+  loading: () => <p className="text-xs font-semibold text-gray-500">Indlæser...</p>,
+});
 const EmbedPreviewModal = dynamic(() => import("./EmbedPreviewModal"), { ssr: false });
 const EmbedVariantCard = dynamic(() => import("./EmbedVariantCard"), {
   loading: () => (
@@ -73,6 +76,7 @@ interface EmbedEditorProps {
         muxPlaybackId: string | null;
         posterFrameUrl: string | null;
         views: number;
+        hasTranscript: boolean;
         subtitles?: Array<{
           languageCode: string;
           name: string;
@@ -600,6 +604,28 @@ export default function EmbedEditor({ embed }: EmbedEditorProps) {
       </section>
 
       <CollapsibleSection
+        id="transcript-settings"
+        kicker="Valgfrit"
+        title="Tekstversion (transskription)"
+        expanded={openSection === "transcript-settings"}
+        onToggle={() => toggleSection("transcript-settings")}
+      >
+        <TranscriptUploadPanel
+          embedId={embed.id}
+          groups={(embed.groups ?? []).map((group) => ({
+            id: group.id,
+            name: group.name,
+            variants: group.variants.map((v) => ({
+              id: v.id,
+              lang: v.lang,
+              title: v.title,
+              hasTranscript: v.hasTranscript,
+            })),
+          }))}
+        />
+      </CollapsibleSection>
+
+      <CollapsibleSection
         id="domain-settings"
         kicker="Trin 4a"
         title="Tilladte domæner"
@@ -646,6 +672,7 @@ export default function EmbedEditor({ embed }: EmbedEditorProps) {
         <EmbedCodeGenerator
           projectId={embed.id}
           projectTitle={projectName}
+          hasTranscript={variants.some((variant) => variant.hasTranscript)}
           disabled={readyVariantCount === 0}
           disabledReason="Upload mindst én video, før du kopierer embed-koden."
         />

@@ -237,6 +237,8 @@ model Variant {
   dreamBrokerUrl String?
   // Varighed fra Mux. Grundlaget for lager- og leveringsgrænser, da Mux fakturerer pr. minut.
   durationSeconds Int?
+  // Accessible text version (see lib/transcript.ts). Only whitelisted fields are stored.
+  transcript     Json?
   views          Int      @default(0)
   groupId        String
   organizationId String?

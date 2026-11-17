@@ -11,6 +11,7 @@ describe("API route contracts", () => {
     const scopedRoutes = [
       "app/api/embeds/route.ts",
       "app/api/embeds/[id]/route.ts",
+      "app/api/embeds/[id]/transcript/route.ts",
       "app/api/variants/route.ts",
       "app/api/variants/[id]/route.ts",
       "app/api/users/[id]/route.ts",
@@ -27,6 +28,7 @@ describe("API route contracts", () => {
     const expectations: Array<{ file: string; guard: string }> = [
       { file: "app/api/embeds/route.ts", guard: "getOrgContextForContentEdit" },
       { file: "app/api/embeds/[id]/route.ts", guard: "getOrgContextForContentEdit" },
+      { file: "app/api/embeds/[id]/transcript/route.ts", guard: "getOrgContextForContentEdit" },
       { file: "app/api/variants/route.ts", guard: "getOrgContextForContentEdit" },
       { file: "app/api/variants/[id]/route.ts", guard: "getOrgContextForContentEdit" },
       { file: "app/api/users/[id]/route.ts", guard: "getOrgContextForMemberManagement" },
