@@ -5,6 +5,7 @@ import CustomMuxPlayer, { type CustomMuxPlayerHandle } from "@/components/player
 import TranscriptDetails from "@/components/player/TranscriptDetails";
 import { useEmbedHeightReporter } from "@/components/player/useEmbedHeightReporter";
 import type { TranscriptData } from "@/lib/transcript";
+import { parseVttCueStarts } from "@/lib/vtt";
 
 const LANGUAGE_NAMES: Record<string, string> = {
   da: "Dansk",
@@ -80,6 +81,40 @@ export default function MuxPlayerClient({
   // room above and below for the player's own control bar.
   const verticalColumnHeight = 50 + allVariants.length * 56 + 12 + 160;
   const languageColumnFits = !hasAnyTranscript || (regionHeight !== null && regionHeight >= verticalColumnHeight);
+  // Click-to-seek: a transcript block's `cues` are subtitle cue numbers, so the start times come
+  // from the variant's own uploaded VTT (same origin). Without a VTT the buttons simply don't show.
+  const [cueStartsByVariant, setCueStartsByVariant] = useState<Record<string, number[]>>({});
+  const activeSubtitle = (() => {
+    const tracks = activeVariant.subtitles ?? [];
+    const lang = activeVariant.lang.toLowerCase();
+    return tracks.find((t) => t.languageCode.toLowerCase() === lang) ?? tracks[0] ?? null;
+  })();
+  const activeSubtitleCode = activeSubtitle?.languageCode ?? null;
+  const activeVariantId = activeVariant.id;
+  const needsCueStarts = Boolean(activeTranscript) && activeSubtitleCode !== null && !cueStartsByVariant[activeVariantId];
+  useEffect(() => {
+    if (!needsCueStarts || !activeSubtitleCode) return;
+    let cancelled = false;
+    fetch(`/api/variants/${activeVariantId}/subtitles/${encodeURIComponent(activeSubtitleCode)}`)
+      .then((res) => (res.ok ? res.text() : ""))
+      .then((text) => {
+        const starts = parseVttCueStarts(text);
+        if (!cancelled && starts.length > 0) {
+          setCueStartsByVariant((prev) => ({ ...prev, [activeVariantId]: starts }));
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [needsCueStarts, activeSubtitleCode, activeVariantId]);
+
+  const seekTo = (seconds: number) => {
+    const player = playerElementRef.current;
+    if (!player) return;
+    player.setCurrentTime(seconds);
+    void player.play();
+  };
   const resizeActive = useEmbedHeightReporter({
     enabled: hasAnyTranscript,
     hasActiveTranscript: Boolean(activeTranscript),
@@ -304,6 +339,8 @@ export default function MuxPlayerClient({
         open={transcriptOpen}
         onOpenChange={setTranscriptOpen}
         growWithText={resizeActive}
+        cueStarts={cueStartsByVariant[activeVariant.id] ?? null}
+        onSeek={seekTo}
       />
     ) : null}
     </div>

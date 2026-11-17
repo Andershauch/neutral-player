@@ -3,6 +3,7 @@
 import { useId } from "react";
 import { getTranscriptDirection, type TranscriptData } from "@/lib/transcript";
 import { TRANSCRIPT_BODY_ATTRIBUTE } from "@/components/player/useEmbedHeightReporter";
+import { formatTimestamp } from "@/lib/vtt";
 
 interface TranscriptDetailsProps {
   transcript: TranscriptData;
@@ -12,6 +13,10 @@ interface TranscriptDetailsProps {
   /// True when the host page's resize script is active: the iframe grows with the text,
   /// so the text no longer needs its own height limit and scrollbar.
   growWithText?: boolean;
+  /// Start time in seconds of each subtitle cue (index 0 = cue 1). With this and `onSeek`,
+  /// speech blocks get a timestamp button that jumps to that point in the video.
+  cueStarts?: number[] | null;
+  onSeek?: (seconds: number) => void;
 }
 
 /// Height of the button row. Must match the extra `3.5rem` in the embed code's
@@ -29,8 +34,14 @@ export default function TranscriptDetails({
   open,
   onOpenChange,
   growWithText = false,
+  cueStarts = null,
+  onSeek,
 }: TranscriptDetailsProps) {
   const id = useId();
+  const seekTime = (cues?: [number, number]): number | null => {
+    const start = cues && cueStarts ? cueStarts[cues[0] - 1] : undefined;
+    return typeof start === "number" ? start : null;
+  };
   const buttonId = `${id}-button`;
   const bodyId = `${id}-body`;
 
@@ -67,6 +78,20 @@ export default function TranscriptDetails({
             {section.blocks.map((block, blockIndex) =>
               block.type === "speech" ? (
                 <p key={blockIndex}>
+                  {onSeek && seekTime(block.cues) !== null ? (
+                    <>
+                      {/* Language-neutral on purpose: the button reads just the time ("0:12"), in the
+                          voice of the transcript's language, so no translated label is needed. */}
+                      <button
+                        type="button"
+                        onClick={() => onSeek(seekTime(block.cues) as number)}
+                        className="me-2 inline-flex cursor-pointer items-center gap-1 rounded bg-gray-100 px-1.5 py-0.5 text-xs font-semibold tabular-nums text-gray-700 hover:bg-gray-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600"
+                      >
+                        <span aria-hidden="true">▶</span>
+                        <span dir="ltr">{formatTimestamp(seekTime(block.cues) as number)}</span>
+                      </button>
+                    </>
+                  ) : null}
                   <strong>{transcript.speaker}:</strong> {block.text}
                 </p>
               ) : (

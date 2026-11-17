@@ -6,12 +6,10 @@ export const metadata: Metadata = {
   description: "Administrationspanel",
 };
 
-// Vi tilføjer viewport indstillinger for at sikre korrekt zoom på mobil
+// Zoom must stay enabled (WCAG 1.4.4), so no maximumScale / userScalable here.
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
 };
 
 export default function RootLayout({

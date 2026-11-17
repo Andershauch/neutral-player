@@ -916,16 +916,19 @@
   Skærmlæser (Narrator): native `<details>/<summary>` blev ikke læst op, så `TranscriptDetails` bruger nu en knap med
   `aria-expanded`/`aria-controls` og et navngivet `region`. Globale `h1`-`h6` er `uppercase` i `globals.css` (uden for Tailwinds lag),
   og versaler får skærmlæsere til at stave ord bogstav for bogstav; tekstversionens `h2` har derfor `textTransform: none`.
-  `TODO` manuelt: gentest i Narrator, NVDA og VoiceOver.
+  `DONE` Narrator bekræftet af Anders 2026-11-17 (efter knap/region, uden versaler, skjulte klammer om visuelle beskrivelser).
+  `DONE` Sprogknapperne har tilgængeligt navn (fx "Українська"), `lang` og `aria-pressed`.
+  `DONE` Klik for at hoppe: talblokke med `cues` får en tidsstempel-knap ("▶ 0:08"). `cues` er VTT-cue-numre (1-baseret),
+  så starttiderne læses fra varianten egen uploadede VTT (`lib/vtt.ts`, hentet fra `/api/variants/[id]/subtitles/[kode]`).
+  Uden VTT vises knapperne ikke. Knappen læser kun tiden op, så den ikke skal oversættes.
+  `DONE` `maximumScale`/`userScalable` fjernet fra `app/layout.tsx` (WCAG 1.4.4). `TODO` manuelt: tjek på iPhone at admin-formularer
+  ikke zoomer uønsket ved fokus (inputs under 16 px).
+  `TODO` manuelt: gentest i NVDA og VoiceOver.
   `TODO` (idébank): resten af appens overskrifter har samme versal-problem for skærmlæsere.
 
 **Idébank (bygges ikke nu):**
-- Sprogknapperne viser kun "UK"/"AR", så skærmlæsere siger "U K". Giv dem et tilgængeligt navn (fx "Українська") og `lang`.
-- Det valgte sprog mangler `aria-pressed`.
-- Sprogknapperne skjules efter 3 sekunder, men kan stadig få tastaturfokus. Vis dem ved `:focus-within`, eller skjul dem ikke.
-- `app/layout.tsx` sætter `maximumScale: 1, userScalable: false`, som blokerer zoom i admin (WCAG 1.4.4). Påvirker sandsynligvis ikke iframen `[USIKKERT: test på iOS]`.
-- Ekstra fallback: link til tekstversion på egen side (`/embed/[id]/tekst?lang=xx`).
-- Klik på en talblok for at hoppe i videoen. `cues` gemmes allerede.
+- Sprogknapperne skjules efter 3 sekunder, men kan stadig få tastaturfokus (skjulningen er ønsket; fokus-håndtering er ikke løst).
+- Ekstra fallback: link til tekstversion på egen side (`/embed/[id]/tekst?lang=xx`). Anders ser ikke behovet.
 
 ### TASK-12.8 Bloedere overgang ved login
 **Status:** `TODO`
