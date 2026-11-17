@@ -912,7 +912,12 @@
   Embeds uden tekstversion får stadig den gamle kode uden de ekstra 3,5 rem.
 - `IN PROGRESS`: Samlet tjekliste (skridt 7). Lint, typecheck, 102 unit tests, build og `perf:budget` er grønne.
   Tastatur, `lang`/`dir`, overskrifter, 390 px, 200 % zoom, sprogskift, gammel embed-kode, med/uden script og konsol er kørt i Chromium (39/39).
-  `TODO` manuelt: arabisk tegnsætning visuelt, rigtig iPhone (zoom, `maximumScale`), skærmlæser, og om halsnaes.dk tillader scriptet.
+  Bekræftet af Anders 2026-11-17: arabisk tegnsætning ser korrekt ud, det virker på iPhone, og halsnaes.dk tillader scripts.
+  Skærmlæser (Narrator): native `<details>/<summary>` blev ikke læst op, så `TranscriptDetails` bruger nu en knap med
+  `aria-expanded`/`aria-controls` og et navngivet `region`. Globale `h1`-`h6` er `uppercase` i `globals.css` (uden for Tailwinds lag),
+  og versaler får skærmlæsere til at stave ord bogstav for bogstav; tekstversionens `h2` har derfor `textTransform: none`.
+  `TODO` manuelt: gentest i Narrator, NVDA og VoiceOver.
+  `TODO` (idébank): resten af appens overskrifter har samme versal-problem for skærmlæsere.
 
 **Idébank (bygges ikke nu):**
 - Sprogknapperne viser kun "UK"/"AR", så skærmlæsere siger "U K". Giv dem et tilgængeligt navn (fx "Українська") og `lang`.

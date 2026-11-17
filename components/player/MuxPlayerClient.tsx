@@ -262,6 +262,10 @@ export default function MuxPlayerClient({
               </span>
 
               <button
+                type="button"
+                lang={v.lang}
+                aria-label={LANGUAGE_NAMES[v.lang] || v.title || v.lang.toUpperCase()}
+                aria-pressed={activeVariant.id === v.id}
                 onClick={(e) => {
                   e.stopPropagation();
                   handleVariantSelect(v);
