@@ -122,6 +122,11 @@ export default function MuxPlayerClient({
     contentKey: activeVariant.id,
   });
   const [showControls, setShowControls] = useState(true);
+  // True while a mouse or pen is over the player. Driven by pointer events rather than CSS
+  // `:hover`, because Tailwind's hover variants only apply when the device reports
+  // `(hover: hover)`, which some touch laptops and remote desktops do not.
+  const [pointerInside, setPointerInside] = useState(false);
+  const languageControlsVisible = showControls || pointerInside;
   const [playerError, setPlayerError] = useState<string | null>(null);
   const [isVariantLoading, setIsVariantLoading] = useState(false);
   const [playedVariantMap, setPlayedVariantMap] = useState<Record<string, boolean>>({});
@@ -212,6 +217,13 @@ export default function MuxPlayerClient({
         hasAnyTranscript ? "min-h-0 flex-1" : "h-full"
       }`}
       onClick={() => setShowControls(true)}
+      onPointerEnter={(e) => {
+        if (e.pointerType !== "touch") setPointerInside(true);
+      }}
+      onPointerMove={(e) => {
+        if (e.pointerType !== "touch") setPointerInside(true);
+      }}
+      onPointerLeave={() => setPointerInside(false)}
     >
       {playerError ? (
         <div className="text-white/80 text-sm px-6 text-center">Videoen kunne ikke afspilles lige nu. Prøv igen om et øjeblik.</div>
@@ -277,8 +289,7 @@ export default function MuxPlayerClient({
           absolute z-10 transition-all duration-500 ease-in-out pointer-events-none
           ${languageColumnFits ? "md:left-auto md:right-2.5 md:top-1/2 md:-translate-y-1/2 md:flex-col md:gap-3 md:bottom-auto md:px-1.5 md:py-1.5" : ""}
           top-4 left-0 right-0 flex justify-center gap-2 px-4 py-1.5 overflow-x-auto no-scrollbar
-          ${showControls ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"}
-          md:group-hover/player:opacity-100 ${languageColumnFits ? "md:group-hover/player:-translate-y-1/2" : "md:group-hover/player:translate-y-0"}
+          ${languageControlsVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"}
         `}
         >
           <p className={`hidden ${languageColumnFits ? "md:block" : ""} text-[9px] text-white/40 font-black uppercase tracking-widest vertical-text mb-2 text-center select-none`}>
@@ -289,8 +300,8 @@ export default function MuxPlayerClient({
             <div
               key={v.id}
               className={`relative flex items-center justify-end group/btn shrink-0 ${
-                showControls ? "pointer-events-auto" : "pointer-events-none"
-              } md:group-hover/player:pointer-events-auto`}
+                languageControlsVisible ? "pointer-events-auto" : "pointer-events-none"
+              }`}
             >
               <span className={`hidden ${languageColumnFits ? "md:block" : ""} absolute right-12 px-3 py-1 bg-white text-black text-[10px] font-bold rounded-md opacity-0 group-hover/btn:opacity-100 transition-opacity pointer-events-none whitespace-nowrap shadow-xl`}>
                 {LANGUAGE_NAMES[v.lang] || v.title || v.lang.toUpperCase()}

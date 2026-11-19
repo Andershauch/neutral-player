@@ -314,7 +314,8 @@ const CustomMuxPlayer = forwardRef<CustomMuxPlayerHandle, CustomMuxPlayerProps>(
     if (!mounted) return;
     const video = videoRef.current;
     if (!video) return;
-    video.style.setProperty("--np-caption-lift", showControls ? "-64px" : "0px");
+    // Hidden bar: still lift a little, otherwise the text touches the bottom edge of the video.
+    video.style.setProperty("--np-caption-lift", showControls ? "-64px" : "-16px");
   }, [mounted, showControls]);
 
   useEffect(() => {
